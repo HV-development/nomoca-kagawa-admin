@@ -1,4 +1,4 @@
-import { createNoCacheResponse } from '@/lib/response-utils';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
@@ -12,8 +12,10 @@ export async function POST(request: Request) {
     }
     // ここではサーバの標準出力へ記録（本番ではログ基盤に送る）
     console.warn('🔐 CSP Report received:', body);
-    return createNoCacheResponse(null, { status: 204 });
+    // 204 No Contentはボディを持てないため、NextResponseを直接使用
+    return new NextResponse(null, { status: 204 });
   } catch (_e) {
-    return createNoCacheResponse({ ok: false }, { status: 204 });
+    // エラー時も204を返す（CSPレポートは失敗してもブラウザに影響しない）
+    return new NextResponse(null, { status: 204 });
   }
 }

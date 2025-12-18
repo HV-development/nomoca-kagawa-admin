@@ -6,8 +6,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('📱 API Route: Applications request received');
-    
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/applications`, {
       method: 'GET',
       headerOptions: {
@@ -22,7 +20,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Applications successful', { count: data.applications?.length });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Applications error', error);

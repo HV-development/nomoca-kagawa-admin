@@ -95,16 +95,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔐 API Route: Password token verification request received', { token: token.substring(0, 8) + '...' });
-
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/verify-token?token=${token}`, {
       method: 'GET',
       headerOptions: {
         requireAuth: false, // トークン検証は認証不要
       },
     });
-
-    console.log('📡 API Route: Response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
@@ -120,12 +116,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Password token verification successful', { 
-      dataType: typeof data,
-      dataKeys: Object.keys(data),
-      hasData: 'data' in data,
-      isValid: data.data?.valid
-    });
     
     // 成功レスポンスをフィルタリング
     try {

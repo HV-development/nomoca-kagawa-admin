@@ -7,10 +7,8 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📧 API Route: Email change request received');
     
-    const emailChangeUrl = `${API_BASE_URL}/auth/email/change`;
-    console.log('🔗 API Route: Full email change URL:', emailChangeUrl);
+    const emailChangeUrl = `${API_BASE_URL}/email/change`;
     
     const response = await secureFetchWithCommonHeaders(request, emailChangeUrl, {
       method: 'POST',
@@ -27,7 +25,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Email change request successful');
 
     return createNoCacheResponse(data);
   } catch (error: unknown) {

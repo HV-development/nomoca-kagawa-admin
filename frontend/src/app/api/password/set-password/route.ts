@@ -16,11 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔐 API Route: Password setup request received', { 
-      token: token.substring(0, 8) + '...',
-      passwordLength: password.length 
-    });
-
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/set-password`, {
       method: 'POST',
       headerOptions: {
@@ -28,8 +23,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({ token, password }),
     });
-
-    console.log('📡 API Route: Response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
@@ -42,11 +35,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Password setup successful', { 
-      dataType: typeof data,
-      dataKeys: Object.keys(data),
-      hasMessage: 'message' in data
-    });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Password setup error', {

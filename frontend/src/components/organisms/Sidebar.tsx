@@ -110,9 +110,8 @@ export default function Sidebar() {
   );
 
   const handleToggleCollapse = useCallback(() => {
-    console.log('Toggle collapse clicked, current state:', isCollapsed);
     setIsCollapsed(prev => !prev);
-  }, [isCollapsed]);
+  }, []);
 
   const handleLogoLoad = useCallback(() => {
     setIsLogoReady(true);

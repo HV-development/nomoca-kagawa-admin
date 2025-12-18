@@ -6,8 +6,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🌐 API Route: Get shops request received');
-    
     const url = new URL(request.url);
     
     // 全てのクエリパラメータをそのまま転送
@@ -23,8 +21,6 @@ export async function GET(request: NextRequest) {
     // アプリケーションフィルタリングはバックエンドでX-Forwarded-Hostから自動判定
     
     const fullUrl = `${API_BASE_URL}/shops?${queryParams.toString()}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
-    console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
 
     const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'GET',
@@ -45,7 +41,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get shops successful', { count: data.shops?.length || 0 });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get shops error', error);
@@ -78,7 +73,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Create shop successful', { shopId: data.id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Create shop error', error);

@@ -31,12 +31,6 @@ export async function POST(request: NextRequest) {
     return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
   try {
-    console.log('🔄 API Route: Refresh token request received');
-    console.log('🔄 API Route: Host header', {
-      host: request.headers.get('host'),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-    });
     const cookieHeader = request.headers.get('cookie') || '';
     const refreshPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('refreshToken='));
     const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
@@ -63,7 +57,6 @@ export async function POST(request: NextRequest) {
     const isSecure = (() => {
       try { return new URL(request.url).protocol === 'https:'; } catch { return process.env.NODE_ENV === 'production'; }
     })();
-    console.log('✅ API Route: Refresh token successful');
 
     const res = createNoCacheResponse({ ok: true });
     if (data.accessToken) {

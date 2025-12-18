@@ -535,21 +535,17 @@ function CouponEditPageContent() {
             </div>
 
             {/* アクションボタン */}
-            <div className="flex justify-center space-x-4 pt-6">
+            <div className="flex justify-center gap-4 pt-6">
               <Button
                 variant="outline"
-                size="lg"
                 onClick={handleCancel}
-                className="px-8"
               >
                 キャンセル
               </Button>
               <Button
                 variant="primary"
-                size="lg"
                 onClick={handleSubmit}
                 disabled={isSubmitting || isUploading}
-                className="px-8"
               >
                 {isSubmitting ? '更新中...' : (isMerchantAccount ? '申請する' : '更新する')}
               </Button>

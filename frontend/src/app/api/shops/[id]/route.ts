@@ -7,7 +7,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🏪 API Route: Get shop request received', { shopId: id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}`, {
       method: 'GET',
@@ -28,13 +27,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get shop successful', { shopId: id });
-    console.log('🔍 API Route: Shop data received from backend:', {
-      paymentCredit: data.paymentCredit,
-      paymentCode: data.paymentCode,
-      customSceneText: data.customSceneText,
-      sceneIds: data.sceneIds
-    });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get shop  error`, error);
@@ -68,10 +60,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Update shop successful', { shopId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: Update shop  error`, error);
+    console.error(`❌ API Route: Update shop error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
@@ -80,7 +71,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🗑️ API Route: Delete shop request received', { shopId: id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}`, {
       method: 'DELETE',
@@ -100,10 +90,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return createNoCacheResponse(errorData, { status: response.status });
     }
 
-    console.log('✅ API Route: Delete shop successful', { shopId: id });
     return createNoCacheResponse({ message: '店舗が削除されました' });
   } catch (error: unknown) {
-    console.error(`❌ API Route: Delete shop  error`, error);
+    console.error(`❌ API Route: Delete shop error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }

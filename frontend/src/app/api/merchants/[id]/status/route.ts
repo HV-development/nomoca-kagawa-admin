@@ -8,7 +8,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    console.log('🔄 API Route: 事業者ステータス更新リクエスト受信', { merchantId: id, status: body.status });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/${id}/status`, {
       method: 'PATCH',
@@ -30,10 +29,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 事業者ステータス更新成功', { merchantId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 事業者ステータス更新エラー `, error);
+    console.error(`❌ API Route: 事業者ステータス更新エラー`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return createNoCacheResponse({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }

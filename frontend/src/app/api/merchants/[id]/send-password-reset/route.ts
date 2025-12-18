@@ -11,10 +11,6 @@ export async function POST(
   try {
     const { id } = await params;
 
-    console.log('📧 API Route: パスワード再設定メール送信リクエスト受信', { 
-      merchantId: id,
-    });
-
     // バックエンドAPIを呼び出し
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/${id}/send-password-reset`, {
       method: 'POST',
@@ -43,7 +39,6 @@ export async function POST(
     }
 
     const data = await response.json();
-    console.log('✅ API Route: パスワード再設定メール送信成功', data);
 
     return createNoCacheResponse(data);
   } catch (error) {

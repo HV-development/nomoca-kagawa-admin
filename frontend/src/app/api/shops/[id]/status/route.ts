@@ -8,7 +8,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    console.log('🔄 API Route: Update shop status request received', { shopId: id, status: body.status });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}/status`, {
       method: 'PATCH',
@@ -30,10 +29,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Update shop status successful', { shopId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: Update shop status  error`, error);
+    console.error(`❌ API Route: Update shop status error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }

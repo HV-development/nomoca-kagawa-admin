@@ -11,8 +11,6 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    console.log('🌐 API Route: Update coupon public status request received', { couponId: id, body });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/coupons/${id}/public-status`, {
       method: 'PATCH',
@@ -34,7 +32,6 @@ export async function PATCH(
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Update coupon public status successful', { couponId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Update coupon public status error', error);

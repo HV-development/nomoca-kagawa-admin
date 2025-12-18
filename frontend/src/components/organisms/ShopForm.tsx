@@ -1015,7 +1015,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }
 
         await apiClient.updateShop(shopId, submitData);
-        showSuccess('店舗を更新しました');
+        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
       } else {
         // 新規作成時は店舗を先に作成
         const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
@@ -1039,11 +1039,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
         }
 
-        showSuccess('店舗を作成しました');
+        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
       }
 
-      // リダイレクト先を決定
-      router.push(fallbackRedirect);
+      // リダイレクト先を決定（トーストメッセージをクエリパラメータで渡す）
+      const toastMessage = isEdit ? '店舗を更新しました' : '店舗を作成しました';
+      const separator = fallbackRedirect.includes('?') ? '&' : '?';
+      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent(toastMessage)}`);
     } catch (err: unknown) {
       const error = err as Error & {
         response?: {
@@ -1093,7 +1095,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
     try {
       setQrCodeLoading(true);
-      console.log('🔗 QRコードURL: 取得開始');
       const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
       if (qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
         setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
@@ -1158,6 +1159,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
           <div className="space-y-4">
+            {/* shopアカウントの場合は事業者名セクションを非表示 */}
+            {!isShopAccount && (
             <div className="w-full" data-field="merchantId">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 事業者名 <span className="text-red-500">*</span>
@@ -1382,6 +1385,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </div>
               )}
             </div>
+            )}
 
             <div className="w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1996,7 +2000,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             });
           }}
           onFieldBlur={(field, value) => handleFieldBlur(field as keyof ExtendedShopCreateRequest, value)}
-          onDeleteAccountChange={(deleteAccount) => {
+          // shopアカウントの場合はアカウント削除を非表示にする
+          onDeleteAccountChange={isShopAccount ? undefined : (deleteAccount) => {
             if (deleteAccount) {
               handleInputChange('createAccount', false);
             }

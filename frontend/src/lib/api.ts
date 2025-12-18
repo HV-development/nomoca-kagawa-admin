@@ -631,6 +631,20 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // メールアドレス変更関連
+  async requestEmailChange(data: { currentPassword: string; newEmail: string; confirmEmail: string }): Promise<{ success: boolean; message?: string }> {
+    return this.request<{ success: boolean; message?: string }>('/auth/email/change', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async confirmEmailChange(token: string): Promise<{ success: boolean; data?: { success: boolean; message: string }; error?: string }> {
+    return this.request<{ success: boolean; data?: { success: boolean; message: string }; error?: string }>(`/auth/email/change/confirm?token=${token}`, {
+      method: 'GET',
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

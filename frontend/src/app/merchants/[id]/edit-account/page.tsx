@@ -9,9 +9,14 @@ import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 
-interface AccountFormData {
-  email: string;
-  password: string;
+interface EmailChangeFormData {
+  newEmail: string;
+  confirmEmail: string;
+  currentPassword: string;
+}
+
+interface PasswordChangeFormData {
+  newPassword: string;
   confirmPassword: string;
 }
 
@@ -22,18 +27,29 @@ export default function MerchantAccountEditPage() {
   const merchantId = params?.id as string;
   const { toasts, addToast, removeToast } = useToast();
   
-  const [formData, setFormData] = useState<AccountFormData>({
-    email: '',
-    password: '',
+  const [currentEmail, setCurrentEmail] = useState<string>('');
+  
+  const [emailFormData, setEmailFormData] = useState<EmailChangeFormData>({
+    newEmail: '',
+    confirmEmail: '',
+    currentPassword: ''
+  });
+  
+  const [passwordFormData, setPasswordFormData] = useState<PasswordChangeFormData>({
+    newPassword: '',
     confirmPassword: ''
   });
   
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
+  const [emailChangeSuccess, setEmailChangeSuccess] = useState(false);
 
-  const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const emailFieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const passwordFieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // 事業者アカウントでない場合はアクセス拒否
   useEffect(() => {
@@ -50,10 +66,7 @@ export default function MerchantAccountEditPage() {
         setIsLoading(true);
         const response = await apiClient.getMyMerchant() as { success: boolean; data?: { account?: { email?: string } } };
         if (response.success && response.data) {
-          setFormData(prev => ({
-            ...prev,
-            email: response.data!.account?.email || ''
-          }));
+          setCurrentEmail(response.data!.account?.email || '');
         }
       } catch (error) {
         console.error('Failed to fetch merchant data:', error);
@@ -68,12 +81,12 @@ export default function MerchantAccountEditPage() {
     }
   }, [merchantId, addToast]);
 
-  const handleInputChange = (field: keyof AccountFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // メールアドレス変更フォームのハンドラー
+  const handleEmailInputChange = (field: keyof EmailChangeFormData, value: string) => {
+    setEmailFormData(prev => ({ ...prev, [field]: value }));
     
-    // エラーをクリア
-    if (errors[field]) {
-      setErrors(prev => {
+    if (emailErrors[field]) {
+      setEmailErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -81,23 +94,157 @@ export default function MerchantAccountEditPage() {
     }
   };
 
-  const validateField = (field: keyof AccountFormData, value: string): string | null => {
+  const validateEmailField = (field: keyof EmailChangeFormData, value: string): string | null => {
     switch (field) {
-      case 'email':
+      case 'newEmail':
         if (!value.trim()) {
-          return 'メールアドレスは必須です';
+          return '新しいメールアドレスは必須です';
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           return '有効なメールアドレスを入力してください';
         }
+        if (value === currentEmail) {
+          return '現在のメールアドレスと同じです';
+        }
         break;
-      case 'password':
-        if (value && value.length < 8) {
+      case 'confirmEmail':
+        if (!value.trim()) {
+          return 'メールアドレス（確認）は必須です';
+        }
+        if (value !== emailFormData.newEmail) {
+          return 'メールアドレスが一致しません';
+        }
+        break;
+      case 'currentPassword':
+        if (!value.trim()) {
+          return '現在のパスワードは必須です';
+        }
+        break;
+    }
+    return null;
+  };
+
+  const handleEmailBlur = (field: keyof EmailChangeFormData) => {
+    const value = emailFormData[field];
+    const error = validateEmailField(field, value);
+    
+    if (error) {
+      setEmailErrors(prev => ({ ...prev, [field]: error }));
+    } else {
+      setEmailErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateEmailFormData = (): boolean => {
+    const fieldErrors: Record<string, string> = {};
+    let hasErrors = false;
+
+    const newEmailError = validateEmailField('newEmail', emailFormData.newEmail);
+    if (newEmailError) {
+      fieldErrors.newEmail = newEmailError;
+      hasErrors = true;
+    }
+
+    const confirmEmailError = validateEmailField('confirmEmail', emailFormData.confirmEmail);
+    if (confirmEmailError) {
+      fieldErrors.confirmEmail = confirmEmailError;
+      hasErrors = true;
+    }
+
+    const currentPasswordError = validateEmailField('currentPassword', emailFormData.currentPassword);
+    if (currentPasswordError) {
+      fieldErrors.currentPassword = currentPasswordError;
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setEmailErrors(fieldErrors);
+      return false;
+    }
+    
+    setEmailErrors({});
+    return true;
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateEmailFormData()) {
+      addToast({ type: 'error', message: '入力内容にエラーがあります' });
+      return;
+    }
+
+    try {
+      setIsEmailSubmitting(true);
+      setServerError('');
+
+      await apiClient.requestEmailChange({
+        currentPassword: emailFormData.currentPassword,
+        newEmail: emailFormData.newEmail,
+        confirmEmail: emailFormData.confirmEmail
+      });
+      
+      setEmailChangeSuccess(true);
+      addToast({ type: 'success', message: '確認メールを送信しました。メール内のリンクをクリックして変更を完了してください。' });
+      
+      // フォームをリセット
+      setEmailFormData({
+        newEmail: '',
+        confirmEmail: '',
+        currentPassword: ''
+      });
+    } catch (error) {
+      console.error('Failed to request email change:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('INVALID_PASSWORD') || error.message.includes('現在のパスワードが正しくありません')) {
+          setServerError('現在のパスワードが正しくありません');
+        } else if (error.message.includes('EMAIL_ALREADY_EXISTS') || error.message.includes('既に使用されています')) {
+          setServerError('このメールアドレスは既に使用されています');
+        } else if (error.message.includes('EMAIL_MISMATCH')) {
+          setServerError('メールアドレスが一致しません');
+        } else {
+          setServerError(error.message || 'メールアドレス変更リクエストに失敗しました');
+        }
+      } else {
+        setServerError('メールアドレス変更リクエストに失敗しました');
+      }
+    } finally {
+      setIsEmailSubmitting(false);
+    }
+  };
+
+  // パスワード変更フォームのハンドラー
+  const handlePasswordInputChange = (field: keyof PasswordChangeFormData, value: string) => {
+    setPasswordFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (passwordErrors[field]) {
+      setPasswordErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validatePasswordField = (field: keyof PasswordChangeFormData, value: string): string | null => {
+    switch (field) {
+      case 'newPassword':
+        if (!value.trim()) {
+          return '新しいパスワードは必須です';
+        }
+        if (value.length < 8) {
           return 'パスワードは8文字以上で入力してください';
         }
         break;
       case 'confirmPassword':
-        if (formData.password && value !== formData.password) {
+        if (!value.trim()) {
+          return 'パスワード（確認）は必須です';
+        }
+        if (value !== passwordFormData.newPassword) {
           return 'パスワードが一致しません';
         }
         break;
@@ -105,14 +252,14 @@ export default function MerchantAccountEditPage() {
     return null;
   };
 
-  const handleBlur = (field: keyof AccountFormData) => {
-    const value = formData[field];
-    const error = validateField(field, value);
+  const handlePasswordBlur = (field: keyof PasswordChangeFormData) => {
+    const value = passwordFormData[field];
+    const error = validatePasswordField(field, value);
     
     if (error) {
-      setErrors(prev => ({ ...prev, [field]: error }));
+      setPasswordErrors(prev => ({ ...prev, [field]: error }));
     } else {
-      setErrors(prev => {
+      setPasswordErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -120,75 +267,59 @@ export default function MerchantAccountEditPage() {
     }
   };
 
-  const validateFormData = (): boolean => {
+  const validatePasswordFormData = (): boolean => {
     const fieldErrors: Record<string, string> = {};
     let hasErrors = false;
 
-    // メールアドレスは必須
-    const emailError = validateField('email', formData.email);
-    if (emailError) {
-      fieldErrors.email = emailError;
+    const newPasswordError = validatePasswordField('newPassword', passwordFormData.newPassword);
+    if (newPasswordError) {
+      fieldErrors.newPassword = newPasswordError;
       hasErrors = true;
     }
 
-    // パスワードは任意だが、入力された場合は確認パスワードも必須
-    if (formData.password) {
-      const passwordError = validateField('password', formData.password);
-      if (passwordError) {
-        fieldErrors.password = passwordError;
-        hasErrors = true;
-      }
-
-      const confirmPasswordError = validateField('confirmPassword', formData.confirmPassword);
-      if (confirmPasswordError) {
-        fieldErrors.confirmPassword = confirmPasswordError;
-        hasErrors = true;
-      }
+    const confirmPasswordError = validatePasswordField('confirmPassword', passwordFormData.confirmPassword);
+    if (confirmPasswordError) {
+      fieldErrors.confirmPassword = confirmPasswordError;
+      hasErrors = true;
     }
 
     if (hasErrors) {
-      setErrors(fieldErrors);
+      setPasswordErrors(fieldErrors);
       return false;
     }
     
-    setErrors({});
+    setPasswordErrors({});
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateFormData()) {
+    if (!validatePasswordFormData()) {
       addToast({ type: 'error', message: '入力内容にエラーがあります' });
       return;
     }
 
     try {
-      setIsSubmitting(true);
+      setIsPasswordSubmitting(true);
       setServerError('');
 
-      const updateData: { email: string; password?: string } = {
-        email: formData.email
-      };
-
-      // パスワードが入力されている場合のみ含める
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
-
-      const response = await apiClient.updateMerchant(merchantId, updateData) as { success: boolean; error?: string };
+      await apiClient.updateMerchant(merchantId, {
+        password: passwordFormData.newPassword
+      });
       
-      if (response.success) {
-        addToast({ type: 'success', message: 'アカウント情報を更新しました' });
-        router.push('/merchants');
-      } else {
-        setServerError(response.error || 'アカウント情報の更新に失敗しました');
-      }
+      addToast({ type: 'success', message: 'パスワードを更新しました' });
+      
+      // フォームをリセット
+      setPasswordFormData({
+        newPassword: '',
+        confirmPassword: ''
+      });
     } catch (error) {
-      console.error('Failed to update account:', error);
-      setServerError('アカウント情報の更新に失敗しました');
+      console.error('Failed to update password:', error);
+      setServerError('パスワードの更新に失敗しました');
     } finally {
-      setIsSubmitting(false);
+      setIsPasswordSubmitting(false);
     }
   };
 
@@ -196,7 +327,7 @@ export default function MerchantAccountEditPage() {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">読み込み中...</p>
         </div>
       </AdminLayout>
@@ -238,112 +369,200 @@ export default function MerchantAccountEditPage() {
           </div>
         )}
 
-        {/* フォーム */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 現在のメールアドレス表示 */}
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-600">現在のメールアドレス</p>
+          <p className="text-lg font-medium text-gray-900">{currentEmail}</p>
+        </div>
+
+        {/* メールアドレス変更フォーム */}
+        <form onSubmit={handleEmailSubmit} className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900 mb-6">アカウント情報</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-6">メールアドレスの変更</h3>
             
-            <div className="space-y-6">
-              {/* メールアドレス */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス <span className="text-red-500">*</span>
-                </label>
-                <input
-                  ref={(el) => { fieldRefs.current.email = el; }}
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  onBlur={() => handleBlur('email')}
-                  className={`w-xl px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="メールアドレスを入力してください"
-                />
-                <div className="mt-1">
-                  {errors.email ? (
-                    <p className="text-sm text-red-600">{errors.email}</p>
-                  ) : (
-                    <p className="text-sm text-gray-500">ログインに使用するメールアドレスです</p>
+            {emailChangeSuccess ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <span className="text-xl mr-2">✅</span>
+                  <div>
+                    <p className="text-sm text-green-800 font-medium">確認メールを送信しました</p>
+                    <p className="text-sm text-green-700 mt-1">
+                      新しいメールアドレス宛に確認メールを送信しました。メール内のリンクをクリックして変更を完了してください。
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEmailChangeSuccess(false)}
+                  className="mt-4 text-sm text-green-700 hover:text-green-800 underline"
+                >
+                  別のメールアドレスで再度変更する
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  メールアドレスを変更するには、新しいメールアドレス宛に確認メールを送信します。
+                  メール内のリンクをクリックすると変更が完了します。
+                </p>
+
+                {/* 新しいメールアドレス */}
+                <div>
+                  <label htmlFor="newEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    新しいメールアドレス <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={(el) => { emailFieldRefs.current.newEmail = el; }}
+                    type="email"
+                    id="newEmail"
+                    value={emailFormData.newEmail}
+                    onChange={(e) => handleEmailInputChange('newEmail', e.target.value)}
+                    onBlur={() => handleEmailBlur('newEmail')}
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                      emailErrors.newEmail ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="新しいメールアドレスを入力"
+                  />
+                  {emailErrors.newEmail && (
+                    <p className="mt-1 text-sm text-red-600">{emailErrors.newEmail}</p>
                   )}
                 </div>
-              </div>
 
-              {/* パスワード */}
+                {/* 新しいメールアドレス（確認） */}
+                <div>
+                  <label htmlFor="confirmEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    新しいメールアドレス（確認） <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={(el) => { emailFieldRefs.current.confirmEmail = el; }}
+                    type="email"
+                    id="confirmEmail"
+                    value={emailFormData.confirmEmail}
+                    onChange={(e) => handleEmailInputChange('confirmEmail', e.target.value)}
+                    onBlur={() => handleEmailBlur('confirmEmail')}
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                      emailErrors.confirmEmail ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="確認のため再度入力"
+                  />
+                  {emailErrors.confirmEmail && (
+                    <p className="mt-1 text-sm text-red-600">{emailErrors.confirmEmail}</p>
+                  )}
+                </div>
+
+                {/* 現在のパスワード */}
+                <div>
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                    現在のパスワード <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={(el) => { emailFieldRefs.current.currentPassword = el; }}
+                    type="password"
+                    id="currentPassword"
+                    value={emailFormData.currentPassword}
+                    onChange={(e) => handleEmailInputChange('currentPassword', e.target.value)}
+                    onBlur={() => handleEmailBlur('currentPassword')}
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                      emailErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="セキュリティのため現在のパスワードを入力"
+                  />
+                  {emailErrors.currentPassword && (
+                    <p className="mt-1 text-sm text-red-600">{emailErrors.currentPassword}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isEmailSubmitting}
+                    className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
+                  >
+                    {isEmailSubmitting ? '送信中...' : '確認メールを送信'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </form>
+
+        {/* パスワード変更フォーム */}
+        <form onSubmit={handlePasswordSubmit} className="space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">パスワードの変更</h3>
+            
+            <div className="space-y-6">
+              {/* 新しいパスワード */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  新しいパスワード <span className="text-red-500">*</span>
                 </label>
                 <input
-                  ref={(el) => { fieldRefs.current.password = el; }}
+                  ref={(el) => { passwordFieldRefs.current.newPassword = el; }}
                   type="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  onBlur={() => handleBlur('password')}
-                  className={`w-xl px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  id="newPassword"
+                  value={passwordFormData.newPassword}
+                  onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                  onBlur={() => handlePasswordBlur('newPassword')}
+                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                    passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="新しいパスワードを入力してください（変更しない場合は空欄）"
+                  placeholder="新しいパスワードを入力"
                 />
                 <div className="mt-1">
-                  {errors.password ? (
-                    <p className="text-sm text-red-600">{errors.password}</p>
+                  {passwordErrors.newPassword ? (
+                    <p className="text-sm text-red-600">{passwordErrors.newPassword}</p>
                   ) : (
-                    <p className="text-sm text-gray-500">8文字以上で入力してください。変更しない場合は空欄のままにしてください。</p>
+                    <p className="text-sm text-gray-500">8文字以上で入力してください</p>
                   )}
                 </div>
               </div>
 
               {/* パスワード確認 */}
-              {formData.password && (
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                    パスワード確認 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    ref={(el) => { fieldRefs.current.confirmPassword = el; }}
-                    type="password"
-                    id="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    onBlur={() => handleBlur('confirmPassword')}
-                    className={`w-xl px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="パスワードを再入力してください"
-                  />
-                  <div className="mt-1">
-                    {errors.confirmPassword ? (
-                      <p className="text-sm text-red-600">{errors.confirmPassword}</p>
-                    ) : (
-                      <p className="text-sm text-gray-500">上記で入力したパスワードと同じものを入力してください</p>
-                    )}
-                  </div>
-                </div>
-              )}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  新しいパスワード（確認） <span className="text-red-500">*</span>
+                </label>
+                <input
+                  ref={(el) => { passwordFieldRefs.current.confirmPassword = el; }}
+                  type="password"
+                  id="confirmPassword"
+                  value={passwordFormData.confirmPassword}
+                  onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                  onBlur={() => handlePasswordBlur('confirmPassword')}
+                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                    passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="確認のため再度入力"
+                />
+                {passwordErrors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.confirmPassword}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isPasswordSubmitting}
+                  className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
+                >
+                  {isPasswordSubmitting ? '更新中...' : 'パスワードを更新'}
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* ボタンエリア */}
-          <div className="flex justify-center gap-4">
-            <button
-              type="button"
-              onClick={() => router.push('/merchants')}
-              className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500"
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
-            >
-              {isSubmitting ? '更新中...' : '更新する'}
-            </button>
-          </div>
         </form>
+
+        {/* 戻るボタン */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => router.push('/merchants')}
+            className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500"
+          >
+            戻る
+          </button>
+        </div>
       </div>
     </AdminLayout>
   );

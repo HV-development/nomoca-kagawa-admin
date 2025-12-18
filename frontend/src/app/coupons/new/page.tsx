@@ -658,21 +658,17 @@ function CouponNewPageContent() {
             </div>
 
             {/* アクションボタン */}
-            <div className="flex justify-center space-x-4 pt-6">
+            <div className="flex justify-center gap-4 pt-6">
               <Button
                 variant="outline"
-                size="lg"
                 onClick={handleCancel}
-                className="px-8"
               >
                 キャンセル
               </Button>
               <Button
                 variant="primary"
-                size="lg"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-8"
               >
                 {isSubmitting ? '処理中...' : (isMerchantAccount ? '申請する' : '登録内容を確認する')}
               </Button>

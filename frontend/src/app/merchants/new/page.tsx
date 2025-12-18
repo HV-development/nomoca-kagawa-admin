@@ -45,7 +45,7 @@ export default function MerchantNewPage() {
     city: '',
     address1: '',
     address2: '',
-    applicationId: '', // アプリケーションIDは空（APIで自動設定）
+    applications: [], // アプリケーションはAPIで自動設定
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,7 +91,7 @@ export default function MerchantNewPage() {
           return newErrors;
         });
       }
-    } else if (field !== 'applicationId') {
+    } else if (field !== 'applications') {
       const error = validateMerchantField(field, value || '');
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
@@ -122,7 +122,7 @@ export default function MerchantNewPage() {
           return newErrors;
         });
       }
-    } else if (field !== 'applicationId') {
+    } else if (field !== 'applications') {
       const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));

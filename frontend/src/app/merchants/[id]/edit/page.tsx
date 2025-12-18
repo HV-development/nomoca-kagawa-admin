@@ -35,7 +35,7 @@ export default function MerchantEditPage() {
     city: '',
     address1: '',
     address2: '',
-    applicationId: '',
+    applications: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,7 +106,7 @@ export default function MerchantEditPage() {
             city?: string;
             address1?: string;
             address2?: string;
-            applicationId?: string;
+            applications?: string[];
           };
           
           // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
@@ -132,7 +132,7 @@ export default function MerchantEditPage() {
             city: merchant.city || '',
             address1: merchant.address1 || '',
             address2: merchant.address2 || '',
-            applicationId: merchant.applicationId || '',
+            applications: merchant.applications || [],
           });
         }
       } catch (error) {
@@ -315,8 +315,8 @@ export default function MerchantEditPage() {
             hasErrors = true;
           }
         }
-      } else if (field !== 'applicationId') {
-        // applicationId以外のフィールドはMerchantFormSchemaでバリデーション
+      } else if (field !== 'applications') {
+        // applications以外のフィールドはMerchantFormSchemaでバリデーション
         const value = formData[field] || '';
         const error = validateMerchantField(field as keyof MerchantFormData, value);
         if (error) {

@@ -327,24 +327,20 @@ export default function MerchantAccountEditPage() {
           </div>
 
           {/* ボタンエリア */}
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-center gap-4">
             <button
               type="button"
               onClick={() => router.push('/merchants')}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-base"
+              className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500"
             >
               キャンセル
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-3 border-2 border-green-600 rounded-lg font-medium text-base transition-colors ${
-                isSubmitting
-                  ? 'bg-gray-400 border-gray-400 text-white cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 hover:border-green-700'
-              }`}
+              className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
             >
-              {isSubmitting ? '更新中...' : '更新'}
+              {isSubmitting ? '更新中...' : '更新する'}
             </button>
           </div>
         </form>

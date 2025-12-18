@@ -1996,7 +1996,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             });
           }}
           onFieldBlur={(field, value) => handleFieldBlur(field as keyof ExtendedShopCreateRequest, value)}
-          onDeleteAccountChange={(deleteAccount) => {
+          // shopアカウントの場合はアカウント削除を非表示にする
+          onDeleteAccountChange={isShopAccount ? undefined : (deleteAccount) => {
             if (deleteAccount) {
               handleInputChange('createAccount', false);
             }

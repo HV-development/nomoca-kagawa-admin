@@ -12,15 +12,15 @@ interface LogoProps {
 function Logo({ size = 'md', className = '', onLoad, onError }: LogoProps) {
   const sizeClasses = useMemo(
     () => ({
-      sm: 'h-8',
-      md: 'h-10',
-      lg: 'h-12',
+      sm: 'h-12',
+      md: 'h-16',
+      lg: 'h-20',
     }),
     []
   );
 
   const imageSize = useMemo(
-    () => (size === 'sm' ? 32 : size === 'md' ? 40 : 48),
+    () => (size === 'sm' ? 48 : size === 'md' ? 64 : 80),
     [size]
   );
 

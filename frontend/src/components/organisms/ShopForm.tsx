@@ -1158,6 +1158,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
           <div className="space-y-4">
+            {/* shopアカウントの場合は事業者名セクションを非表示 */}
+            {!isShopAccount && (
             <div className="w-full" data-field="merchantId">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 事業者名 <span className="text-red-500">*</span>
@@ -1382,6 +1384,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </div>
               )}
             </div>
+            )}
 
             <div className="w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-1">

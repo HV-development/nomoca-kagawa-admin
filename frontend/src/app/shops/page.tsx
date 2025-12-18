@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -25,6 +25,7 @@ const FloatingFooter = dynamic(() => import('@/components/molecules/floating-foo
 
 function ShopsPageContent() {
   const auth = useAuth();
+  const router = useRouter();
   const lastFetchKeyRef = useRef<string | null>(null);
   const searchParams = useSearchParams();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
@@ -103,6 +104,20 @@ function ShopsPageContent() {
       setIsSearchExpanded(true);
     }
   }, [searchParams]);
+
+  // URLパラメータからトーストメッセージを表示
+  useEffect(() => {
+    const toast = searchParams?.get('toast');
+    if (toast) {
+      showSuccess(toast);
+      // トーストパラメータをURLから削除
+      const newParams = new URLSearchParams(searchParams?.toString() || '');
+      newParams.delete('toast');
+      const newUrl = newParams.toString() ? `/shops?${newParams.toString()}` : '/shops';
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [searchParams, showSuccess, router]);
+
   const [searchErrors, setSearchErrors] = useState({
     createdAtFrom: '',
     createdAtTo: '',

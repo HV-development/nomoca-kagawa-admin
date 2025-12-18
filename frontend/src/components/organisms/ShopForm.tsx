@@ -1015,7 +1015,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }
 
         await apiClient.updateShop(shopId, submitData);
-        showSuccess('店舗を更新しました');
+        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
       } else {
         // 新規作成時は店舗を先に作成
         const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
@@ -1039,11 +1039,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
         }
 
-        showSuccess('店舗を作成しました');
+        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
       }
 
-      // リダイレクト先を決定
-      router.push(fallbackRedirect);
+      // リダイレクト先を決定（トーストメッセージをクエリパラメータで渡す）
+      const toastMessage = isEdit ? '店舗を更新しました' : '店舗を作成しました';
+      const separator = fallbackRedirect.includes('?') ? '&' : '?';
+      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent(toastMessage)}`);
     } catch (err: unknown) {
       const error = err as Error & {
         response?: {

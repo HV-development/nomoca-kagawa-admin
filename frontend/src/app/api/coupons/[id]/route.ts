@@ -7,7 +7,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🎟️ API Route: Get coupon request received', { couponId: id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/coupons/${id}`, {
       method: 'GET',
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get coupon successful', { couponId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get coupon error`, error);
@@ -41,7 +39,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    console.log('✏️ API Route: Update coupon request received', { couponId: id, title: body.title });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/coupons/${id}`, {
       method: 'PATCH',
@@ -67,7 +64,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Update coupon successful', { couponId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Update coupon error`, error);
@@ -79,7 +75,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🗑️ API Route: Delete coupon request received', { couponId: id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/coupons/${id}`, {
       method: 'DELETE',
@@ -99,7 +94,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return createNoCacheResponse(errorData, { status: response.status });
     }
 
-    console.log('✅ API Route: Delete coupon successful', { couponId: id });
     return createNoCacheResponse({ message: 'クーポンが削除されました' });
   } catch (error: unknown) {
     console.error(`❌ API Route: Delete coupon error`, error);

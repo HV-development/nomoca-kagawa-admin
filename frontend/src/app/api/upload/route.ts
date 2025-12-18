@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
-    
     // バックエンドAPIに転送（FormDataの場合はContent-Typeを設定しない）
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/api/upload`, {
       method: 'POST',

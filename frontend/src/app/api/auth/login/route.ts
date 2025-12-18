@@ -32,15 +32,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    console.log('🔐 API Route: Admin login request received', { email: body.email });
-    console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
     const loginUrl = `${API_BASE_URL}/admin/login`;
-    console.log('🔗 API Route: Full login URL:', loginUrl);
-    console.log('🔐 API Route: Host header', {
-      host: request.headers.get('host'),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-    });
     
     // 管理者用のログインエンドポイントを使用
     const response = await secureFetchWithCommonHeaders(request, loginUrl, {
@@ -61,7 +53,6 @@ export async function POST(request: NextRequest) {
     const isSecure = (() => {
       try { return new URL(request.url).protocol === 'https:'; } catch { return process.env.NODE_ENV === 'production'; }
     })();
-    console.log('✅ API Route: Admin login successful', { accountType: data.account?.accountType });
 
     // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
     const res = createNoCacheResponse({ account: data.account });
@@ -81,10 +72,6 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 60 * 15,
       });
-      console.info('🔐 API Route: Set access token cookies', {
-        isSecure,
-        sameSite: 'lax',
-      });
     }
     if (data.refreshToken) {
       res.cookies.set('refreshToken', data.refreshToken, {
@@ -100,11 +87,6 @@ export async function POST(request: NextRequest) {
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
-      });
-      console.info('🔐 API Route: Set refresh token cookies', {
-        isSecure,
-        sameSite: 'lax',
-        maxAgeDays: 30,
       });
     }
     return res;

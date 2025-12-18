@@ -6,8 +6,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🌐 API Route: Get admin accounts request received');
-
     const url = new URL(request.url);
 
     // 全てのクエリパラメータをそのまま転送
@@ -17,8 +15,6 @@ export async function GET(request: NextRequest) {
     });
 
     const fullUrl = `${API_BASE_URL}/admin-accounts?${queryParams.toString()}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
-    console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
 
     const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'GET',
@@ -39,7 +35,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get admin accounts successful', { count: data.accounts?.length || 0 });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get admin accounts error', error);
@@ -51,12 +46,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('➕ API Route: admin account creation request received', { 
-      firstName: body.firstName,
-      lastName: body.lastName,
-      fullBody: body,
-      bodyKeys: Object.keys(body)
-    });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin-accounts`, {
       method: 'POST',
@@ -78,7 +67,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: admin account creation successful', { adminAccountId: data.id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: admin account creation error', error);

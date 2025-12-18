@@ -7,7 +7,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📝 API Route: Register request received', { email: body.email });
     
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/register`, {
       method: 'POST',
@@ -24,7 +23,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Register successful', { userId: data.user?.id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Register error', error);

@@ -7,7 +7,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🔗 API Route: Get shop QR code URL request received', { shopId: id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}/qr-code-url`, {
       method: 'GET',
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get shop QR code URL successful', { shopId: id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get shop QR code URL error`, error);

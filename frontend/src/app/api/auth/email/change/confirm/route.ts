@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
       return createNoCacheResponse({ success: false, error: 'トークンが指定されていません' }, { status: 400 });
     }
 
-    console.log('📧 API Route: Email change confirm request received');
-    
     const confirmUrl = `${API_BASE_URL}/email/change/confirm?token=${encodeURIComponent(token)}`;
-    console.log('🔗 API Route: Full email change confirm URL:', confirmUrl);
     
     const response = await secureFetchWithCommonHeaders(request, confirmUrl, {
       method: 'GET',
@@ -32,7 +29,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Email change confirm successful');
 
     return createNoCacheResponse(data);
   } catch (error: unknown) {

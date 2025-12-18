@@ -7,10 +7,8 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🌐 API Route: Get admin account by ID request received', { id });
 
     const fullUrl = `${API_BASE_URL}/admin-accounts/id/${id}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
 
     const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'GET',
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get admin account by ID successful', { id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get admin account by ID error', error);
@@ -44,7 +41,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    console.log('✏️ API Route: Update admin account by ID request received', { id, body });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin-accounts/id/${id}`, {
       method: 'PATCH',
@@ -66,7 +62,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Update admin account by ID successful', { id });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Update admin account by ID error`, error);
@@ -78,7 +73,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🗑️ API Route: Delete admin account by ID request received', { id });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin-accounts/${id}`, {
       method: 'DELETE',
@@ -98,7 +92,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return createNoCacheResponse(errorData, { status: response.status });
     }
 
-    console.log('✅ API Route: Delete admin account by ID successful', { id });
     return createNoCacheResponse({ message: '管理者アカウントが削除されました' });
   } catch (error: unknown) {
     console.error(`❌ API Route: Delete admin account by ID error`, error);

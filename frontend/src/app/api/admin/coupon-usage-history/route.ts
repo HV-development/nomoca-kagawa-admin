@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     
     const fullUrl = `${API_BASE_URL}/admin/coupon-usage-history`;
-    console.log('🔗 API Route: Posting to', fullUrl);
 
     const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'POST',
@@ -56,7 +55,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get coupon usage history successful', { count: data.history?.length || 0 });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupon usage history error', error);

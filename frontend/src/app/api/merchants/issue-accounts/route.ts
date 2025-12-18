@@ -6,10 +6,7 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎫 API Route: アカウント発行リクエスト受信');
-    
     const body = await request.json();
-    console.log('🎫 API Route: Request body', body);
     
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/issue-accounts`, {
       method: 'POST',
@@ -24,8 +21,6 @@ export async function POST(request: NextRequest) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('📡 API Route: Response status:', response.status);
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
       console.error('❌ API Route: アカウント発行失敗', {
@@ -37,7 +32,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: アカウント発行成功', data);
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: アカウント発行エラー', {

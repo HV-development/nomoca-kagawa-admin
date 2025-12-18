@@ -6,8 +6,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚪 API Route: Logout request received');
-    
     // ログアウトは認証がオプショナル（認証されていない場合でもログアウト処理を実行）
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/logout`, {
       method: 'POST',
@@ -56,7 +54,6 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
     
-    console.log('🍪 API Route: Session cookies cleared');
     return nextResponse;
   } catch (error: unknown) {
     console.error('❌ API Route: Logout error', error);

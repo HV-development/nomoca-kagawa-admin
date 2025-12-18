@@ -19,11 +19,6 @@ export async function POST(
       );
     }
 
-    console.log('📧 API Route: パスワード設定メール再送リクエスト受信', { 
-      merchantId: id,
-      email 
-    });
-
     // バックエンドAPIを呼び出し
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/resend-setup-email`, {
       method: 'POST',
@@ -47,7 +42,6 @@ export async function POST(
     }
 
     const data = await response.json();
-    console.log('✅ API Route: パスワード設定メール再送成功', data);
 
     return createNoCacheResponse(data);
   } catch (error) {

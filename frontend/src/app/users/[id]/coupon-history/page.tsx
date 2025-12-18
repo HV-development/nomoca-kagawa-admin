@@ -165,7 +165,6 @@ export default function CouponHistoryPage() {
   const handleSearch = () => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
-    console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {

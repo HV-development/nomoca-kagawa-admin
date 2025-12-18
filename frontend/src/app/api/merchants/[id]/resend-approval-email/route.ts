@@ -10,7 +10,6 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    console.log('➕ API Route: 承認メール再送リクエスト受信', { merchantId: id });
 
     //事業者情報を取得してメールアドレスを確認
     const merchantResponse = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/${id}`, {
@@ -42,8 +41,6 @@ export async function POST(
       );
     }
 
-    console.log('📧 API Route: パスワード設定メール再送', { email });
-
     // パスワード設定メール再送APIを呼び出し
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/resend-setup-email`, {
       method: 'POST',
@@ -60,7 +57,6 @@ export async function POST(
     }
 
     const data = await response.json();
-    console.log('✅ API Route: パスワード設定メール再送成功');
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: パスワード設定メール再送エラー', error);

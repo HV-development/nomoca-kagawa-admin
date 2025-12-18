@@ -1095,7 +1095,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
     try {
       setQrCodeLoading(true);
-      console.log('🔗 QRコードURL: 取得開始');
       const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
       if (qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
         setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);

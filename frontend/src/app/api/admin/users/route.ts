@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
     // アプリケーションフィルタリングはバックエンドでX-Forwarded-Hostから自動判定
     
     const fullUrl = `${API_BASE_URL}/admin/users`;
-    console.log('🔗 API Route: Posting to', fullUrl);
 
     // リフレッシュされたトークンがある場合はそれを使用、なければ通常の認証ヘッダーを使用
     const response = await secureFetchWithCommonHeaders(request, fullUrl, {
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get users successful', { count: data.users?.length || 0 });
     
     const nextResponse = createNoCacheResponse(data);
     

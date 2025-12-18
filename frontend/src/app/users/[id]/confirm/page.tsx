@@ -68,7 +68,6 @@ export default function UserEditConfirmPage() {
 
   const handleUpdate = () => {
     // 実際の更新処理（APIコール等）
-    console.log('ユーザー更新:', userData);
     showSuccess('ユーザー情報を更新しました');
     // 更新後はユーザー一覧画面に遷移
     setTimeout(() => {

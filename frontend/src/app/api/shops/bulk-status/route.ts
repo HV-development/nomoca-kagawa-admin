@@ -7,10 +7,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('🔄 API Route: Bulk shop status update request received', { 
-      shopIds: body.shopIds, 
-      status: body.status 
-    });
 
     const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/bulk-status`, {
       method: 'PATCH',
@@ -35,10 +31,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Bulk shop status update successful', { 
-      updatedCount: data.data?.updatedCount,
-      failedCount: data.data?.failedCount
-    });
     return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Bulk shop status update error', error);

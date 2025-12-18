@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📧 API Route: Email change request received');
     
-    const emailChangeUrl = `${API_BASE_URL}/auth/email/change`;
+    const emailChangeUrl = `${API_BASE_URL}/email/change`;
     console.log('🔗 API Route: Full email change URL:', emailChangeUrl);
     
     const response = await secureFetchWithCommonHeaders(request, emailChangeUrl, {

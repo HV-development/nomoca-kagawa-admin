@@ -1,0 +1,30 @@
+services:
+  admin:
+    build:
+      context: ../../../
+      dockerfile: nomoca-kagawa-admin/infrastructure/docker/Dockerfile
+      target: dev
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+    ports:
+      - "3003:3000"
+    env_file:
+      - ../../frontend/.env
+    environment:
+      - PORT=3000
+    volumes:
+      - ../../frontend:/app
+      - nomoca_kagawa_admin_node_modules:/app/node_modules
+      - /app/.next
+    networks:
+      - tamanomi-network
+    external_links:
+      - tamanomi-api_api-1
+
+volumes:
+  nomoca_kagawa_admin_node_modules:
+
+networks:
+  tamanomi-network:
+    external: true
+    name: tamanomi-network

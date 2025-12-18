@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 42 43% 97%;
+    --foreground: 180 48% 32%;
+    --card: 0 0% 100%;
+    --card-foreground: 180 48% 32%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 180 48% 32%;
+    --primary: 178 48% 32%;
+    --primary-foreground: 42 43% 97%;
+    --secondary: 42 30% 92%;
+    --secondary-foreground: 180 48% 32%;
+    --muted: 42 30% 92%;
+    --muted-foreground: 180 20% 45%;
+    --accent: 42 30% 92%;
+    --accent-foreground: 180 48% 32%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 42 20% 85%;
+    --input: 42 20% 85%;
+    --ring: 178 48% 32%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+  /* 入力フィールドのテキストカラーを黒に */
+  input,
+  textarea,
+  select {
+    color: #000000;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+}
+
+/* Material Symbols Outlined */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}

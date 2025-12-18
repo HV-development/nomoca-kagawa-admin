@@ -1,0 +1,133 @@
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { getAuthHeader, getRefreshToken } from '@/lib/header-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
+
+const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
+
+async function refreshAccessToken(request: NextRequest): Promise<{ token: string; refreshToken?: string } | null> {
+  try {
+    const refreshToken = getRefreshToken(request);
+
+    if (!refreshToken) {
+      return null;
+    }
+
+    const refreshResponse = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/refresh`, {
+      method: 'POST',
+      headerOptions: {
+        requireAuth: false, // リフレッシュトークンは認証不要
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!refreshResponse.ok) {
+      return null;
+    }
+
+    const refreshData = await refreshResponse.json();
+    if (!refreshData.accessToken) {
+      return null;
+    }
+
+    return {
+      token: `Bearer ${refreshData.accessToken}`,
+      refreshToken: refreshData.refreshToken,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const segments = url.pathname.split('/').filter(Boolean);
+  const id = segments[segments.length - 1];
+
+  if (!id) {
+    return createNoCacheResponse({ message: 'ユーザーIDが指定されていません' }, { status: 400 });
+  }
+
+  try {
+    let refreshResult: { token: string; refreshToken?: string } | null = null;
+    const authHeader = getAuthHeader(request);
+
+    // 認証ヘッダーがない場合、リフレッシュトークンで更新を試行
+    if (!authHeader) {
+      refreshResult = await refreshAccessToken(request);
+      if (!refreshResult) {
+        return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    const fullUrl = `${API_BASE_URL}/users/${encodeURIComponent(id)}`;
+
+    // リフレッシュされたトークンがある場合はそれを使用、なければ通常の認証ヘッダーを使用
+    const response = await secureFetchWithCommonHeaders(request, fullUrl, {
+      method: 'GET',
+      headerOptions: {
+        requireAuth: true,
+        customHeaders: refreshResult ? {
+          'Authorization': refreshResult.token,
+        } : undefined,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      return createNoCacheResponse(errorData, { status: response.status });
+    }
+
+    const data = await response.json().catch(() => null);
+    const nextResponse = createNoCacheResponse(data);
+
+    if (refreshResult) {
+      const token = refreshResult.token.replace('Bearer ', '');
+      const isSecure = (() => {
+        try {
+          return new URL(request.url).protocol === 'https:';
+        } catch {
+          return process.env.NODE_ENV === 'production';
+        }
+      })();
+
+      nextResponse.cookies.set('accessToken', token, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 15,
+      });
+
+      nextResponse.cookies.set('__Host-accessToken', token, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 15,
+      });
+
+      if (refreshResult.refreshToken) {
+        nextResponse.cookies.set('refreshToken', refreshResult.refreshToken, {
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+        nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+    }
+
+    return nextResponse;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+  }
+}

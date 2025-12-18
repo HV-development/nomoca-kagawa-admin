@@ -1,0 +1,75 @@
+import type { ShopCreateRequest } from '@hv-development/schemas';
+
+export interface Merchant {
+  id: string;
+  name: string;
+  nameKana?: string;
+  representativeNameLast?: string;
+  representativeNameFirst?: string;
+  representativeNameLastKana?: string;
+  representativeNameFirstKana?: string;
+  email?: string;
+  phone?: string;
+  representativePhone?: string;
+  postalCode?: string;
+  prefecture?: string;
+  city?: string;
+  address1?: string;
+  address2?: string | null;
+  businessType?: string;
+  businessDescription?: string;
+  website?: string | null;
+  accountId?: string;
+  accountEmail?: string;
+  applications?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date;
+  account: {
+    email: string;
+    displayName?: string | null;
+    status?: string;
+    lastLoginAt?: Date;
+  };
+  shops?: Array<{
+    id: string;
+    name: string;
+    status: string;
+  }>;
+}
+
+export interface ShopDataResponse extends ShopCreateRequest {
+  accountEmail?: string;
+  merchant?: {
+    id: string;
+    name: string;
+  };
+  images?: string[];
+}
+
+export interface Genre {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
+export interface Scene {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
+export interface ImagePreview {
+  file: File;
+  url: string;
+}
+
+export type ExtendedShopCreateRequest = ShopCreateRequest & {
+  homepageUrl?: string | null;
+  couponUsageStart?: string | null;
+  couponUsageEnd?: string | null;
+  couponUsageDays?: string | null;
+};
+
+
+

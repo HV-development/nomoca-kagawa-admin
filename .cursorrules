@@ -1,0 +1,180 @@
+# Cursor 開発ルール（社内標準・v1.0）
+
+本ドキュメントは、AIコーディングエディタ「Cursor」を日常開発で安全かつ生産的に使うための社内標準です。Next.js／TypeScript／Prisma／AWS／Vercel の利用を前提にしています。必要に応じて適宜改訂します。
+
+---
+
+## 1. 目的と適用範囲
+
+- **目的**: 生産性向上、品質の均一化、セキュリティ担保、ライセンス遵守、属人化防止。
+- **対象**: 自社/受託のすべてのリポジトリ（Web, API, IaC, スクリプト）。
+- **前提**: Human-in-the-loop（必ず人が確認・承認）。Cursor提案はドラフトであり、最終責任はレビュアーとマージ権限者にあります。
+
+## 2. 用語
+
+- **Cursor Chat**: エディタ内の会話。設計・仕様・生成指示に活用。
+- **Composer**: 指定範囲の生成/改善。Diffを前提に検討・採択する。
+- **Context**: 参照ファイル群。最小限に絞る（不要ファイルは除外）。
+
+## 3. 基本原則（必読）
+
+1. **機密情報の遮断**: `.env`, 秘密鍵、顧客データは絶対にプロンプトへ貼らない。
+2. **再現性の確保**: 生成依頼時は要件/前提/制約/完成定義を明記する。
+3. **最小権限**: 生成・修正は対象ディレクトリ/ファイルへ限定。広域置換は禁止。
+4. **出典・ライセンス**: 外部コード/スニペットはライセンス確認し、出典URLをPRに記載。
+5. **差分主義**: 大規模生成より小さなPRを積み重ねる。レビュー容易性を最優先。
+6. **自動化の活用**: Lint/Typecheck/Test/Build をCIで強制。閾値未達はマージ不可。
+
+## 4. 環境・セットアップ
+
+- **言語/フレームワーク**: TypeScript, Next.js (App Router), Prisma, Node LTS。
+- **パッケージ管理**: pnpm（高速・効率的な依存関係管理）。
+- **コード規約**: ESLint + Prettier（プロジェクト共通設定）。
+- **コミット規約**: Conventional Commits（例: `feat:`, `fix:`）。
+- **ブランチ戦略**: GitHub Flow（main保護、PR必須）。
+- **CI**: GitHub Actions（lint/typecheck/test/build）。
+- **デプロイ**: Vercel（Preview URLでUI確認）。DBは Neon/Aurora等。
+
+## 5. プロンプト作法（Prompting Guidelines）
+
+### テンプレ（生成依頼時）
+```
+- 目的: XXX を実現する
+- 対象: apps/web の src/app/(dashboard)/page.tsx
+- 前提: Next.js App Router, Tailwind, shadcn/ui 使用
+- 制約: a11y担保、CSR回避、API は /api/v1/users を利用
+- 出力形式: 差分方針 + 完全コード + テスト（Jest/Playwright）
+- 完成定義: CI green、Core Web Vitals 影響なし、既存機能を壊さない
+```
+
+**やってはいけない**: 曖昧依頼（「いい感じに」「適当に」）、大量ファイル同時編集、秘密情報貼付。
+
+## 6. コード生成ルール
+
+### Next.js
+- App Router を基本。Server Components 優先、不要な `use client` 禁止。
+- APIは `/app/api` に実装。Zodで入出力スキーマ定義。
+- UIは shadcn/ui + Tailwind。スタイルはユーティリティ優先、過剰なカスタムCSS禁止。
+
+### TypeScript
+- `strict: true`。`any` 禁止（必要時は TODO と根拠記載）。
+- 型はドメイン中心（`types/` に再利用型を集約）。
+
+### Atomic Design
+- **Atoms**: 最小単位の再利用可能コンポーネント（Button, Icon, Logo等）。
+- **Molecules**: Atomsを組み合わせた機能単位（MenuItem, SidebarHeader等）。
+- **Organisms**: 複雑な機能を持つUIセクション（Sidebar, Header等）。
+- **Templates**: ページレイアウトの構造（DashboardLayout等）。
+- **Pages**: 具体的なページ実装（Dashboard等）。
+- コンポーネントは適切な階層に配置し、再利用性を最優先とする。
+
+### Prisma/DB
+- Schema変更は Migration PR 単位。データ破壊的変更は移行手順を同梱。
+- `prisma generate` を CI で検証。N+1 は Drizzle/Prisma の include/select 最適化。
+
+### エラーハンドリング
+- サーバー境界で例外捕捉。HTTPは RFCに準拠したステータスと機械可読エラーを返却。
+
+### 観測性
+- 重要処理は構造化ログ（JSON）で出力。PIIはマスク。
+
+## 7. セキュリティ・コンプライアンス
+
+- **秘密情報**: `.env*` はプロンプト投入禁止。必要ならダミー例示に置換。
+- **依存関係**: `pnpm audit` をCIで強制。Criticalはブロック。ライセンススキャナを定期実行。
+- **入力検証**: API/フォームは Zod でバリデーション。サニタイズを徹底。
+- **権限**: ルート/権限はサーバー側で判定。クライアントのrole表示は参考表示のみ。
+
+## 8. 品質ゲート（マージ条件）
+
+- Lint/Typecheck/Test/Build が CI で 全て成功。
+- 主要追加コードに テスト（ユニット or E2E）。
+- 既存の Core Web Vitals を劣化させない（Previewで確認）。
+- PRに背景/方針/影響範囲/テスト結果/出典を記載。
+
+## 9. PR テンプレ（貼り付けて利用）
+
+```markdown
+## 背景 / 目的
+
+## 変更概要
+- 
+
+## スクリーンショット / 動作
+- Preview: <URL>
+
+## テスト
+- [ ] unit
+- [ ] e2e
+- ログ: <抜粋 or 画像>
+
+## 影響範囲
+- 
+
+## セキュリティ/ライセンス
+- 外部コード出典: <URL>
+- ライセンス確認: 済/不要（理由: ）
+
+## 備考
+```
+
+## 10. 禁止事項
+
+- 機密/個人情報の貼付、外部共有。
+- 未確認の生成コードを直接 main へコミット。
+- 出典不明コードの流用。
+- **フォールバック処理の実装**（エラーが隠蔽されるため、特別必要でない限り禁止）
+
+## 11. よく使うプロンプト例
+
+- **改善依頼**: 「この UserTable の描画を Suspense + use パターンでSSR最適化。差分説明と完全コード、Jestのスナップショットも。」
+- **バグ原因調査**: 「`/api/v1/users` の 500。ログとコードを解析し、再現手順/根因/修正案/テストを提示。」
+- **設計相談**: 「通知機能を実装。イベント駆動（Outbox）前提でリトライ戦略と失敗時挙動まで設計。」
+
+## 12. 運用
+
+- **ナレッジ**: 成功/失敗プロンプトは Notion（またはリポ内 `docs/ai-notes.md`）へ記録。
+- **定期見直し**: 四半期ごとに本ルールの棚卸し（メトリクス: PRあたりLead Time, 変更失敗率, バグ再発率）。
+- **教育**: 新メンバーは本ドキュメントを必読し、サンプルPRを1本提出。
+
+---
+
+## 付録A. 生成前/後チェックリスト
+
+### 生成前
+- 目的/制約/完成定義を言語化したか
+- 参照ファイルを最小化したか
+- 機密情報を伏せたか
+
+### 生成後
+- 差分の意図を理解したか
+- 型安全/エラー処理/a11y/パフォーマンスの観点を確認したか
+- テストとCIがGreenか
+- PRに出典と影響範囲を記したか
+
+## 付録B. ディレクトリ標準（例）
+
+```
+apps/
+  web/ (Next.js)
+  api/ (Fastify/Next API)
+packages/
+  ui/ (shadcn/ui 拡張)
+  config/ (eslint, tsconfig, prettier)
+  db/ (Prisma schema / client)
+
+# Atomic Design ディレクトリ構造
+src/components/
+  atoms/          # 最小単位コンポーネント
+  molecules/      # 機能単位コンポーネント
+  organisms/      # 複雑なUIセクション
+  templates/      # ページレイアウト
+  pages/          # 具体的なページ実装
+
+## 付録C. Conventional Commits（抜粋）
+
+- `feat`: 新機能, `fix`: バグ修正, `perf`: 性能改善, `refactor`: 仕様不変の整理, `test`: テスト, `docs`: ドキュメント。
+
+---
+
+**改訂履歴**: v1.1（2025-08-20）pnpm対応・Atomic Design追加

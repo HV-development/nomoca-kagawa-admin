@@ -127,10 +127,17 @@ export function buildCommonHeaders(
   headers['X-Request-ID'] = requestId
 
   // X-Forwarded-Hostヘッダーを追加（バックエンドでのアプリケーション判定用）
-  // 実際のリクエストのHostヘッダーを転送
-  const host = request.headers.get('host')
-  if (host) {
-    headers['X-Forwarded-Host'] = host
+  // 環境変数 APP_DOMAIN が設定されている場合はそれを優先使用
+  // これにより、Vercel/Railway経由でも正しい管理画面ドメインが転送される
+  const appDomain = process.env.APP_DOMAIN
+  if (appDomain) {
+    headers['X-Forwarded-Host'] = appDomain
+  } else {
+    // フォールバック: 実際のリクエストのHostヘッダーを転送
+    const host = request.headers.get('host')
+    if (host) {
+      headers['X-Forwarded-Host'] = host
+    }
   }
 
   // カスタムヘッダーをマージ（後から追加されたヘッダーが優先）

@@ -14,7 +14,7 @@
     "secret:generate": "tsx ../scripts/generate-secret.ts"
   },
   "dependencies": {
-    "@hv-development/schemas": "1.93.0",
+    "@hv-development/schemas": "1.92.0",
     "autoprefixer": "10.4.21",
     "jose": "^6.1.0",
     "lucide-react": "^0.555.0",

@@ -441,6 +441,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               longitude: shopData.longitude ? String(shopData.longitude) : '',
               // paymentAppsからpaymentMydigiを設定
               paymentMydigi: paymentMydigiValue,
+              // areaがnullの場合は空文字列に変換
+              area: shopData.area ?? '',
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定

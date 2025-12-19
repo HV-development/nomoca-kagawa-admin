@@ -34,10 +34,10 @@ function MerchantSelectModal({
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [currentSearch, setCurrentSearch] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef(1);
 
   // データ取得関数
   const fetchMerchants = useCallback(async (searchTerm: string, pageNum: number, isLoadMore: boolean = false) => {
@@ -96,7 +96,7 @@ function MerchantSelectModal({
   useEffect(() => {
     if (isOpen) {
       setMerchants([]);
-      setPage(1);
+      pageRef.current = 1;
       setHasMore(true);
       setCurrentSearch('');
       setSearchQuery('');
@@ -109,7 +109,7 @@ function MerchantSelectModal({
 
   // 検索実行
   const handleSearch = useCallback(async () => {
-    setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
     setCurrentSearch(searchQuery);
     await fetchMerchants(searchQuery, 1, false);
@@ -118,10 +118,10 @@ function MerchantSelectModal({
   // 追加読み込み
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
+    const nextPage = pageRef.current + 1;
+    pageRef.current = nextPage;
     await fetchMerchants(currentSearch, nextPage, true);
-  }, [isLoadingMore, hasMore, page, currentSearch, fetchMerchants]);
+  }, [isLoadingMore, hasMore, currentSearch, fetchMerchants]);
 
   // スクロールイベント監視
   const handleScroll = useCallback(() => {
@@ -139,7 +139,7 @@ function MerchantSelectModal({
     onSelect(merchant);
     setSearchQuery('');
     setMerchants([]);
-    setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
     setCurrentSearch('');
     onClose();
@@ -148,7 +148,7 @@ function MerchantSelectModal({
   const handleClose = useCallback(() => {
     setSearchQuery('');
     setMerchants([]);
-    setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
     setCurrentSearch('');
     onClose();

@@ -6,14 +6,13 @@ import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment
 
 interface PaymentMethodSelectorProps {
   paymentCash: boolean;
-  paymentSaicoin: boolean;
-  paymentTamapon: boolean;
+  paymentMydigi: boolean;
   selectedCreditBrands: string[];
   customCreditText: string;
   selectedQrBrands: string[];
   customQrText: string;
   validationErrors: Record<string, string>;
-  onPaymentChange: (field: 'paymentCash' | 'paymentSaicoin' | 'paymentTamapon', value: boolean) => void;
+  onPaymentChange: (field: 'paymentCash' | 'paymentMydigi', value: boolean) => void;
   onCreditBrandsChange: (brands: string[]) => void;
   onCreditTextChange: (text: string) => void;
   onQrBrandsChange: (brands: string[]) => void;
@@ -23,8 +22,7 @@ interface PaymentMethodSelectorProps {
 
 export default function PaymentMethodSelector({
   paymentCash,
-  paymentSaicoin,
-  paymentTamapon,
+  paymentMydigi,
   selectedCreditBrands,
   customCreditText,
   selectedQrBrands,
@@ -153,18 +151,18 @@ export default function PaymentMethodSelector({
           </div>
         </div>
 
-        {/* さいコイン決済 */}
+        {/* マイデジ決済 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            さいコイン決済
+            マイデジ決済
           </label>
           <div className="flex gap-4">
             <label className="flex items-center">
               <input
                 type="radio"
-                name="paymentSaicoin"
-                checked={paymentSaicoin === true}
-                onChange={() => onPaymentChange('paymentSaicoin', true)}
+                name="paymentMydigi"
+                checked={paymentMydigi === true}
+                onChange={() => onPaymentChange('paymentMydigi', true)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
               />
               <span className="ml-2 text-sm text-gray-900">可</span>
@@ -172,38 +170,9 @@ export default function PaymentMethodSelector({
             <label className="flex items-center">
               <input
                 type="radio"
-                name="paymentSaicoin"
-                checked={paymentSaicoin === false}
-                onChange={() => onPaymentChange('paymentSaicoin', false)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-sm text-gray-900">不可</span>
-            </label>
-          </div>
-        </div>
-
-        {/* たまポン決済 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            たまポン決済
-          </label>
-          <div className="flex gap-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="paymentTamapon"
-                checked={paymentTamapon === true}
-                onChange={() => onPaymentChange('paymentTamapon', true)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-sm text-gray-900">可</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="paymentTamapon"
-                checked={paymentTamapon === false}
-                onChange={() => onPaymentChange('paymentTamapon', false)}
+                name="paymentMydigi"
+                checked={paymentMydigi === false}
+                onChange={() => onPaymentChange('paymentMydigi', false)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
               />
               <span className="ml-2 text-sm text-gray-900">不可</span>

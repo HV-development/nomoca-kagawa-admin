@@ -141,8 +141,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     couponUsageStart: '',
     couponUsageEnd: '',
     couponUsageDays: '',
-    paymentSaicoin: false,
-    paymentTamapon: false,
+    paymentMydigi: false,
     paymentCash: true,
     paymentCredit: '',
     paymentCode: '',
@@ -162,6 +161,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [customQrText, setCustomQrText] = useState<string>('');
 
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<Merchant | null>(null);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
@@ -346,6 +346,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               }
               setMerchantName(merchant.name);
               setMerchants([merchant]);
+              setSelectedMerchantDetails(merchant);
             }
           } else {
             console.error('事業者情報の取得に失敗しました:', result.reason);
@@ -402,7 +403,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           if (shopResult.status !== 'fulfilled') {
             throw new Error('店舗データの取得に失敗しました');
           }
-          const shopData = shopResult.value as ShopDataResponse;
+          // APIレスポンスが { data: ... } 形式の場合とそうでない場合に対応
+          const rawShopData = shopResult.value as { data?: ShopDataResponse } | ShopDataResponse;
+          const shopData = (rawShopData && typeof rawShopData === 'object' && 'data' in rawShopData && rawShopData.data)
+            ? rawShopData.data
+            : rawShopData as ShopDataResponse;
 
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
@@ -412,6 +417,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             const accountEmail = shopData.accountEmail;
             setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
             setOriginalAccountEmail(accountEmail ?? null);
+
+            // paymentAppsからmydigiの値を取得（後方互換性: paymentMydigiも参照）
+            // APIレスポンスが文字列の場合はパースする
+            const rawPaymentApps = (shopData as { paymentApps?: Record<string, boolean> | string }).paymentApps;
+            const paymentAppsData = typeof rawPaymentApps === 'string' 
+              ? (() => { try { return JSON.parse(rawPaymentApps); } catch { return null; } })()
+              : rawPaymentApps;
+            const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
+            console.log('🔍 ShopForm - paymentApps loading:', { rawPaymentApps, paymentAppsData, paymentMydigiValue });
+
             setFormData({
               ...shopData,
               merchantId: finalMerchantId,
@@ -419,6 +434,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // latitude/longitudeを文字列に変換
               latitude: shopData.latitude ? String(shopData.latitude) : '',
               longitude: shopData.longitude ? String(shopData.longitude) : '',
+              // paymentAppsからpaymentMydigiを設定
+              paymentMydigi: paymentMydigiValue,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -562,18 +579,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     };
   }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount]);
 
-  // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
+  // formData.merchantIdが変更されたときに加盟店名とselectedMerchantDetailsを更新
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
       const merchant = merchants.find(m => m.id === formData.merchantId) as Merchant;
       if (merchant) {
         setMerchantName(merchant.name);
+        setSelectedMerchantDetails(merchant);
       }
     }
   }, [formData.merchantId, merchants]);
 
   // 加盟店選択ハンドラー
-  const handleMerchantSelect = (merchant: Merchant) => {
+  const handleMerchantSelect = async (merchant: Merchant) => {
     setFormData(prev => ({
       ...prev,
       merchantId: merchant.id,
@@ -594,6 +612,57 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     });
 
     setIsMerchantModalOpen(false);
+
+    // 選択した事業者がmerchants配列に存在する場合はその情報を使用
+    const existingMerchant = merchants.find(m => m.id === merchant.id);
+    if (existingMerchant) {
+      setSelectedMerchantDetails(existingMerchant);
+    } else {
+      // 存在しない場合は詳細情報を取得
+      try {
+        const response = await apiClient.getMerchant(merchant.id) as { data?: Merchant } | Merchant;
+        // APIレスポンスが { data: ... } 形式の場合とそうでない場合に対応
+        const merchantDetails = (response && typeof response === 'object' && 'data' in response && response.data)
+          ? response.data as Merchant
+          : response as Merchant;
+        if (merchantDetails && merchantDetails.id) {
+          setSelectedMerchantDetails(merchantDetails);
+          setMerchants(prev => [...prev, merchantDetails]);
+        }
+      } catch (error) {
+        console.error('事業者詳細の取得に失敗しました:', error);
+      }
+    }
+  };
+
+  // 親事業者からコピー機能
+  const handleCopyFromMerchant = () => {
+    // selectedMerchantDetailsを優先的に使用し、なければmerchants配列から検索
+    const merchant = selectedMerchantDetails?.id === formData.merchantId
+      ? selectedMerchantDetails
+      : merchants.find(m => m.id === formData.merchantId);
+    
+    if (merchant) {
+      setFormData(prev => ({
+        ...prev,
+        // 店舗名（事業者名をそのまま使用）
+        name: merchant.name,
+        // 店舗名（カナ）
+        nameKana: merchant.nameKana || '',
+        // 電話番号
+        phone: merchant.representativePhone || '',
+        // 郵便番号
+        postalCode: merchant.postalCode || '',
+        // 都道府県
+        prefecture: merchant.prefecture || '',
+        // 市区町村
+        city: merchant.city || '',
+        // 番地以降
+        address1: merchant.address1 || '',
+        // 建物名
+        address2: merchant.address2 || ''
+      }));
+    }
   };
 
   const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
@@ -1002,6 +1071,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // paymentApps: mydigi用の決済方法をJSON形式で送信
+        paymentApps: { mydigi: formData.paymentMydigi ?? false },
         homepageUrl: normalizedHomepageUrl,
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
@@ -1173,36 +1244,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      // 親事業者の情報を取得
-                      const merchant = merchants.find(m => m.id === formData.merchantId);
-                      if (merchant) {
-                        // 親事業者の情報をフォームに反映
-                        setFormData(prev => {
-                          const newFormData = {
-                            ...prev,
-                            // 店舗名（事業者名をそのまま使用）
-                            name: merchant.name,
-                            // 店舗名（カナ）
-                            nameKana: merchant.nameKana,
-                            // 電話番号
-                            phone: merchant.representativePhone || '',
-                            // 郵便番号
-                            postalCode: merchant.postalCode || '',
-                            // 都道府県
-                            prefecture: merchant.prefecture || '',
-                            // 市区町村
-                            city: merchant.city || '',
-                            // 番地以降
-                            address1: merchant.address1 || '',
-                            // 建物名
-                            address2: merchant.address2 || ''
-                          };
-
-                          return newFormData;
-                        });
-                      }
-                    }}
+                    onClick={handleCopyFromMerchant}
                     className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1227,36 +1269,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        // 親事業者の情報を取得
-                        const merchant = merchants.find(m => m.id === formData.merchantId);
-                        if (merchant) {
-                          // 親事業者の情報をフォームに反映
-                          setFormData(prev => {
-                            const newFormData = {
-                              ...prev,
-                              // 店舗名（事業者名をそのまま使用）
-                              name: merchant.name,
-                              // 店舗名（カナ）
-                              nameKana: merchant.nameKana,
-                              // 電話番号
-                              phone: merchant.representativePhone || '',
-                              // 郵便番号
-                              postalCode: merchant.postalCode || '',
-                              // 都道府県
-                              prefecture: merchant.prefecture || '',
-                              // 市区町村
-                              city: merchant.city || '',
-                              // 番地以降
-                              address1: merchant.address1 || '',
-                              // 建物名
-                              address2: merchant.address2 || ''
-                            };
-
-                            return newFormData;
-                          });
-                        }
-                      }}
+                      onClick={handleCopyFromMerchant}
                       className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1284,36 +1297,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            // 親事業者の情報を取得
-                            const merchant = merchants.find(m => m.id === formData.merchantId);
-                            if (merchant) {
-                              // 親事業者の情報をフォームに反映
-                              setFormData(prev => {
-                                const newFormData = {
-                                  ...prev,
-                                  // 店舗名（事業者名をそのまま使用）
-                                  name: merchant.name,
-                                  // 店舗名（カナ）
-                                  nameKana: merchant.nameKana,
-                                  // 電話番号
-                                  phone: merchant.representativePhone || '',
-                                  // 郵便番号
-                                  postalCode: merchant.postalCode || '',
-                                  // 都道府県
-                                  prefecture: merchant.prefecture || '',
-                                  // 市区町村
-                                  city: merchant.city || '',
-                                  // 番地以降
-                                  address1: merchant.address1 || '',
-                                  // 建物名
-                                  address2: merchant.address2 || ''
-                                };
-
-                                return newFormData;
-                              });
-                            }
-                          }}
+                          onClick={handleCopyFromMerchant}
                           className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1342,36 +1326,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          // 親事業者の情報を取得
-                          const merchant = merchants.find(m => m.id === formData.merchantId);
-                          if (merchant) {
-                            // 親事業者の情報をフォームに反映
-                            setFormData(prev => {
-                              const newFormData = {
-                                ...prev,
-                                // 店舗名（事業者名をそのまま使用）
-                                name: merchant.name,
-                                // 店舗名（カナ）
-                                nameKana: merchant.nameKana,
-                                // 電話番号
-                                phone: merchant.representativePhone || '',
-                                // 郵便番号
-                                postalCode: merchant.postalCode || '',
-                                // 都道府県
-                                prefecture: merchant.prefecture || '',
-                                // 市区町村
-                                city: merchant.city || '',
-                                // 番地以降
-                                address1: merchant.address1 || '',
-                                // 建物名
-                                address2: merchant.address2 || ''
-                              };
-
-                              return newFormData;
-                            });
-                          }
-                        }}
+                        onClick={handleCopyFromMerchant}
                         className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1931,8 +1886,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         {/* 決済情報 */}
         <PaymentMethodSelector
           paymentCash={formData.paymentCash ?? false}
-          paymentSaicoin={formData.paymentSaicoin ?? false}
-          paymentTamapon={formData.paymentTamapon ?? false}
+          paymentMydigi={formData.paymentMydigi ?? false}
           selectedCreditBrands={selectedCreditBrands}
           customCreditText={customCreditText}
           selectedQrBrands={selectedQrBrands}

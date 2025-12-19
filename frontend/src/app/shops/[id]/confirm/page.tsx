@@ -221,13 +221,8 @@ export default function ShopConfirmPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">決済情報</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">サイコイン決済</label>
-              <div className="text-sm text-gray-900">{shop.paymentSaicoin ? '対応' : '非対応'}</div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">たまぽん決済</label>
-              <div className="text-sm text-gray-900">{shop.paymentTamapon ? '対応' : '非対応'}</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">マイデジ決済</label>
+              <div className="text-sm text-gray-900">{((shop as { paymentApps?: Record<string, boolean> }).paymentApps?.mydigi ?? (shop as { paymentMydigi?: boolean }).paymentMydigi) ? '対応' : '非対応'}</div>
             </div>
             
             <div>

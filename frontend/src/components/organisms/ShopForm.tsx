@@ -141,8 +141,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     couponUsageStart: '',
     couponUsageEnd: '',
     couponUsageDays: '',
-    paymentSaicoin: false,
-    paymentTamapon: false,
+    paymentMydigi: false,
     paymentCash: true,
     paymentCredit: '',
     paymentCode: '',
@@ -412,6 +411,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             const accountEmail = shopData.accountEmail;
             setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
             setOriginalAccountEmail(accountEmail ?? null);
+
+            // paymentAppsからmydigiの値を取得（後方互換性: paymentMydigiも参照）
+            const paymentAppsData = (shopData as { paymentApps?: Record<string, boolean> }).paymentApps;
+            const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
+
             setFormData({
               ...shopData,
               merchantId: finalMerchantId,
@@ -419,6 +423,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // latitude/longitudeを文字列に変換
               latitude: shopData.latitude ? String(shopData.latitude) : '',
               longitude: shopData.longitude ? String(shopData.longitude) : '',
+              // paymentAppsからpaymentMydigiを設定
+              paymentMydigi: paymentMydigiValue,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -1002,6 +1008,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // paymentApps: mydigi用の決済方法をJSON形式で送信
+        paymentApps: { mydigi: formData.paymentMydigi ?? false },
         homepageUrl: normalizedHomepageUrl,
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
@@ -1931,8 +1939,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         {/* 決済情報 */}
         <PaymentMethodSelector
           paymentCash={formData.paymentCash ?? false}
-          paymentSaicoin={formData.paymentSaicoin ?? false}
-          paymentTamapon={formData.paymentTamapon ?? false}
+          paymentMydigi={formData.paymentMydigi ?? false}
           selectedCreditBrands={selectedCreditBrands}
           customCreditText={customCreditText}
           selectedQrBrands={selectedQrBrands}

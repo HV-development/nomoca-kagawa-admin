@@ -58,18 +58,26 @@ function MerchantSelectModal({
       let totalPages = 1;
 
       if (response && typeof response === 'object') {
-        if ('data' in response && response.data && typeof response.data === 'object' && 'merchants' in response.data) {
-          fetchedMerchants = (response.data as { merchants: Merchant[] }).merchants || [];
+        // data ラッパーがある場合（formatSuccessResponse形式）
+        if ('data' in response && response.data && typeof response.data === 'object') {
+          const dataObj = response.data as { merchants?: Merchant[]; pagination?: { totalPages?: number } };
+          if ('merchants' in dataObj) {
+            fetchedMerchants = dataObj.merchants || [];
+          }
+          // pagination情報をdataから取得
+          if ('pagination' in dataObj && dataObj.pagination && typeof dataObj.pagination === 'object') {
+            totalPages = dataObj.pagination.totalPages || 1;
+          }
         } else if ('merchants' in response) {
+          // dataラッパーがない場合
           fetchedMerchants = (response as { merchants: Merchant[] }).merchants || [];
+          // pagination情報を取得
+          if ('pagination' in response && response.pagination && typeof response.pagination === 'object') {
+            const pagination = response.pagination as { totalPages?: number };
+            totalPages = pagination.totalPages || 1;
+          }
         } else if (Array.isArray(response)) {
           fetchedMerchants = response as Merchant[];
-        }
-
-        // pagination情報を取得
-        if ('pagination' in response && response.pagination && typeof response.pagination === 'object') {
-          const pagination = response.pagination as { totalPages?: number };
-          totalPages = pagination.totalPages || 1;
         }
       }
 

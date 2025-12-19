@@ -73,6 +73,7 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   couponUsageDays?: string | null;
   paymentMydigi?: boolean;
   paymentApps?: Record<string, boolean>;
+  area?: string;
 };
 
 

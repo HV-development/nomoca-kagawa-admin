@@ -408,11 +408,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
           // APIレスポンスが { data: ... } 形式の場合とそうでない場合に対応
           const rawShopData = shopResult.value as { data?: ShopDataResponse } | ShopDataResponse;
-          console.log('🔍 ShopForm - rawShopData:', rawShopData);
           const shopData = (rawShopData && typeof rawShopData === 'object' && 'data' in rawShopData && rawShopData.data)
             ? rawShopData.data
             : rawShopData as ShopDataResponse;
-          console.log('🔍 ShopForm - shopData:', shopData);
 
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
@@ -430,7 +428,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               ? (() => { try { return JSON.parse(rawPaymentApps); } catch { return null; } })()
               : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
-            console.log('🔍 ShopForm - paymentApps loading:', { rawPaymentApps, paymentAppsData, paymentMydigiValue });
 
             setFormData({
               ...shopData,

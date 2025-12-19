@@ -413,8 +413,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             setOriginalAccountEmail(accountEmail ?? null);
 
             // paymentAppsからmydigiの値を取得（後方互換性: paymentMydigiも参照）
-            const paymentAppsData = (shopData as { paymentApps?: Record<string, boolean> }).paymentApps;
+            // APIレスポンスが文字列の場合はパースする
+            const rawPaymentApps = (shopData as { paymentApps?: Record<string, boolean> | string }).paymentApps;
+            const paymentAppsData = typeof rawPaymentApps === 'string' 
+              ? (() => { try { return JSON.parse(rawPaymentApps); } catch { return null; } })()
+              : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
+            console.log('🔍 ShopForm - paymentApps loading:', { rawPaymentApps, paymentAppsData, paymentMydigiValue });
 
             setFormData({
               ...shopData,

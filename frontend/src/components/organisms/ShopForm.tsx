@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
-import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS } from '@/lib/constants/japan';
+import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, KAGAWA_AREAS } from '@/lib/constants/japan';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
@@ -145,6 +145,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     paymentCash: true,
     paymentCredit: '',
     paymentCode: '',
+    area: '',
     status: 'registering',
     createAccount: false,
     password: '',
@@ -407,11 +408,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
           // APIレスポンスが { data: ... } 形式の場合とそうでない場合に対応
           const rawShopData = shopResult.value as { data?: ShopDataResponse } | ShopDataResponse;
-          console.log('🔍 ShopForm - rawShopData:', rawShopData);
           const shopData = (rawShopData && typeof rawShopData === 'object' && 'data' in rawShopData && rawShopData.data)
             ? rawShopData.data
             : rawShopData as ShopDataResponse;
-          console.log('🔍 ShopForm - shopData:', shopData);
 
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
@@ -429,7 +428,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               ? (() => { try { return JSON.parse(rawPaymentApps); } catch { return null; } })()
               : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
-            console.log('🔍 ShopForm - paymentApps loading:', { rawPaymentApps, paymentAppsData, paymentMydigiValue });
 
             setFormData({
               ...shopData,
@@ -440,6 +438,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               longitude: shopData.longitude ? String(shopData.longitude) : '',
               // paymentAppsからpaymentMydigiを設定
               paymentMydigi: paymentMydigiValue,
+              // areaがnullの場合は空文字列に変換
+              area: shopData.area ?? '',
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -1576,6 +1576,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="建物名 / 部屋番号を入力してください（任意）"
               />
+            </div>
+
+            {/* 対象エリア */}
+            <div className="max-w-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                対象エリア
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {KAGAWA_AREAS.map((area) => (
+                  <label key={area} className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="area"
+                      value={area}
+                      checked={formData.area === area}
+                      onChange={(e) => handleInputChange('area', e.target.value)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">{area}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* 緯度・経度 */}

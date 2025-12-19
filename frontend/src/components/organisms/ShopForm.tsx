@@ -579,7 +579,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   }, [formData.merchantId, merchants]);
 
   // 加盟店選択ハンドラー
-  const handleMerchantSelect = (merchant: Merchant) => {
+  const handleMerchantSelect = async (merchant: Merchant) => {
     setFormData(prev => ({
       ...prev,
       merchantId: merchant.id,
@@ -600,6 +600,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     });
 
     setIsMerchantModalOpen(false);
+
+    // 選択した事業者がmerchants配列に存在しない場合、詳細情報を取得して追加
+    const existingMerchant = merchants.find(m => m.id === merchant.id);
+    if (!existingMerchant) {
+      try {
+        const response = await apiClient.getMerchant(merchant.id);
+        if (response) {
+          setMerchants(prev => [...prev, response as Merchant]);
+        }
+      } catch (error) {
+        console.error('事業者詳細の取得に失敗しました:', error);
+      }
+    }
   };
 
   const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {

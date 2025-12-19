@@ -57,12 +57,13 @@ export async function POST(request: NextRequest) {
     // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
     const res = createNoCacheResponse({ account: data.account });
     if (data.accessToken) {
+      // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 15,
+        maxAge: 60 * 60 * 2,
       });
       // __Host- prefix for hardened cookie (no Domain, path=/, secure required)
       res.cookies.set('__Host-accessToken', data.accessToken, {
@@ -70,23 +71,24 @@ export async function POST(request: NextRequest) {
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 15,
+        maxAge: 60 * 60 * 2,
       });
     }
     if (data.refreshToken) {
+      // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
       res.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: 60 * 60 * 24 * 7,
       });
       res.cookies.set('__Host-refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: 60 * 60 * 24 * 7,
       });
     }
     return res;

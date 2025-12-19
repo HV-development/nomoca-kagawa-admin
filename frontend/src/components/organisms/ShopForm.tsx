@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
-import { PREFECTURES, WEEKDAYS } from '@/lib/constants/japan';
+import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS } from '@/lib/constants/japan';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
@@ -275,6 +275,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
   // 定休日チェックボックス用
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
+  // 定休日「その他」のフリーワード入力用
+  const [customHolidayText, setCustomHolidayText] = useState<string>('');
 
   // バリデーションフック
   const { validateField } = useShopValidation({
@@ -509,7 +511,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // 定休日の設定
             const holidaysValue = (shopData as ShopCreateRequest).holidays;
             if (holidaysValue && holidaysValue.trim()) {
-              setSelectedHolidays(holidaysValue.split(',').map(h => h.trim()));
+              const holidayItems = holidaysValue.split(',').map(h => h.trim());
+              const holidays: string[] = [];
+              let customText = '';
+              
+              holidayItems.forEach(item => {
+                // 「その他:テキスト」形式をパース
+                if (item.startsWith('その他:')) {
+                  holidays.push('その他');
+                  customText = item.substring('その他:'.length);
+                } else {
+                  holidays.push(item);
+                }
+              });
+              
+              setSelectedHolidays(holidays);
+              setCustomHolidayText(customText);
             }
 
             // 利用シーンの設定
@@ -807,11 +824,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
       
+      // 「その他」選択時にテキストを含める定休日文字列を生成
+      const isHolidayOtherSelected = selectedHolidays.includes('その他');
+      const holidaysForSubmit = selectedHolidays.map(h => {
+        if (h === 'その他' && customHolidayText.trim()) {
+          return `その他:${customHolidayText.trim()}`;
+        }
+        return h;
+      }).join(',');
+
       const dataToValidate = {
         ...formData,
         // 空文字列の場合はnullに変換（zodのバリデーションに対応）
         accountEmail: formData.accountEmail || null,
-        holidays: selectedHolidays.join(','),
+        holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
         // クーポン利用時間の空文字列をnullに変換
@@ -949,6 +975,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.customSceneText = '具体的な利用シーンは100文字以内で入力してください';
       }
 
+      // 定休日「その他」のテキストボックス必須チェック
+      if (isHolidayOtherSelected && (!customHolidayText || customHolidayText.trim().length === 0)) {
+        customErrors.customHolidayText = 'その他の定休日の内容を入力してください';
+      } else if (isHolidayOtherSelected && customHolidayText && customHolidayText.length > 100) {
+        customErrors.customHolidayText = 'その他の定休日は100文字以内で入力してください';
+      }
+
       // カスタムエラーがある場合は表示して終了
       if (Object.keys(customErrors).length > 0) {
         // エラーをstateに設定
@@ -1068,7 +1101,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         latitude: formData.latitude ? (isEdit ? Number(formData.latitude) : String(formData.latitude)) : undefined,
         longitude: formData.longitude ? (isEdit ? Number(formData.longitude) : String(formData.longitude)) : undefined,
         images: allImageUrls,  // 画像削除時にも空配列を送信
-        holidays: selectedHolidays.join(','),
+        holidays: holidaysForSubmit,
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
         paymentCredit: paymentCreditJson,
@@ -1769,6 +1802,68 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                 ))}
               </div>
+              {/* 特殊オプション（不定休・その他） */}
+              <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-gray-200">
+                {HOLIDAY_SPECIAL_OPTIONS.map((option) => (
+                  <label key={option} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedHolidays.includes(option)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedHolidays([...selectedHolidays, option]);
+                        } else {
+                          setSelectedHolidays(selectedHolidays.filter(h => h !== option));
+                          // 「その他」のチェックを外した場合、テキストもクリア
+                          if (option === 'その他') {
+                            setCustomHolidayText('');
+                            // バリデーションエラーもクリア
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.customHolidayText;
+                              return newErrors;
+                            });
+                          }
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{option}</span>
+                  </label>
+                ))}
+              </div>
+              {/* 「その他」選択時のテキスト入力 */}
+              {selectedHolidays.includes('その他') && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    name="customHolidayText"
+                    value={customHolidayText}
+                    onChange={(e) => {
+                      setCustomHolidayText(e.target.value);
+                      // 入力時にバリデーションエラーをクリア
+                      if (e.target.value.trim()) {
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.customHolidayText;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    placeholder="例: 年末年始、お盆休み、第2・4水曜日など"
+                    maxLength={100}
+                    className={`w-full max-w-md px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.customHolidayText 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  <ErrorMessage message={validationErrors.customHolidayText} />
+                  <p className="mt-1 text-xs text-gray-500 text-right max-w-md">
+                    {customHolidayText.length} / 100文字
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ホームページURL（任意） */}

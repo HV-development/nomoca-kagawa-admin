@@ -11,8 +11,11 @@ export const PREFECTURES = [
   '沖縄県'
 ] as const;
 
-// 定休日
+// 定休日（曜日）
 export const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日', '祝日'] as const;
+
+// 定休日の特殊オプション
+export const HOLIDAY_SPECIAL_OPTIONS = ['不定休', 'その他'] as const;
 
 
 

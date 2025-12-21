@@ -2,26 +2,45 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
+ * IPv4-mapped IPv6アドレスからIPv4部分を抽出
+ * 例: ::ffff:192.168.1.1 -> 192.168.1.1
+ */
+function normalizeIp(ip: string): string {
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x) からIPv4部分を抽出
+  const ipv4Mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (ipv4Mapped) {
+    return ipv4Mapped[1];
+  }
+  return ip;
+}
+
+/**
  * クライアントのIPアドレスを取得
  * Vercel/Cloudflare等のプロキシヘッダーを優先
  */
 function getClientIp(request: NextRequest): string {
+  let ip = '0.0.0.0';
+  
   // Vercel固有のヘッダー
   const vercelIp = request.headers.get('x-vercel-forwarded-for');
   if (vercelIp) {
-    return vercelIp.split(',')[0].trim();
+    ip = vercelIp.split(',')[0].trim();
   }
   // 標準的なプロキシヘッダー
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
+  else {
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+      ip = forwarded.split(',')[0].trim();
+    } else {
+      const realIp = request.headers.get('x-real-ip');
+      if (realIp) {
+        ip = realIp;
+      }
+    }
   }
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp;
-  }
-  // Next.js 15以降ではrequest.ipが存在しない場合がある
-  return '0.0.0.0';
+  
+  // IPv4-mapped IPv6アドレスを正規化
+  return normalizeIp(ip);
 }
 
 /**

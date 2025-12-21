@@ -32,7 +32,6 @@ test.describe('キャッシュ無効化ヘッダーの検証', () => {
     }
 
     // コンソールにヘッダー情報を出力
-    console.log(`[${path}] キャッシュヘッダー情報:`, JSON.stringify(headers, null, 2));
 
     // Cache-Controlが設定されていることを確認
     expect(cacheControl, `${path}のCache-Controlヘッダーが設定されていません`).toBeTruthy();
@@ -268,7 +267,6 @@ test.describe('Strict-Transport-Securityヘッダーの検証', () => {
     }
 
     // コンソールにヘッダー情報を出力
-    console.log(`[${path}] HSTSヘッダー情報:`, JSON.stringify(headers, null, 2));
 
     expect(hsts, `${path}のStrict-Transport-Securityヘッダーが設定されていません`).toBeTruthy();
     expect(hsts, `${path}のStrict-Transport-Securityヘッダーが期待値と異なります。実際の値: ${hsts}`).toBe(expectedHSTS);

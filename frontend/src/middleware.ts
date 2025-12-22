@@ -2,6 +2,48 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
+ * IPv4-mapped IPv6アドレスからIPv4部分を抽出
+ * 例: ::ffff:192.168.1.1 -> 192.168.1.1
+ */
+function normalizeIp(ip: string): string {
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x) からIPv4部分を抽出
+  const ipv4Mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (ipv4Mapped) {
+    return ipv4Mapped[1];
+  }
+  return ip;
+}
+
+/**
+ * クライアントのIPアドレスを取得
+ * Vercel/Cloudflare等のプロキシヘッダーを優先
+ */
+function getClientIp(request: NextRequest): string {
+  let ip = '0.0.0.0';
+  
+  // Vercel固有のヘッダー
+  const vercelIp = request.headers.get('x-vercel-forwarded-for');
+  if (vercelIp) {
+    ip = vercelIp.split(',')[0].trim();
+  }
+  // 標準的なプロキシヘッダー
+  else {
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+      ip = forwarded.split(',')[0].trim();
+    } else {
+      const realIp = request.headers.get('x-real-ip');
+      if (realIp) {
+        ip = realIp;
+      }
+    }
+  }
+  
+  // IPv4-mapped IPv6アドレスを正規化
+  return normalizeIp(ip);
+}
+
+/**
  * /_next/image エンドポイントのURLパラメータを検証
  * ディレクトリトラバーサル攻撃を防止
  */
@@ -57,6 +99,34 @@ function validateImageUrl(url: string | null): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
+
+  // メンテナンスモードチェック（最優先で実行）
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    // メンテナンスページ自体と静的ファイルは除外
+    if (pathname === '/maintenance' || pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
+      // メンテナンスページはそのまま表示
+      if (pathname === '/maintenance') {
+        const response = NextResponse.next();
+        response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        return response;
+      }
+    } else {
+      // IPホワイトリストチェック
+      const clientIp = getClientIp(request);
+      const allowedIps = (process.env.MAINTENANCE_ALLOWED_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean);
+      
+      if (!allowedIps.includes(clientIp)) {
+        // メンテナンスページへリダイレクト
+        const url = request.nextUrl.clone();
+        url.pathname = '/maintenance';
+        url.search = '';
+        const redirectResponse = NextResponse.redirect(url);
+        redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        return redirectResponse;
+      }
+    }
+  }
 
   // /_next/image エンドポイントのURLパラメータを検証（ディレクトリトラバーサル対策）
   if (pathname === '/_next/image') {

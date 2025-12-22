@@ -668,8 +668,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         name: merchant.name,
         // 店舗名（カナ）
         nameKana: merchant.nameKana || '',
-        // 電話番号
-        phone: merchant.representativePhone || '',
         // 郵便番号
         postalCode: merchant.postalCode || '',
         // 都道府県

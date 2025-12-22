@@ -52,6 +52,10 @@ const nextConfig = {
         hostname: 'images.nomoca-kagawa.com',
       },
       {
+        protocol: 'https',
+        hostname: 'prod-images.nomoca-kagawa.com',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '9000',
@@ -150,7 +154,7 @@ const nextConfig = {
             isDev
               ? "font-src 'self' https://fonts.gstatic.com https: data:"
               : "font-src 'self' https://fonts.gstatic.com",
-            `img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com https://dev-images.nomoca-kagawa.com https://images.nomoca-kagawa.com${isDev ? ' http://localhost:3001 http://localhost:9000' : ''}`,
+            `img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com https://dev-images.nomoca-kagawa.com https://images.nomoca-kagawa.com https://prod-images.nomoca-kagawa.com${isDev ? ' http://localhost:3001 http://localhost:9000' : ''}`,
             // 開発環境ではlocalhostへの接続も許可
             isDev
               ? "connect-src 'self' https://zipcloud.ibsnet.co.jp http://localhost:* ws://localhost:* wss://localhost:*"

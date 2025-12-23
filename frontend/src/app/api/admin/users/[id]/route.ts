@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { getAuthHeader, getRefreshToken } from '@/lib/header-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
+import { COOKIE_MAX_AGE } from '@/lib/cookie-config';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
@@ -92,41 +93,43 @@ export async function GET(request: NextRequest) {
         }
       })();
 
+      // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
       nextResponse.cookies.set('accessToken', token, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 15,
+        maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
       });
 
       // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
       if (isSecure) {
         nextResponse.cookies.set('__Host-accessToken', token, {
           httpOnly: true,
-          secure: true,
+          secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
           path: '/',
-          maxAge: 60 * 15,
+          maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
         });
       }
 
       if (refreshResult.refreshToken) {
+        // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
         nextResponse.cookies.set('refreshToken', refreshResult.refreshToken, {
           httpOnly: true,
           secure: isSecure,
           sameSite: 'lax',
           path: '/',
-          maxAge: 60 * 60 * 24 * 30,
+          maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
         });
         // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
         if (isSecure) {
           nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
             httpOnly: true,
-            secure: true,
+            secure: true, // __Host-プレフィックスは必ずsecure: true
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24 * 30,
+            maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
           });
         }
       }

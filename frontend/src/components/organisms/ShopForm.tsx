@@ -454,14 +454,36 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // 加盟店名を設定（APIレスポンスから直接取得）
             const merchantFromShop = shopData.merchant;
 
+            // 事業者名を先に設定（表示用）
             if (merchantFromShop?.name) {
-              // APIレスポンスにmerchant情報が含まれている場合はそれを使用
               setMerchantName(merchantFromShop.name);
-            } else {
-              // fallback: merchants配列から検索
-              const merchant = merchantsArray.find((m) => m.id === finalMerchantId);
-              if (merchant) {
-                setMerchantName(merchant.name);
+            }
+
+            // 事業者の詳細情報（住所含む）を取得して設定
+            // 「事業者からのコピー」機能で住所情報が必要なため、APIから詳細を取得
+            if (finalMerchantId) {
+              try {
+                const response = await apiClient.getMerchant(finalMerchantId) as { data?: Merchant } | Merchant;
+                const merchantDetails = (response && typeof response === 'object' && 'data' in response && response.data)
+                  ? response.data as Merchant
+                  : response as Merchant;
+                if (merchantDetails && merchantDetails.id) {
+                  setSelectedMerchantDetails(merchantDetails);
+                  if (merchantDetails.name) {
+                    setMerchantName(merchantDetails.name);
+                  }
+                }
+              } catch (error) {
+                console.error('事業者詳細の取得に失敗しました:', error);
+                // フォールバック: APIレスポンスまたはmerchants配列から設定
+                if (merchantFromShop) {
+                  setSelectedMerchantDetails(merchantFromShop as Merchant);
+                } else {
+                  const merchant = merchantsArray.find((m) => m.id === finalMerchantId);
+                  if (merchant) {
+                    setSelectedMerchantDetails(merchant);
+                  }
+                }
               }
             }
 

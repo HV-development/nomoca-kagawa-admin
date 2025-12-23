@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
+import { COOKIE_MAX_AGE } from '@/lib/cookie-config';
 
 // 簡易レート制限（同一IPあたり1分間に10回まで）
 const ipCounters = new Map<string, { count: number; resetAt: number }>();
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 2,
+        maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
       });
       // __Host- prefix for hardened cookie (no Domain, path=/, secure required)
       // HTTPS環境でのみ設定（__Host-プレフィックスはSecure属性が必須のため）
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
           secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
           path: '/',
-          maxAge: 60 * 60 * 2,
+          maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
         });
       }
     }
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
       });
       // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
       if (isSecure) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
           secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
           path: '/',
-          maxAge: 60 * 60 * 24 * 7,
+          maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
         });
       }
     }

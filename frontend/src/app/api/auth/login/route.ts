@@ -66,13 +66,16 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 2,
       });
       // __Host- prefix for hardened cookie (no Domain, path=/, secure required)
-      res.cookies.set('__Host-accessToken', data.accessToken, {
-        httpOnly: true,
-        secure: isSecure,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 2,
-      });
+      // HTTPS環境でのみ設定（__Host-プレフィックスはSecure属性が必須のため）
+      if (isSecure) {
+        res.cookies.set('__Host-accessToken', data.accessToken, {
+          httpOnly: true,
+          secure: true, // __Host-プレフィックスは必ずsecure: true
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 2,
+        });
+      }
     }
     if (data.refreshToken) {
       // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
@@ -83,13 +86,16 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
       });
-      res.cookies.set('__Host-refreshToken', data.refreshToken, {
-        httpOnly: true,
-        secure: isSecure,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      });
+      // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
+      if (isSecure) {
+        res.cookies.set('__Host-refreshToken', data.refreshToken, {
+          httpOnly: true,
+          secure: true, // __Host-プレフィックスは必ずsecure: true
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7,
+        });
+      }
     }
     return res;
   } catch (error: unknown) {

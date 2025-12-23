@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headerOptions: {
         requireAuth: false, // 利用シーン一覧は認証不要（公開エンドポイント）
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 

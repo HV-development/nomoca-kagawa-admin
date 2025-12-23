@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headerOptions: {
         requireAuth: false, // 公開API
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 

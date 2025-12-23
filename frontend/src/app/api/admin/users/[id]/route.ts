@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headerOptions: {
         requireAuth: true,
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
         customHeaders: refreshResult ? {
           'Authorization': refreshResult.token,
         } : undefined,
@@ -99,13 +100,16 @@ export async function GET(request: NextRequest) {
         maxAge: 60 * 15,
       });
 
-      nextResponse.cookies.set('__Host-accessToken', token, {
-        httpOnly: true,
-        secure: isSecure,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 15,
-      });
+      // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
+      if (isSecure) {
+        nextResponse.cookies.set('__Host-accessToken', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 15,
+        });
+      }
 
       if (refreshResult.refreshToken) {
         nextResponse.cookies.set('refreshToken', refreshResult.refreshToken, {
@@ -115,13 +119,16 @@ export async function GET(request: NextRequest) {
           path: '/',
           maxAge: 60 * 60 * 24 * 30,
         });
-        nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
-          httpOnly: true,
-          secure: isSecure,
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 30,
-        });
+        // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
+        if (isSecure) {
+          nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30,
+          });
+        }
       }
     }
 

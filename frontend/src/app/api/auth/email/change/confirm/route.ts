@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headerOptions: {
         requireAuth: false, // 確認処理は認証不要
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 

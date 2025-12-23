@@ -16,6 +16,7 @@ export async function POST(
       method: 'GET',
       headerOptions: {
         requireAuth: true, // 認証が必要
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 

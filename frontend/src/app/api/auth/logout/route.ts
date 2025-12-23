@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headerOptions: {
         requireAuth: false, // 認証がオプショナル
+        setContentType: false, // ボディなしリクエストのためContent-Typeを設定しない
       },
     });
 

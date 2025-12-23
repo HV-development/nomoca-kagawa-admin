@@ -457,11 +457,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (merchantFromShop?.name) {
               // APIレスポンスにmerchant情報が含まれている場合はそれを使用
               setMerchantName(merchantFromShop.name);
+              // 事業者からコピー機能のために詳細情報も設定
+              setSelectedMerchantDetails(merchantFromShop as Merchant);
             } else {
               // fallback: merchants配列から検索
               const merchant = merchantsArray.find((m) => m.id === finalMerchantId);
               if (merchant) {
                 setMerchantName(merchant.name);
+                setSelectedMerchantDetails(merchant);
               }
             }
 

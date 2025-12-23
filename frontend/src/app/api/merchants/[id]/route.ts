@@ -12,6 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       method: 'GET',
       headerOptions: {
         requireAuth: true, // 認証が必要
+        setContentType: false, // GETリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 
@@ -76,6 +77,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       method: 'DELETE',
       headerOptions: {
         requireAuth: true, // 認証が必要
+        setContentType: false, // DELETEリクエストにはボディがないためContent-Typeを設定しない
       },
     });
 

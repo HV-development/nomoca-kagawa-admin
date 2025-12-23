@@ -43,6 +43,15 @@ export interface ShopDataResponse extends ShopCreateRequest {
   merchant?: {
     id: string;
     name: string;
+    nameKana?: string;
+    postalCode?: string;
+    prefecture?: string;
+    city?: string;
+    address1?: string;
+    address2?: string | null;
+    account?: {
+      email: string;
+    };
   };
   images?: string[];
   latitude?: string | number;

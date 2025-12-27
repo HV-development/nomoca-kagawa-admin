@@ -21,21 +21,31 @@ export default defineConfig({
   /* CIでのみ並列実行を制限 */
   workers: process.env.CI ? 1 : undefined,
   /* レポーター設定 */
-  reporter: 'html',
+  reporter: [
+    ['html', { outputFolder: 'playwright-report' }],
+    ['list'], // コンソールに各テストの実行状況を表示
+    ['line'], // 実行進捗を1行ずつ表示
+  ],
   /* 共有設定 */
   use: {
     /* ベースURL（開発サーバーのURL） */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3001',
+    baseURL: process.env.E2E_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3001',
     /* アクションのタイムアウト */
     actionTimeout: 10 * 1000,
     /* ナビゲーションのタイムアウト */
     navigationTimeout: 30 * 1000,
-    /* スクリーンショットを失敗時のみ取得 */
-    screenshot: 'only-on-failure',
-    /* 動画を常に録画 */
-    video: 'on',
-    /* トレースを失敗時のみ取得 */
-    trace: 'on-first-retry',
+    /* スクリーンショット設定（常にフルページで取得） */
+    screenshot: {
+      mode: 'on',
+      fullPage: true,
+    },
+    /* 動画設定（常に録画、720p） */
+    video: {
+      mode: 'on',
+      size: { width: 1280, height: 720 },
+    },
+    /* トレース（失敗時に保持） */
+    trace: 'retain-on-failure',
   },
 
   /* プロジェクト設定 */

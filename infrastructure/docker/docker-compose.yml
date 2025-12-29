@@ -7,7 +7,7 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
-      - "3003:3000"
+      - "3005:3000"
     env_file:
       - ../../frontend/.env
     environment:

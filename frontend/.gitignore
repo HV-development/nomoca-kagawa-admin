@@ -1,1 +1,5 @@
 .npmrc
+.auth/
+test-results/
+playwright-report/
+.env.local

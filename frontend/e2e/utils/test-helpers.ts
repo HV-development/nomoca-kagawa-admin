@@ -1,35 +1,11 @@
-import { Page, BrowserContext, expect } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 /**
  * 管理画面用テストヘルパー関数
+ * 
+ * モック関数は廃止され、実データを使用したテストに移行しました。
+ * 認証は storageState（auth.setup.ts）で管理されます。
  */
-
-// ユーザー権限タイプ
-export type AdminRole = 'sysadmin' | 'operator' | 'merchant' | 'shop';
-
-// 権限別のモックデータ
-const ROLE_MOCK_DATA: Record<AdminRole, object> = {
-  sysadmin: {
-    accountType: 'admin',
-    email: 'sysadmin@example.com',
-    role: 'sysadmin',
-  },
-  operator: {
-    accountType: 'admin',
-    email: 'operator@example.com',
-    role: 'operator',
-  },
-  merchant: {
-    accountType: 'merchant',
-    email: 'merchant@example.com',
-    merchantId: 'merchant-test-001',
-  },
-  shop: {
-    accountType: 'shop',
-    email: 'shop@example.com',
-    shopId: 'shop-test-001',
-  },
-};
 
 /**
  * スクリーンショットを取得する
@@ -41,39 +17,6 @@ export async function takeScreenshot(page: Page, name: string): Promise<void> {
     path: `test-results/screenshots/${name}.png`,
     fullPage: true,
   });
-}
-
-/**
- * 指定した権限でログイン状態を設定する（APIモックを使用）
- * @param page Playwrightのページオブジェクト
- * @param role 権限タイプ
- * @param customData 追加のカスタムデータ
- */
-export async function loginAs(
-  page: Page,
-  role: AdminRole,
-  customData?: Partial<typeof ROLE_MOCK_DATA[AdminRole]>
-): Promise<void> {
-  const mockData = { ...ROLE_MOCK_DATA[role], ...customData };
-
-  // /api/me エンドポイントをモック
-  await page.route('**/api/me', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockData),
-    });
-  });
-
-  // アクセストークンのCookieを設定
-  await page.context().addCookies([
-    {
-      name: 'accessToken',
-      value: `mock_${role}_token`,
-      domain: 'localhost',
-      path: '/',
-    },
-  ]);
 }
 
 /**
@@ -94,81 +37,16 @@ export async function performLogin(
 }
 
 /**
- * APIレスポンスをモックする
- * @param page Playwrightのページオブジェクト
- * @param urlPattern URLパターン（ワイルドカード使用可能）
- * @param response レスポンスデータ
- * @param status HTTPステータスコード（デフォルト: 200）
- */
-export async function mockApiResponse(
-  page: Page,
-  urlPattern: string,
-  response: object,
-  status: number = 200
-): Promise<void> {
-  await page.route(urlPattern, async (route) => {
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: JSON.stringify(response),
-    });
-  });
-}
-
-/**
- * APIエラーレスポンスをモックする
- * @param page Playwrightのページオブジェクト
- * @param urlPattern URLパターン
- * @param status HTTPステータスコード
- * @param message エラーメッセージ
- */
-export async function mockApiError(
-  page: Page,
-  urlPattern: string,
-  status: number,
-  message: string
-): Promise<void> {
-  await page.route(urlPattern, async (route) => {
-    await route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        error: true,
-        message,
-        statusCode: status,
-      }),
-    });
-  });
-}
-
-/**
- * ネットワークエラーをモックする
- * @param page Playwrightのページオブジェクト
- * @param urlPattern URLパターン
- */
-export async function mockNetworkError(
-  page: Page,
-  urlPattern: string
-): Promise<void> {
-  await page.route(urlPattern, async (route) => {
-    await route.abort('failed');
-  });
-}
-
-/**
- * 全てのAPIモックをクリアする
- * @param page Playwrightのページオブジェクト
- */
-export async function clearAllMocks(page: Page): Promise<void> {
-  await page.unrouteAll();
-}
-
-/**
  * ページのローディングが完了するまで待機する
  * @param page Playwrightのページオブジェクト
  */
 export async function waitForPageLoad(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle');
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 10000 });
+  } catch {
+    // networkidleがタイムアウトした場合はdomcontentloadedで代替
+    await page.waitForLoadState('domcontentloaded');
+  }
 }
 
 /**
@@ -263,7 +141,3 @@ export async function uploadFile(
   const fileInput = page.locator(selector);
   await fileInput.setInputFiles(filePath);
 }
-
-
-
-

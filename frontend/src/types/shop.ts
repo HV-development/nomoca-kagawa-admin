@@ -58,7 +58,7 @@ export interface ShopDataResponse extends ShopCreateRequest {
   longitude?: string | number;
   paymentMydigi?: boolean;
   paymentApps?: Record<string, boolean>;
-  area?: string | null;
+  area?: string;
 }
 
 export interface Genre {

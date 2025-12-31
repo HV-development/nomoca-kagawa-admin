@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint'
 
 const eslintConfig = [
   {
-    ignores: ['.next/', 'node_modules/', 'dist/', 'build/', 'next-env.d.ts'],
+    ignores: ['.next/', 'node_modules/', 'dist/', 'build/', 'next-env.d.ts', 'playwright-report/', 'test-results/'],
   },
   {
     name: 'next/core-web-vitals',

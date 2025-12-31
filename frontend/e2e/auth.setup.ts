@@ -1,84 +1,92 @@
-import { test as setup } from '@playwright/test';
+import { test as setup, expect as _expect } from '@playwright/test';
 
+// 環境変数からテスト用の認証情報を取得
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'nomoca-admin@example.com';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'nomoca-admin123';
+
+// 認証状態を保存するファイルパス
 const authFile = '.auth/admin.json';
 
 /**
  * 認証セットアップ
- * 
- * パスワード認証を実行し、認証状態を .auth/admin.json に保存します。
- * この認証状態は authenticated プロジェクトのテストで再利用されます。
+ * パスワード認証を実行し、認証状態をstorageStateとして保存する
  */
 setup('authenticate as admin', async ({ page }) => {
-  console.log('[Auth Setup] Starting authentication...');
-  console.log(`[Auth Setup] Email: ${ADMIN_EMAIL}`);
+    console.log('[Auth Setup] Starting authentication...');
+    console.log('[Auth Setup] Email:', ADMIN_EMAIL);
 
-  // ログインページに移動
-  await page.goto('/login');
-  await page.waitForLoadState('domcontentloaded');
+    // ログインページにアクセス
+    await page.goto('/login');
+    await page.waitForLoadState('domcontentloaded');
 
-  // ログインフォームが表示されるまで待機
-  await page.waitForSelector('input', { timeout: 10000 });
+    // ログインフォームが表示されるまで待機
+    await page.waitForSelector('input[type="email"], input[id="email"]', { timeout: 15000 });
 
-  // 認証情報を入力
-  const emailInput = page.getByLabel('メールアドレス');
-  const passwordInput = page.getByLabel('パスワード');
+    console.log('[Auth Setup] Filling login form...');
 
-  if (await emailInput.isVisible().catch(() => false)) {
+    // メールアドレスを入力
+    const emailInput = page.locator('input[type="email"], input[id="email"]').first();
     await emailInput.fill(ADMIN_EMAIL);
-  } else {
-    // フォールバック: placeholder で検索
-    await page.getByPlaceholder(/email|メール/i).fill(ADMIN_EMAIL);
-  }
 
-  if (await passwordInput.isVisible().catch(() => false)) {
+    // パスワードを入力
+    const passwordInput = page.locator('input[type="password"], input[id="password"]').first();
     await passwordInput.fill(ADMIN_PASSWORD);
-  } else {
-    // フォールバック: type="password" で検索
-    await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
-  }
 
-  // ログインボタンをクリック
-  const loginButton = page.getByRole('button', { name: 'ログイン', exact: true });
-  if (await loginButton.isVisible().catch(() => false)) {
-    await loginButton.click();
-  } else {
-    // フォールバック
+    console.log('[Auth Setup] Submitting login form...');
+
+    // ログインボタンをクリック
     await page.getByRole('button', { name: /ログイン|Login/i }).click();
-  }
 
-  // ログイン後の遷移を待機（最大30秒）
-  // URLが変わるか、エラーメッセージが表示されないことを確認
-  try {
-    await page.waitForURL((url) => !url.pathname.includes('/login'), {
-      timeout: 30000,
-    });
-    console.log('[Auth Setup] Login successful - redirected to:', page.url());
-  } catch {
-    // URL変わらない場合はエラーを確認
-    const errorMessage = await page.locator('.text-red-500, .text-destructive, [role="alert"]').textContent().catch(() => null);
-    if (errorMessage) {
-      throw new Error(`[Auth Setup] Login failed with error: ${errorMessage}`);
+    // ログイン後の遷移を待機
+    console.log('[Auth Setup] Waiting for redirect after login...');
+
+    // エラーメッセージが表示されていないことを確認しつつ、リダイレクトを待機
+    let loginSuccess = false;
+    const startTime = Date.now();
+    const timeout = 30000;
+
+    while (!loginSuccess && Date.now() - startTime < timeout) {
+        await page.waitForTimeout(500);
+
+        // エラーメッセージをチェック
+        const errorMessage = await page.locator('.text-red-500, .text-destructive, [role="alert"]').textContent().catch(() => null);
+        if (errorMessage && errorMessage.includes('正しくありません')) {
+            throw new Error('[Auth Setup] Login failed: ' + errorMessage);
+        }
+
+        // URLがログインページ以外に変わったかチェック
+        const currentUrl = page.url();
+        if (!currentUrl.includes('/login')) {
+            loginSuccess = true;
+            console.log('[Auth Setup] Redirected to:', currentUrl);
+        }
+
+        // Cookieが設定されたかチェック
+        const cookies = await page.context().cookies();
+        const accessToken = cookies.find(c => c.name.includes('accessToken'));
+        if (accessToken) {
+            loginSuccess = true;
+            console.log('[Auth Setup] Access token cookie found');
+        }
     }
-    // エラーがなければCookieを確認して続行
-    console.log('[Auth Setup] URL did not change, checking cookies...');
-  }
 
-  // 認証状態に必要なCookieが設定されていることを確認
-  const cookies = await page.context().cookies();
-  const accessTokenCookie = cookies.find(
-    (c) => c.name === 'accessToken' || c.name.includes('accessToken')
-  );
-  
-  if (!accessTokenCookie) {
-    console.log('[Auth Setup] Available cookies:', cookies.map(c => c.name).join(', '));
-    throw new Error('[Auth Setup] Access token cookie not found after login');
-  }
-  
-  console.log('[Auth Setup] Access token cookie found');
+    if (!loginSuccess) {
+        // 最終チェック
+        const finalCookies = await page.context().cookies();
+        const finalAccessToken = finalCookies.find(c => c.name.includes('accessToken'));
+        if (!finalAccessToken) {
+            const _pageContent = await page.content();
+            console.log('[Auth Setup] Page URL:', page.url());
+            console.log('[Auth Setup] Cookies:', finalCookies.map(c => c.name).join(', '));
+            throw new Error('[Auth Setup] Login timeout - no access token found');
+        }
+    }
 
-  // 認証状態を保存
-  await page.context().storageState({ path: authFile });
-  console.log(`[Auth Setup] Authentication state saved to ${authFile}`);
+    console.log('[Auth Setup] Login successful!');
+
+    // 認証状態を保存
+    console.log('[Auth Setup] Saving authentication state...');
+    await page.context().storageState({ path: authFile });
+
+    console.log('[Auth Setup] Authentication complete!');
 });

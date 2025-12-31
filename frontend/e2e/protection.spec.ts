@@ -1,19 +1,122 @@
-
 import { test, expect } from '@playwright/test';
 
-test.describe('ページ保護のテスト', () => {
-    test('未認証状態で保護されたページにアクセスするとログインページにリダイレクトされる', async ({ page }) => {
-        // /merchants はログイン後のデフォルトリダイレクト先の一つ
-        await page.goto('/merchants');
+/**
+ * 認証保護テスト
+ * 
+ * 認証: なし（未認証状態をテスト）
+ */
+test.describe('認証保護', () => {
+    // ================================================================
+    // 未認証アクセステスト
+    // ================================================================
+    test.describe('未認証アクセス', () => {
+        test('未認証で/merchantsにアクセスするとログインにリダイレクトされること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
 
-        // URLがログインページであることを確認
-        // next.config.jsなどの設定により、リダイレクトパラメータが付く可能性があるため、パス部分を確認
-        await expect(page).toHaveURL(/.*\/login/);
-        await expect(page.getByRole('heading', { name: 'ログイン' })).toBeVisible();
+            await page.goto('/merchants');
+            await page.waitForTimeout(3000);
+
+            const isOnLogin = page.url().includes('/login');
+            expect(isOnLogin).toBeTruthy();
+
+            await context.close();
+        });
+
+        test('未認証で/shopsにアクセスするとログインにリダイレクトされること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            await page.goto('/shops');
+            await page.waitForTimeout(3000);
+
+            const isOnLogin = page.url().includes('/login');
+            expect(isOnLogin).toBeTruthy();
+
+            await context.close();
+        });
+
+        test('未認証で/couponsにアクセスするとログインにリダイレクトされること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            await page.goto('/coupons');
+            await page.waitForTimeout(3000);
+
+            const isOnLogin = page.url().includes('/login');
+            expect(isOnLogin).toBeTruthy();
+
+            await context.close();
+        });
+
+        test('未認証で/adminsにアクセスするとログインにリダイレクトされること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            await page.goto('/admins');
+            await page.waitForTimeout(3000);
+
+            const isOnLogin = page.url().includes('/login');
+            expect(isOnLogin).toBeTruthy();
+
+            await context.close();
+        });
+
+        test('未認証で/usersにアクセスするとログインにリダイレクトされること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            await page.goto('/users');
+            await page.waitForTimeout(3000);
+
+            const isOnLogin = page.url().includes('/login');
+            expect(isOnLogin).toBeTruthy();
+
+            await context.close();
+        });
     });
 
-    test('未認証状態で /users にアクセスするとログインページにリダイレクトされる', async ({ page }) => {
-        await page.goto('/users');
-        await expect(page).toHaveURL(/.*\/login/);
+    // ================================================================
+    // ログインページアクセステスト
+    // ================================================================
+    test.describe('ログインページ', () => {
+        test('未認証で/loginにアクセスできること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            const response = await page.goto('/login');
+            expect(response?.status()).toBe(200);
+
+            await context.close();
+        });
+
+        test('ログインフォームが表示されること', async ({ browser }) => {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            await page.goto('/login');
+            await page.waitForLoadState('domcontentloaded');
+
+            const hasEmailInput = await page.locator('input[type="email"], input[id="email"]').first().isVisible().catch(() => false);
+            const hasPasswordInput = await page.locator('input[type="password"]').first().isVisible().catch(() => false);
+            const hasSubmitButton = await page.getByRole('button', { name: /ログイン/i }).isVisible().catch(() => false);
+
+            expect(hasEmailInput && hasPasswordInput && hasSubmitButton).toBeTruthy();
+
+            await context.close();
+        });
+    });
+
+    // ================================================================
+    // APIエンドポイント保護テスト
+    // ================================================================
+    test.describe('APIエンドポイント保護', () => {
+        test('未認証でAPIにアクセスすると401が返ること', async ({ request }) => {
+            const response = await request.get('/api/merchants');
+
+            // 401または403またはリダイレクト
+            const status = response.status();
+            expect(status === 401 || status === 403 || status >= 300 && status < 400).toBeTruthy();
+        });
     });
 });

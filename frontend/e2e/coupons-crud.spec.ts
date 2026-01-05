@@ -67,16 +67,22 @@ test.describe('クーポン管理', () => {
             await page.goto('/coupons');
             await page.waitForSelector('table tbody tr', { timeout: 15000 }).catch(() => {});
 
-            const link = page.locator('table tbody tr a').first();
-            if (await link.isVisible().catch(() => false)) {
-                await link.click();
-                await page.waitForURL(/\/coupons\/[^/]+/);
-                expect(page.url()).toMatch(/\/coupons\/[^/]+/);
+            // 編集リンクをクリック（クーポン詳細ページは存在せず、編集ページに遷移）
+            const editLink = page.locator('a[href*="/edit"]').first();
+            if (await editLink.isVisible().catch(() => false)) {
+                await editLink.click();
+                await page.waitForURL(/\/coupons\/[^/]+\/edit/);
+                expect(page.url()).toMatch(/\/coupons\/[^/]+\/edit/);
+                
+                // 編集ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                await expect(page.getByRole('heading')).toBeVisible({ timeout: 10000 });
             } else {
                 const row = page.locator('table tbody tr').first();
                 if (await row.isVisible().catch(() => false)) {
                     await row.click();
                     await page.waitForTimeout(2000);
+                    await expect(page.getByRole('heading')).toBeVisible({ timeout: 10000 }).catch(() => {});
                 }
             }
         });
@@ -85,12 +91,16 @@ test.describe('クーポン管理', () => {
             await page.goto('/coupons');
             await page.waitForSelector('table tbody tr', { timeout: 15000 }).catch(() => {});
 
-            const link = page.locator('table tbody tr a').first();
-            if (await link.isVisible().catch(() => false)) {
-                await link.click();
-                await page.waitForURL(/\/coupons\/[^/]+/);
-                await page.waitForTimeout(2000);
+            // 編集リンクをクリック（クーポン詳細ページは存在せず、編集ページに遷移）
+            const editLink = page.locator('a[href*="/edit"]').first();
+            if (await editLink.isVisible().catch(() => false)) {
+                await editLink.click();
+                await page.waitForURL(/\/coupons\/[^/]+\/edit/);
+                await page.waitForLoadState('networkidle');
 
+                // 編集ページの見出しが表示されることを確認
+                await expect(page.getByRole('heading')).toBeVisible({ timeout: 10000 });
+                
                 const hasContent = await page.locator('main').isVisible().catch(() => false);
                 expect(hasContent).toBeTruthy();
             }

@@ -67,16 +67,23 @@ test.describe('管理者ユーザー管理', () => {
             await page.goto('/admins');
             await page.waitForSelector('table tbody tr', { timeout: 15000 }).catch(() => {});
 
-            const link = page.locator('table tbody tr a').first();
-            if (await link.isVisible().catch(() => false)) {
-                await link.click();
-                await page.waitForURL(/\/admins\/[^/]+/);
-                expect(page.url()).toMatch(/\/admins\/[^/]+/);
+            // 編集リンクをクリック（管理者詳細ページは存在せず、編集ページに遷移）
+            const editLink = page.locator('a[href*="/edit"]').first();
+            if (await editLink.isVisible().catch(() => false)) {
+                await editLink.click();
+                await page.waitForURL(/\/admins\/[^/]+\/edit/);
+                expect(page.url()).toMatch(/\/admins\/[^/]+\/edit/);
+                
+                // 編集ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                await expect(page.getByRole('heading', { name: /管理者アカウント編集|管理者編集/i })).toBeVisible({ timeout: 10000 });
             } else {
+                // 編集リンクがない場合は行をクリック
                 const row = page.locator('table tbody tr').first();
                 if (await row.isVisible().catch(() => false)) {
                     await row.click();
                     await page.waitForTimeout(2000);
+                    await expect(page.getByRole('heading', { name: /管理者アカウント編集|管理者編集/i })).toBeVisible({ timeout: 10000 }).catch(() => {});
                 }
             }
         });
@@ -85,12 +92,16 @@ test.describe('管理者ユーザー管理', () => {
             await page.goto('/admins');
             await page.waitForSelector('table tbody tr', { timeout: 15000 }).catch(() => {});
 
-            const link = page.locator('table tbody tr a').first();
-            if (await link.isVisible().catch(() => false)) {
-                await link.click();
-                await page.waitForURL(/\/admins\/[^/]+/);
-                await page.waitForTimeout(2000);
+            // 編集リンクをクリック（管理者詳細ページは存在せず、編集ページに遷移）
+            const editLink = page.locator('a[href*="/edit"]').first();
+            if (await editLink.isVisible().catch(() => false)) {
+                await editLink.click();
+                await page.waitForURL(/\/admins\/[^/]+\/edit/);
+                await page.waitForLoadState('networkidle');
 
+                // 編集ページの見出しが表示されることを確認
+                await expect(page.getByRole('heading', { name: /管理者アカウント編集|管理者編集/i })).toBeVisible({ timeout: 10000 });
+                
                 const hasContent = await page.locator('main').isVisible().catch(() => false);
                 expect(hasContent).toBeTruthy();
             }

@@ -1,4 +1,4 @@
-import { test, expect as _expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * 実際のCRUD操作テスト
@@ -39,6 +39,16 @@ test.describe('CRUD操作テスト', () => {
             if (await submitButton.isVisible().catch(() => false)) {
                 await submitButton.click();
                 await page.waitForTimeout(3000);
+                
+                // 作成成功後の画面遷移を確認（一覧ページまたは詳細ページに遷移）
+                await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                const successText = page.getByText(/登録|作成|保存|成功/i);
+                const heading = page.getByRole('heading', { name: /事業者管理/i });
+                const hasSuccess = await successText.first().isVisible().catch(() => false);
+                const hasHeading = await heading.first().isVisible().catch(() => false);
+                expect(hasSuccess || hasHeading).toBeTruthy();
             }
         });
 
@@ -64,6 +74,16 @@ test.describe('CRUD操作テスト', () => {
                     if (await submitButton.isVisible().catch(() => false)) {
                         await submitButton.click();
                         await page.waitForTimeout(3000);
+                        
+                        // 更新成功後の画面遷移を確認
+                        await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                        // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                        await page.waitForLoadState('networkidle');
+                        const successText = page.getByText(/更新|保存|変更|成功/i);
+                        const heading = page.getByRole('heading', { name: /事業者管理/i });
+                        const hasSuccess = await successText.first().isVisible().catch(() => false);
+                        const hasHeading = await heading.first().isVisible().catch(() => false);
+                        expect(hasSuccess || hasHeading).toBeTruthy();
                     }
                 }
             }
@@ -103,6 +123,16 @@ test.describe('CRUD操作テスト', () => {
             if (await submitButton.isVisible().catch(() => false)) {
                 await submitButton.click();
                 await page.waitForTimeout(3000);
+                
+                // 作成成功後の画面遷移を確認（一覧ページまたは詳細ページに遷移）
+                await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                const successText = page.getByText(/登録|作成|保存|成功/i);
+                const heading = page.getByRole('heading', { name: /事業者管理/i });
+                const hasSuccess = await successText.first().isVisible().catch(() => false);
+                const hasHeading = await heading.first().isVisible().catch(() => false);
+                expect(hasSuccess || hasHeading).toBeTruthy();
             }
         });
 
@@ -126,6 +156,16 @@ test.describe('CRUD操作テスト', () => {
                     if (await submitButton.isVisible().catch(() => false)) {
                         await submitButton.click();
                         await page.waitForTimeout(3000);
+                        
+                        // 更新成功後の画面遷移を確認
+                        await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                        // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                        await page.waitForLoadState('networkidle');
+                        const successText = page.getByText(/更新|保存|変更|成功/i);
+                        const heading = page.getByRole('heading', { name: /事業者管理/i });
+                        const hasSuccess = await successText.first().isVisible().catch(() => false);
+                        const hasHeading = await heading.first().isVisible().catch(() => false);
+                        expect(hasSuccess || hasHeading).toBeTruthy();
                     }
                 }
             }
@@ -171,6 +211,16 @@ test.describe('CRUD操作テスト', () => {
             if (await submitButton.isVisible().catch(() => false)) {
                 await submitButton.click();
                 await page.waitForTimeout(3000);
+                
+                // 作成成功後の画面遷移を確認（一覧ページまたは詳細ページに遷移）
+                await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                const successText = page.getByText(/登録|作成|保存|成功/i);
+                const heading = page.getByRole('heading', { name: /事業者管理/i });
+                const hasSuccess = await successText.first().isVisible().catch(() => false);
+                const hasHeading = await heading.first().isVisible().catch(() => false);
+                expect(hasSuccess || hasHeading).toBeTruthy();
             }
         });
 
@@ -194,6 +244,16 @@ test.describe('CRUD操作テスト', () => {
                     if (await submitButton.isVisible().catch(() => false)) {
                         await submitButton.click();
                         await page.waitForTimeout(3000);
+                        
+                        // 更新成功後の画面遷移を確認
+                        await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                        // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                        await page.waitForLoadState('networkidle');
+                        const successText = page.getByText(/更新|保存|変更|成功/i);
+                        const heading = page.getByRole('heading', { name: /事業者管理/i });
+                        const hasSuccess = await successText.first().isVisible().catch(() => false);
+                        const hasHeading = await heading.first().isVisible().catch(() => false);
+                        expect(hasSuccess || hasHeading).toBeTruthy();
                     }
                 }
             }
@@ -264,6 +324,16 @@ test.describe('CRUD操作テスト', () => {
             if (await submitButton.isVisible().catch(() => false)) {
                 await submitButton.click();
                 await page.waitForTimeout(3000);
+                
+                // 作成成功後の画面遷移を確認（一覧ページまたは詳細ページに遷移）
+                await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                const successText = page.getByText(/登録|作成|保存|成功/i);
+                const heading = page.getByRole('heading', { name: /事業者管理/i });
+                const hasSuccess = await successText.first().isVisible().catch(() => false);
+                const hasHeading = await heading.first().isVisible().catch(() => false);
+                expect(hasSuccess || hasHeading).toBeTruthy();
             }
         });
 
@@ -287,6 +357,16 @@ test.describe('CRUD操作テスト', () => {
                     if (await submitButton.isVisible().catch(() => false)) {
                         await submitButton.click();
                         await page.waitForTimeout(3000);
+                        
+                        // 更新成功後の画面遷移を確認
+                        await page.waitForURL(/\/merchants/, { timeout: 10000 }).catch(() => {});
+                        // 成功メッセージまたは一覧ページのテキストが表示されることを確認
+                        await page.waitForLoadState('networkidle');
+                        const successText = page.getByText(/更新|保存|変更|成功/i);
+                        const heading = page.getByRole('heading', { name: /事業者管理/i });
+                        const hasSuccess = await successText.first().isVisible().catch(() => false);
+                        const hasHeading = await heading.first().isVisible().catch(() => false);
+                        expect(hasSuccess || hasHeading).toBeTruthy();
                     }
                 }
             }

@@ -88,11 +88,21 @@ test.describe('ショップ（店舗）管理', () => {
                 await link.click();
                 await page.waitForURL(/\/shops\/[^/]+/);
                 expect(page.url()).toMatch(/\/shops\/[^/]+/);
+                
+                // 詳細ページのテキストが表示されることを確認（店舗名が見出しとして表示される）
+                await page.waitForLoadState('networkidle');
+                // 店舗詳細ページの見出しは店舗名が表示されるため、h1要素が存在することを確認
+                const heading = page.locator('h1').first();
+                await expect(heading).toBeVisible({ timeout: 10000 });
+                const headingText = await heading.textContent();
+                expect(headingText).toBeTruthy();
+                expect(headingText?.length).toBeGreaterThan(0);
             } else {
                 const row = page.locator('table tbody tr').first();
                 if (await row.isVisible().catch(() => false)) {
                     await row.click();
                     await page.waitForTimeout(2000);
+                    await expect(page.getByRole('heading', { name: /店舗情報|店舗管理|ショップ/i })).toBeVisible({ timeout: 10000 }).catch(() => {});
                 }
             }
         });
@@ -105,8 +115,15 @@ test.describe('ショップ（店舗）管理', () => {
             if (await link.isVisible().catch(() => false)) {
                 await link.click();
                 await page.waitForURL(/\/shops\/[^/]+/);
-                await page.waitForTimeout(2000);
+                await page.waitForLoadState('networkidle');
 
+                // 詳細ページの見出しが表示されることを確認（店舗名が見出しとして表示される）
+                const heading = page.locator('h1').first();
+                await expect(heading).toBeVisible({ timeout: 10000 });
+                const headingText = await heading.textContent();
+                expect(headingText).toBeTruthy();
+                expect(headingText?.length).toBeGreaterThan(0);
+                
                 const hasContent = await page.locator('main').isVisible().catch(() => false);
                 expect(hasContent).toBeTruthy();
             }

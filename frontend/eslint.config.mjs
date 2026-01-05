@@ -2,6 +2,26 @@
 import nextPlugin from '@next/eslint-plugin-next'
 import tseslint from 'typescript-eslint'
 
+// sessionStorageの制限ルール
+const sessionStorageRestrictions = [
+  {
+    selector: "MemberExpression[object.name='window'][property.name='sessionStorage']",
+    message: 'window.sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+  },
+  {
+    selector: "MemberExpression[object.name='sessionStorage']",
+    message: 'sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+  },
+  {
+    selector: "CallExpression[callee.object.name='sessionStorage']",
+    message: 'sessionStorageのメソッド（getItem、setItem、removeItem、clearなど）の使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+  },
+  {
+    selector: "CallExpression[callee.object.object.name='window'][callee.object.property.name='sessionStorage']",
+    message: 'window.sessionStorageのメソッドの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+  },
+]
+
 const eslintConfig = [
   {
     ignores: ['.next/', 'node_modules/', 'dist/', 'build/', 'next-env.d.ts', 'playwright-report/', 'test-results/'],
@@ -43,25 +63,16 @@ const eslintConfig = [
           message: 'sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
         },
       ],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "MemberExpression[object.name='window'][property.name='sessionStorage']",
-          message: 'window.sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
-        },
-        {
-          selector: "MemberExpression[object.name='sessionStorage']",
-          message: 'sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
-        },
-        {
-          selector: "CallExpression[callee.object.name='sessionStorage']",
-          message: 'sessionStorageのメソッド（getItem、setItem、removeItem、clearなど）の使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
-        },
-        {
-          selector: "CallExpression[callee.object.object.name='window'][callee.object.property.name='sessionStorage']",
-          message: 'window.sessionStorageのメソッドの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...sessionStorageRestrictions],
+    },
+  },
+  // ページコンポーネントでは一時データ保存用のsessionStorage使用を許可
+  // 注意: 認証トークンの保存には絶対に使用しないこと（トーストやフォームデータの一時保存のみ）
+  {
+    files: ['src/app/**/page.tsx', 'src/components/organisms/ShopForm.tsx'],
+    rules: {
+      'no-restricted-globals': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
   {

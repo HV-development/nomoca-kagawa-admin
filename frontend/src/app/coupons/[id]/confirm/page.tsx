@@ -1,26 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponUpdateRequest, CouponStatus } from '@hv-development/schemas';
+import type { CouponUpdateRequest } from '@hv-development/schemas';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 interface CouponData {
+  couponId: string;
   couponName: string;
   couponContent: string;
   couponConditions: string;
-  publishStatus: string;
+  drinkType: string;
   imagePreview: string;
   imageUrl: string;
 }
 
-export default function CouponEditConfirmPage() {
+function CouponEditConfirmPageContent() {
   const searchParams = useSearchParams();
   const params = useParams();
   const router = useRouter();
@@ -30,23 +34,48 @@ export default function CouponEditConfirmPage() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
 
   useEffect(() => {
-    const data: CouponData = {
-      couponName: searchParams.get('couponName') || '',
-      couponContent: searchParams.get('couponContent') || '',
-      couponConditions: searchParams.get('couponConditions') || '',
-      publishStatus: searchParams.get('publishStatus') || '',
-      imagePreview: searchParams.get('imagePreview') || '',
-      imageUrl: searchParams.get('imageUrl') || '',
-    };
-    setCouponData(data);
-  }, [searchParams]);
+    // sessionStorageからデータを取得（画像データを含む）
+    try {
+      const storedData = sessionStorage.getItem('couponEditConfirmData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData) as CouponData;
+        setCouponData(parsedData);
+      } else {
+        // sessionStorageにデータがない場合、URLパラメータから取得（後方互換性のため）
+        const data: CouponData = {
+          couponId: couponId,
+          couponName: searchParams.get('couponName') || '',
+          couponContent: searchParams.get('couponContent') || '',
+          couponConditions: searchParams.get('couponConditions') || '',
+          drinkType: searchParams.get('drinkType') || '',
+          imagePreview: searchParams.get('imagePreview') || '',
+          imageUrl: searchParams.get('imageUrl') || '',
+        };
+        setCouponData(data);
+      }
+    } catch (error) {
+      console.error('データの取得に失敗しました:', error);
+      // エラー時は空のデータを設定
+      setCouponData({
+        couponId: couponId,
+        couponName: '',
+        couponContent: '',
+        couponConditions: '',
+        drinkType: '',
+        imagePreview: '',
+        imageUrl: '',
+      });
+    }
+  }, [searchParams, couponId]);
 
-  const getPublishStatusLabel = (status: string) => {
-    switch (status) {
-      case '1':
-        return '公開する';
-      case '2':
-        return '公開しない';
+  const getDrinkTypeLabel = (drinkType: string) => {
+    switch (drinkType) {
+      case 'alcohol':
+        return 'アルコール';
+      case 'soft_drink':
+        return 'ソフトドリンク';
+      case 'other':
+        return 'その他';
       default:
         return '';
     }
@@ -61,19 +90,32 @@ export default function CouponEditConfirmPage() {
     
     setIsSubmitting(true);
     try {
-      const updateData: CouponUpdateRequest = {
+      // imageUrlが空文字列の場合はプロパティ自体を含めない
+      const imageUrl = couponData.imageUrl && couponData.imageUrl.trim() !== '' ? couponData.imageUrl : undefined;
+      
+      const updateData: Partial<CouponUpdateRequest> = {
         title: couponData.couponName,
-        description: couponData.couponContent || null,
-        conditions: couponData.couponConditions || null,
-        imageUrl: couponData.imageUrl || null,
-        status: (couponData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+        description: couponData.couponContent || undefined,
+        conditions: couponData.couponConditions || undefined,
+        drinkType: (couponData.drinkType === 'alcohol' || couponData.drinkType === 'soft_drink' || couponData.drinkType === 'other') ? couponData.drinkType : undefined,
       };
       
+      // imageUrlが有効な場合のみ追加
+      if (imageUrl) {
+        updateData.imageUrl = imageUrl;
+      }
+      
       await apiClient.updateCoupon(couponId, updateData);
-      showSuccess('クーポン情報を更新しました');
-      setTimeout(() => {
-        router.push('/coupons');
-      }, 1500);
+      
+      // 更新成功後、sessionStorageをクリア
+      try {
+        sessionStorage.removeItem('couponEditConfirmData');
+      } catch (error) {
+        console.error('sessionStorageのクリアに失敗しました:', error);
+      }
+      
+      // 一覧画面に遷移（トーストは一覧画面で表示）
+      router.push('/coupons?toast=' + encodeURIComponent('クーポン情報を更新しました'));
     } catch (error) {
       console.error('クーポンの更新に失敗しました:', error);
       showError('クーポンの更新に失敗しました。もう一度お試しください。');
@@ -138,6 +180,15 @@ export default function CouponEditConfirmPage() {
               </div>
             )}
 
+            {couponData.drinkType && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ドリンク種別
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{getDrinkTypeLabel(couponData.drinkType)}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 クーポン画像
@@ -159,30 +210,20 @@ export default function CouponEditConfirmPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                公開 / 非公開
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getPublishStatusLabel(couponData.publishStatus)}</p>
-            </div>
           </div>
 
           {/* アクションボタン */}
           <div className="flex justify-center space-x-4 pt-6 mt-6 border-t border-gray-200">
             <Button
               variant="outline"
-              size="lg"
               onClick={handleModify}
-              className="px-8"
             >
               変更内容を修正する
             </Button>
             <Button
               variant="primary"
-              size="lg"
               onClick={handleUpdate}
               disabled={isSubmitting}
-              className="px-8"
             >
               {isSubmitting ? '更新中...' : '変更する'}
             </Button>
@@ -191,5 +232,13 @@ export default function CouponEditConfirmPage() {
       </div>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
+  );
+}
+
+export default function CouponEditConfirmPage() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <CouponEditConfirmPageContent />
+    </Suspense>
   );
 }

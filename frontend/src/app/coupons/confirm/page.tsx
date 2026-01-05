@@ -19,6 +19,7 @@ interface CouponData {
   couponName: string;
   couponContent: string;
   couponConditions: string;
+  drinkType: string;
   publishStatus: string;
   imagePreview: string;
   imageUrl: string;
@@ -32,30 +33,57 @@ function CouponConfirmPageContent() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
 
   useEffect(() => {
-    const data: CouponData = {
-      shopId: searchParams.get('shopId') || '',
-      couponName: searchParams.get('couponName') || '',
-      couponContent: searchParams.get('couponContent') || '',
-      couponConditions: searchParams.get('couponConditions') || '',
-      publishStatus: searchParams.get('publishStatus') || '',
-      imagePreview: searchParams.get('imagePreview') || '',
-      imageUrl: searchParams.get('imageUrl') || '',
-    };
-    setCouponData(data);
+    // sessionStorageからデータを取得（画像データを含む）
+    try {
+      const storedData = sessionStorage.getItem('couponConfirmData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData) as CouponData;
+        setCouponData(parsedData);
+      } else {
+        // sessionStorageにデータがない場合、URLパラメータから取得（後方互換性のため）
+        const data: CouponData = {
+          shopId: searchParams.get('shopId') || '',
+          couponName: searchParams.get('couponName') || '',
+          couponContent: searchParams.get('couponContent') || '',
+          couponConditions: searchParams.get('couponConditions') || '',
+          drinkType: searchParams.get('drinkType') || '',
+          publishStatus: searchParams.get('publishStatus') || '',
+          imagePreview: searchParams.get('imagePreview') || '',
+          imageUrl: searchParams.get('imageUrl') || '',
+        };
+        setCouponData(data);
+      }
+    } catch (error) {
+      console.error('データの取得に失敗しました:', error);
+      // エラー時は空のデータを設定
+      setCouponData({
+        shopId: '',
+        couponName: '',
+        couponContent: '',
+        couponConditions: '',
+        drinkType: '',
+        publishStatus: '',
+        imagePreview: '',
+        imageUrl: '',
+      });
+    }
   }, [searchParams]);
 
-  const getPublishStatusLabel = (status: string) => {
-    switch (status) {
-      case '1':
-        return '公開する';
-      case '2':
-        return '公開しない';
+  const getDrinkTypeLabel = (drinkType: string) => {
+    switch (drinkType) {
+      case 'alcohol':
+        return 'アルコール';
+      case 'soft_drink':
+        return 'ソフトドリンク';
+      case 'other':
+        return 'その他';
       default:
         return '';
     }
   };
 
   const handleModify = () => {
+    // sessionStorageのデータは保持したまま戻る（修正画面で再利用可能）
     router.back();
   };
 
@@ -69,16 +97,23 @@ function CouponConfirmPageContent() {
         title: couponData.couponName,
         description: couponData.couponContent || null,
         conditions: couponData.couponConditions || null,
+        drinkType: (couponData.drinkType === 'alcohol' || couponData.drinkType === 'soft_drink' || couponData.drinkType === 'other') ? couponData.drinkType : null,
         imageUrl: couponData.imageUrl || null,
-        status: (couponData.publishStatus === '1' ? 'approved' : 'pending') as CouponStatus,
-        isPublic: couponData.publishStatus === '1'
+        status: 'pending' as CouponStatus,
+        isPublic: false
       };
       
       await apiClient.createCoupon(createData);
-      showSuccess('クーポンを登録しました');
-      setTimeout(() => {
-        router.push('/coupons');
-      }, 1500);
+      
+      // 登録成功後、sessionStorageをクリア
+      try {
+        sessionStorage.removeItem('couponConfirmData');
+      } catch (error) {
+        console.error('sessionStorageのクリアに失敗しました:', error);
+      }
+      
+      // 一覧画面に遷移（トーストは一覧画面で表示）
+      router.push('/coupons?toast=' + encodeURIComponent('クーポンを登録しました'));
     } catch (error) {
       console.error('クーポンの作成に失敗しました:', error);
       showError('クーポンの作成に失敗しました。もう一度お試しください。');
@@ -143,6 +178,15 @@ function CouponConfirmPageContent() {
               </div>
             )}
 
+            {couponData.drinkType && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ドリンク種別
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{getDrinkTypeLabel(couponData.drinkType)}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 クーポン画像
@@ -163,32 +207,21 @@ function CouponConfirmPageContent() {
                 )}
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                公開 / 非公開
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getPublishStatusLabel(couponData.publishStatus)}</p>
-            </div>
           </div>
 
           {/* アクションボタン */}
           <div className="flex justify-center space-x-4 pt-6 mt-6 border-t border-gray-200">
             <Button
               variant="outline"
-              size="lg"
               onClick={handleModify}
-              className="px-8"
             >
               登録内容を修正する
             </Button>
             <Button
               variant="primary"
-              size="lg"
               onClick={handleRegister}
               disabled={isSubmitting}
-              className="px-8"
-              >
+            >
               {isSubmitting ? '登録中...' : '登録する'}
             </Button>
           </div>

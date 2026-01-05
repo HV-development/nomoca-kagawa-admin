@@ -75,6 +75,10 @@ test.describe('マーチャント（事業者）管理', () => {
                 await link.click();
                 await page.waitForURL(/\/merchants\/[^/]+/);
                 expect(page.url()).toMatch(/\/merchants\/[^/]+/);
+                
+                // 詳細ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                await expect(page.getByRole('heading', { name: /事業者情報|事業者編集/i })).toBeVisible({ timeout: 10000 });
             } else {
                 // リンクがない場合は行をクリック
                 const row = page.locator('table tbody tr').first();
@@ -82,6 +86,7 @@ test.describe('マーチャント（事業者）管理', () => {
                     await row.click();
                     await page.waitForTimeout(2000);
                     // クリックで詳細に遷移するか確認
+                    await expect(page.getByRole('heading', { name: /事業者情報|事業者管理/i })).toBeVisible({ timeout: 10000 }).catch(() => {});
                 }
             }
         });

@@ -12,7 +12,6 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useAuth } from '@/components/contexts/auth-context';
 import { PREFECTURES } from '@/lib/constants/japan';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
-import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -29,6 +28,35 @@ export default function MerchantNewPage() {
       return;
     }
   }, [auth, router]);
+  
+  // 確認画面から戻ってきた場合、sessionStorageからデータを復元
+  useEffect(() => {
+    try {
+      const storedData = sessionStorage.getItem('merchantConfirmData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        setFormData({
+          name: parsedData.name || '',
+          nameKana: parsedData.nameKana || '',
+          representativeNameLast: parsedData.representativeNameLast || '',
+          representativeNameFirst: parsedData.representativeNameFirst || '',
+          representativeNameLastKana: parsedData.representativeNameLastKana || '',
+          representativeNameFirstKana: parsedData.representativeNameFirstKana || '',
+          representativePhone: parsedData.representativePhone || '',
+          email: parsedData.email || '',
+          postalCode: parsedData.postalCode || '',
+          prefecture: parsedData.prefecture || '',
+          city: parsedData.city || '',
+          address1: parsedData.address1 || '',
+          address2: parsedData.address2 || '',
+          applications: [],
+        });
+        setIssueAccount(parsedData.issueAccount || false);
+      }
+    } catch (error) {
+      console.error('sessionStorageからのデータ復元に失敗しました:', error);
+    }
+  }, []);
   
   // フォームデータに追加のフィールドを含める
   const [formData, setFormData] = useState<MerchantFormData & { email: string }>({
@@ -49,7 +77,6 @@ export default function MerchantNewPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
   const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
   
@@ -188,7 +215,7 @@ export default function MerchantNewPage() {
   };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     setServerError('');
     
@@ -196,92 +223,34 @@ export default function MerchantNewPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      // emailフィールドをaccountEmailにマッピング
-      // APIスキーマに合わせてフィールドをマッピング
-      const requestData = {
-        accountEmail: formData.email,
-        name: formData.name,
-        nameKana: formData.nameKana,
-        representativeNameLast: formData.representativeNameLast,
-        representativeNameFirst: formData.representativeNameFirst,
-        representativeNameLastKana: formData.representativeNameLastKana,
-        representativeNameFirstKana: formData.representativeNameFirstKana,
-        representativePhone: formData.representativePhone,
-        postalCode: formData.postalCode,
-        prefecture: formData.prefecture,
-        city: formData.city,
-        address1: formData.address1,
-        address2: formData.address2 || undefined,
-        issueAccount, // アカウント発行フラグ
-      };
+    // sessionStorageにデータを保存
+    const confirmData = {
+      email: formData.email,
+      name: formData.name,
+      nameKana: formData.nameKana,
+      representativeNameLast: formData.representativeNameLast,
+      representativeNameFirst: formData.representativeNameFirst,
+      representativeNameLastKana: formData.representativeNameLastKana,
+      representativeNameFirstKana: formData.representativeNameFirstKana,
+      representativePhone: formData.representativePhone,
+      postalCode: formData.postalCode,
+      prefecture: formData.prefecture,
+      city: formData.city,
+      address1: formData.address1,
+      address2: formData.address2 || '',
+      issueAccount,
+    };
 
-      await apiClient.createMerchant(requestData);
-      
-      // 成功時の処理
-      router.push('/merchants');
-      
+    try {
+      sessionStorage.setItem('merchantConfirmData', JSON.stringify(confirmData));
     } catch (error) {
-      console.error('登録エラー:', error);
-      
-      // apiClientのエラーレスポンスを処理
-      if (error instanceof Error && 'response' in error) {
-        const apiError = error as Error & { response?: { status: number; data: unknown } };
-        const status = apiError.response?.status;
-        const errorData = apiError.response?.data as { error?: { details?: Array<{ path: string[]; message: string }>; message?: string }; errors?: Record<string, string>; message?: string } | undefined;
-        
-        if (status === 400) {
-          // パラメータエラーの場合
-          if (errorData?.error?.details) {
-            // 新しいエラー形式: { error: { details: [...] } }
-            const fieldErrors: Record<string, string> = {};
-            errorData.error.details.forEach((detail) => {
-              if (detail.path && detail.path.length > 0) {
-                const fieldName = detail.path[0];
-                fieldErrors[fieldName] = detail.message;
-              }
-            });
-            setErrors(fieldErrors);
-            
-            // 最初のエラーフィールドにスクロール
-            const firstErrorField = Object.keys(fieldErrors)[0];
-            if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
-              const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
-              element?.focus();
-              element?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-              });
-            }
-          } else if (errorData?.errors) {
-            // 古いエラー形式: { errors: {...} }
-            setErrors(errorData.errors);
-            // 最初のエラーフィールドにスクロール
-            const firstErrorField = Object.keys(errorData.errors)[0];
-            if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
-              const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
-              element?.focus();
-              element?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-              });
-            }
-          } else {
-            setServerError(errorData?.error?.message || errorData?.message || '入力内容に誤りがあります');
-          }
-        } else {
-          // その他のエラーの場合（409 Conflictなど）
-          const errorMessage = errorData?.error?.message || errorData?.message || error.message || '登録中にエラーが発生しました';
-          showError(errorMessage);
-        }
-      } else {
-        showError('登録中にエラーが発生しました');
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error('sessionStorageへの保存に失敗しました:', error);
+      showError('データの保存に失敗しました。もう一度お試しください。');
+      return;
     }
+
+    // 確認画面に遷移
+    router.push('/merchants/confirm');
   };
 
   const getCharacterCount = (field: keyof MerchantFormData, maxLength: number) => {
@@ -325,7 +294,7 @@ export default function MerchantNewPage() {
         )}
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning>
+        <form onSubmit={handleConfirm} className="space-y-6" suppressHydrationWarning>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
@@ -684,9 +653,8 @@ export default function MerchantNewPage() {
             <Button
               type="submit"
               variant="primary"
-              disabled={isSubmitting}
             >
-              {isSubmitting ? '登録中...' : '登録'}
+              登録内容を確認する
             </Button>
           </div>
         </form>

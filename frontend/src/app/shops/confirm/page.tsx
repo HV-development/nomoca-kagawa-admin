@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -9,6 +9,7 @@ import Icon from '@/components/atoms/Icon';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
+import type { ShopCreateRequest, CouponStatus } from '@hv-development/schemas';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 
 export const dynamic = 'force-dynamic';
@@ -64,10 +65,8 @@ interface ShopConfirmData {
   sceneNames: Record<string, string>;
 }
 
-function ShopEditConfirmContent() {
-  const params = useParams();
+function ShopConfirmContent() {
   const router = useRouter();
-  const shopId = params.id as string;
   const { toasts, removeToast, showError } = useToast();
   const [shopData, setShopData] = useState<ShopConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,25 +77,22 @@ function ShopEditConfirmContent() {
       const storedData = sessionStorage.getItem('shopConfirmData');
       if (storedData) {
         const parsedData = JSON.parse(storedData) as ShopConfirmData;
-        // 編集確認画面なのでisEditがtrueかつshopIdが一致することを確認
-        if (parsedData.isEdit && parsedData.shopId === shopId) {
+        // 新規登録確認画面なのでisEditがfalseであることを確認
+        if (!parsedData.isEdit) {
           setShopData(parsedData);
-        } else if (!parsedData.isEdit) {
-          // 新規登録の場合は登録確認画面に遷移
-          router.push('/shops/confirm');
         } else {
-          // shopIdが一致しない場合は編集画面に戻る
-          router.push(`/shops/${shopId}/edit`);
+          // 編集モードの場合は編集確認画面に遷移
+          router.push(`/shops/${parsedData.shopId}/confirm`);
         }
       } else {
-        // データがない場合は編集画面に戻る
-        router.push(`/shops/${shopId}/edit`);
+        // データがない場合は登録画面に戻る
+        router.push('/shops/new');
       }
     } catch (error) {
       console.error('データの取得に失敗しました:', error);
-      router.push(`/shops/${shopId}/edit`);
+      router.push('/shops/new');
     }
-  }, [shopId, router]);
+  }, [router]);
 
   const handleModify = () => {
     // sessionStorageのデータは保持したまま戻る
@@ -108,21 +104,7 @@ function ShopEditConfirmContent() {
     return option?.label || smokingType;
   };
 
-  const getStatusLabel = (status: string) => {
-    const statusLabels: Record<string, string> = {
-      registering: '登録中',
-      collection_requested: '情報収集依頼済み',
-      approval_pending: '承認待ち',
-      promotional_materials_preparing: '宣材準備中',
-      promotional_materials_shipping: '宣材発送中',
-      operating: '営業中',
-      suspended: '停止中',
-      terminated: '終了',
-    };
-    return statusLabels[status] || status;
-  };
-
-  const handleUpdate = async () => {
+  const handleRegister = async () => {
     if (!shopData) return;
     
     setIsSubmitting(true);
@@ -136,14 +118,12 @@ function ShopEditConfirmContent() {
       ].filter(Boolean).join('');
       
       // アカウントメールの設定
-      let accountEmail: string | null | undefined;
+      let accountEmail: string | null = null;
       if (shopData.createAccount) {
         accountEmail = shopData.accountEmail || null;
-      } else {
-        accountEmail = null;
       }
 
-      const submitData = {
+      const submitData: ShopCreateRequest = {
         merchantId: shopData.merchantId,
         genreId: shopData.genreId,
         accountEmail,
@@ -156,32 +136,31 @@ function ShopEditConfirmContent() {
         address1: shopData.address1,
         address2: shopData.address2 || undefined,
         address: fullAddress,
-        latitude: Number(shopData.latitude),
-        longitude: Number(shopData.longitude),
+        latitude: shopData.latitude,
+        longitude: shopData.longitude,
         description: shopData.description || undefined,
         details: shopData.details || undefined,
         holidays: shopData.holidaysForSubmit || undefined,
-        smokingType: shopData.smokingType || undefined,
-        homepageUrl: shopData.homepageUrl || null,
-        couponUsageStart: shopData.couponUsageStart || null,
-        couponUsageEnd: shopData.couponUsageEnd || null,
-        couponUsageDays: shopData.couponUsageDays || null,
+        smokingType: (shopData.smokingType as "non_smoking" | "separated" | "smoking_allowed" | "electronic_only" | undefined) || undefined,
+        homepageUrl: shopData.homepageUrl || undefined,
+        couponUsageStart: shopData.couponUsageStart || undefined,
+        couponUsageEnd: shopData.couponUsageEnd || undefined,
+        couponUsageDays: shopData.couponUsageDays || undefined,
         paymentMydigi: shopData.paymentMydigi,
         paymentCash: shopData.paymentCash,
-        paymentCredit: shopData.paymentCreditJson,
-        paymentCode: shopData.paymentCodeJson,
-        paymentApps: { mydigi: shopData.paymentMydigi ?? false },
+        paymentCredit: shopData.paymentCreditJson as unknown as string,
+        paymentCode: shopData.paymentCodeJson as unknown as string,
         area: shopData.area || undefined,
-        status: shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-        images: shopData.existingImages,
+        status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
+        password: shopData.createAccount ? shopData.password : undefined,
       };
 
-      // 店舗を更新
-      await apiClient.updateShop(shopId, submitData);
+      // 店舗を作成
+      const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
       
-      // 更新成功後、sessionStorageをクリア
+      // 登録成功後、sessionStorageをクリア
       try {
         sessionStorage.removeItem('shopConfirmData');
       } catch (error) {
@@ -191,12 +170,12 @@ function ShopEditConfirmContent() {
       // リダイレクト先を決定
       const fallbackRedirect = shopData.fallbackRedirect || '/shops';
       const separator = fallbackRedirect.includes('?') ? '&' : '?';
-      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent('店舗を更新しました')}`);
+      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent('店舗を作成しました')}`);
     } catch (error) {
-      console.error('店舗の更新に失敗しました:', error);
+      console.error('店舗の登録に失敗しました:', error);
       
       // エラーメッセージを取得
-      let errorMessage = '店舗の更新に失敗しました。もう一度お試しください。';
+      let errorMessage = '店舗の登録に失敗しました。もう一度お試しください。';
       if (error && typeof error === 'object' && 'response' in error) {
         const apiError = error as { response?: { status?: number; data?: { message?: string; error?: { message?: string } } } };
         if (apiError.response?.status === 409) {
@@ -232,7 +211,7 @@ function ShopEditConfirmContent() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">店舗更新内容確認</h1>
+              <h1 className="text-2xl font-bold text-gray-900">店舗登録内容確認</h1>
               <p className="text-gray-600">
                 入力内容を確認してください
               </p>
@@ -301,11 +280,6 @@ function ShopEditConfirmContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">経度</label>
                 <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.longitude}</p>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getStatusLabel(shopData.status)}</p>
             </div>
           </div>
         </div>
@@ -468,12 +442,10 @@ function ShopEditConfirmContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
                 <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.accountEmail}</p>
               </div>
-              {!shopData.hasExistingAccount && shopData.password && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{'*'.repeat(8)}</p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{'*'.repeat(8)}</p>
+              </div>
             </div>
           </div>
         )}
@@ -484,14 +456,14 @@ function ShopEditConfirmContent() {
             variant="outline"
             onClick={handleModify}
           >
-            更新内容を修正する
+            登録内容を修正する
           </Button>
           <Button
             variant="primary"
-            onClick={handleUpdate}
+            onClick={handleRegister}
             disabled={isSubmitting}
           >
-            {isSubmitting ? '更新中...' : '更新する'}
+            {isSubmitting ? '登録中...' : '登録する'}
           </Button>
         </div>
       </div>
@@ -500,7 +472,7 @@ function ShopEditConfirmContent() {
   );
 }
 
-export default function ShopEditConfirmPage() {
+export default function ShopConfirmPage() {
   return (
     <Suspense fallback={
       <AdminLayout>
@@ -509,7 +481,8 @@ export default function ShopEditConfirmPage() {
         </div>
       </AdminLayout>
     }>
-      <ShopEditConfirmContent />
+      <ShopConfirmContent />
     </Suspense>
   );
 }
+

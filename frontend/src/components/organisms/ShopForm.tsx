@@ -1057,107 +1057,54 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         return;
       }
 
-      let uploadedImageUrls: string[] = [];
-
-      // 編集時のみ画像を先にアップロード
-      if (isEdit && shopId) {
-        // merchantIdが設定されていることを確認
-        if (!formData.merchantId || formData.merchantId.trim() === '') {
-          throw new Error('事業者IDが設定されていません。画像をアップロードできません。');
-        }
-        uploadedImageUrls = await uploadImages(shopId, formData.merchantId);
-      }
-
-      // 住所フィールドを結合
-      const fullAddress = [
-        formData.prefecture,
-        formData.city,
-        formData.address1,
-        formData.address2
-      ].filter(Boolean).join('');
+      // バリデーション成功 - 確認画面に遷移
+      // ジャンル名を取得
+      const selectedGenre = genres.find(g => g.id === formData.genreId);
       
-      // 画像URLを結合（既存画像 + 新規アップロード画像）
-      const allImageUrls = [...existingImages, ...uploadedImageUrls];
-      // 画面上の既存画像も即時更新（古い世代で404になるのを避ける）
-      if (uploadedImageUrls.length > 0) {
-        setExistingImages(allImageUrls);
-      }
-      // アカウントメールの設定
-      let accountEmail: string | null | undefined;
-      if (formData.createAccount) {
-        // アカウント発行チェックがONの場合
-        accountEmail = formData.accountEmail || null;
-      } else {
-        // アカウント発行チェックがOFFの場合はnullに設定（アカウント無効化）
-        accountEmail = null;
-      }
-
-      // クレジットカードとQRコードをJSON形式で送信データに追加
-      // 空文字はnullに正規化（未入力と区別し、明示的にDBをクリアできるようにする）
-      const normalizedHomepageUrl = (formData.homepageUrl && formData.homepageUrl.trim() !== '') ? formData.homepageUrl.trim() : null;
-      const normalizedCouponStart = (formData.couponUsageStart && formData.couponUsageStart !== '') ? formData.couponUsageStart : null;
-      const normalizedCouponEnd = (formData.couponUsageEnd && formData.couponUsageEnd !== '') ? formData.couponUsageEnd : null;
-      const normalizedCouponDays = (formData.couponUsageDays && formData.couponUsageDays.trim() !== '') ? formData.couponUsageDays.trim() : null;
-
-      const submitData = {
+      // 確認画面用のデータを準備
+      const confirmData = {
+        // 基本データ
         ...formData,
-        accountEmail,
-        address: fullAddress,  // 結合した住所
-        // latitude/longitudeを文字列に変換
-        latitude: formData.latitude ? (isEdit ? Number(formData.latitude) : String(formData.latitude)) : undefined,
-        longitude: formData.longitude ? (isEdit ? Number(formData.longitude) : String(formData.longitude)) : undefined,
-        images: allImageUrls,  // 画像削除時にも空配列を送信
-        holidays: holidaysForSubmit,
-        sceneIds: selectedScenes,  // 利用シーンの配列を追加
-        customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
-        paymentCredit: paymentCreditJson,
-        paymentCode: paymentCodeJson,
-        // paymentApps: mydigi用の決済方法をJSON形式で送信
-        paymentApps: { mydigi: formData.paymentMydigi ?? false },
-        homepageUrl: normalizedHomepageUrl,
-        couponUsageStart: normalizedCouponStart,
-        couponUsageEnd: normalizedCouponEnd,
-        couponUsageDays: normalizedCouponDays,
+        // 追加データ
+        shopId: shopId || null,
+        isEdit,
+        merchantName,
+        genreName: selectedGenre?.name || '',
+        selectedScenes,
+        customSceneText: isOtherSceneSelected ? customSceneText : '',
+        selectedHolidays,
+        customHolidayText: isHolidayOtherSelected ? customHolidayText : '',
+        selectedCreditBrands,
+        customCreditText: isCreditOtherSelected ? customCreditText : '',
+        selectedQrBrands,
+        customQrText: isQrOtherSelected ? customQrText : '',
+        holidaysForSubmit,
+        paymentCreditJson,
+        paymentCodeJson,
+        existingImages,
+        imagePreviews,
+        hasExistingAccount,
+        fallbackRedirect,
+        // シーン名のマッピング用
+        sceneNames: scenes.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>),
       };
 
-      if (isEdit && shopId) {
-        // 編集時：merchantIdが設定されていることを確認
-        if (!formData.merchantId || formData.merchantId.trim() === '') {
-          throw new Error('事業者IDが設定されていません');
-        }
-
-        await apiClient.updateShop(shopId, submitData);
-        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
-      } else {
-        // 新規作成時は店舗を先に作成
-        const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
-        
-        // 作成された店舗のIDを使って画像をアップロード
-        // merchantIdはcreatedShopから取得（formData.merchantIdが空の場合でも対応）
-        const targetMerchantId = createdShop?.merchantId || formData.merchantId;
-
-        if (imagePreviews.length > 0 && createdShop?.id) {
-          if (!targetMerchantId || targetMerchantId.trim() === '') {
-            throw new Error('事業者IDが設定されていません。画像をアップロードできません。');
-          }
-
-          const newUploadedImageUrls = await uploadImages(createdShop.id, targetMerchantId);
-
-          // 画像をアップロードした場合は店舗を更新
-          if (newUploadedImageUrls.length > 0) {
-            await apiClient.updateShop(createdShop.id, {
-              images: newUploadedImageUrls,
-            });
-          }
-        }
-
-        // 遷移先でトーストを表示するため、ここではshowSuccessを呼ばない
+      // sessionStorageにデータを保存
+      try {
+        sessionStorage.setItem('shopConfirmData', JSON.stringify(confirmData));
+      } catch (error) {
+        console.error('sessionStorageへの保存に失敗しました:', error);
+        showError('データの保存に失敗しました。もう一度お試しください。');
+        setIsSubmitting(false);
+        return;
       }
 
-      // リダイレクト先を決定（トーストメッセージをクエリパラメータで渡す）
-      const toastMessage = isEdit ? '店舗を更新しました' : '店舗を作成しました';
-      const separator = fallbackRedirect.includes('?') ? '&' : '?';
-      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent(toastMessage)}`);
+      // 確認画面に遷移
+      if (isEdit && shopId) {
+        router.push(`/shops/${shopId}/confirm`);
+      } else {
+        router.push('/shops/confirm');
+      }
     } catch (err: unknown) {
       const error = err as Error & {
         response?: {
@@ -1184,7 +1131,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }));
         showError(message);
       } else {
-        showError(isEdit ? '店舗更新に失敗しました' : '店舗作成に失敗しました');
+        showError('エラーが発生しました');
       }
     } finally {
       setIsSubmitting(false);
@@ -2097,11 +2044,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               type="submit" 
               variant="primary" 
               disabled={isSubmitting}
-              onClick={() => {
-                // Submit button clicked
-              }}
             >
-              {isSubmitting ? '保存中...' : (isEdit ? '更新' : '作成')}
+              {isSubmitting ? '処理中...' : (isEdit ? '更新内容を確認する' : '登録内容を確認する')}
             </Button>
           </div>
         </div>

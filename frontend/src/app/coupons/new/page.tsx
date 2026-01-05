@@ -89,7 +89,51 @@ function CouponNewPageContent() {
   const [isShopModalOpen, setIsShopModalOpen] = useState(false);
 
   useEffect(() => {
-    // URLパラメータから値を取得してフォームに設定
+    // sessionStorageからデータを復元（確認画面から戻った場合）
+    const restoreFromSessionStorage = async () => {
+      try {
+        const storedData = sessionStorage.getItem('couponConfirmData');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          
+          // フォームデータを復元
+          setFormData(prev => ({
+            ...prev,
+            shopId: parsedData.shopId || prev.shopId,
+            couponName: parsedData.couponName || prev.couponName,
+            couponContent: parsedData.couponContent || prev.couponContent,
+            couponConditions: parsedData.couponConditions || prev.couponConditions,
+            drinkType: parsedData.drinkType || prev.drinkType,
+            publishStatus: parsedData.publishStatus === '1' ? 'active' : parsedData.publishStatus === '2' ? 'inactive' : prev.publishStatus,
+            imagePreview: parsedData.imagePreview || prev.imagePreview,
+            imageUrl: parsedData.imageUrl || prev.imageUrl,
+            couponImage: null, // ファイルは復元できない
+          }));
+          
+          // 店舗情報を復元
+          if (parsedData.shopId) {
+            try {
+              const shopData = await apiClient.getShop(parsedData.shopId) as Shop;
+              setSelectedShop(shopData);
+              
+              if (shopData.merchant) {
+                setSelectedMerchant({
+                  id: shopData.merchant.id,
+                  name: shopData.merchant.name,
+                  account: { email: '' }
+                });
+              }
+            } catch (error) {
+              console.error('店舗情報の取得に失敗しました:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('sessionStorageからのデータ復元に失敗しました:', error);
+      }
+    };
+    
+    // URLパラメータから値を取得してフォームに設定（後方互換性のため）
     if (searchParams) {
       const urlData = {
         couponName: searchParams.get('couponName') || '',
@@ -108,8 +152,8 @@ function CouponNewPageContent() {
       }
     }
     
-    // メモリ内stateのみを使用（ページリロードで失われることを許容）
-    // sessionStorageは使用しない
+    // sessionStorageからデータを復元
+    restoreFromSessionStorage();
   }, [searchParams]);
   
   // アカウントタイプに応じた初期化
@@ -244,6 +288,42 @@ function CouponNewPageContent() {
     }
   };
 
+  const scrollToFirstError = (errorKeys: string[]) => {
+    // エラーの優先順位に従ってスクロール
+    const fieldOrder = ['shopId', 'couponName', 'couponContent', 'drinkType'];
+    
+    for (const field of fieldOrder) {
+      if (errorKeys.includes(field)) {
+        let element: HTMLElement | null = null;
+        
+        switch (field) {
+          case 'shopId':
+            // 店舗選択エラーの場合、店舗選択セクションにスクロール
+            element = document.querySelector('[data-field="shopId"]') as HTMLElement;
+            break;
+          case 'couponName':
+            element = document.getElementById('couponName');
+            break;
+          case 'couponContent':
+            element = document.getElementById('couponContent');
+            break;
+          case 'drinkType':
+            // ドリンク種別の場合、ドリンク種別セクションにスクロール
+            element = document.querySelector('[data-field="drinkType"]') as HTMLElement;
+            break;
+        }
+        
+        if (element) {
+          setTimeout(() => {
+            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element?.focus();
+          }, 100);
+          break;
+        }
+      }
+    }
+  };
+
   const validateAllFields = (): boolean => {
     const newErrors: CouponFormErrors = {};
 
@@ -270,12 +350,49 @@ function CouponNewPageContent() {
     }
 
     setErrors(newErrors);
+    
+    // エラーがある場合、最初のエラーフィールドにスクロール
+    if (Object.keys(newErrors).length > 0) {
+      scrollToFirstError(Object.keys(newErrors));
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     if (validateAllFields()) {
+      // 管理者アカウントの場合は確認画面に遷移
+      if (!isMerchantAccount) {
+        // 画像プレビュー（base64データ）はURLパラメータが長くなりすぎるため、sessionStorageに保存
+        const confirmData = {
+          shopId: formData.shopId,
+          couponName: formData.couponName,
+          couponContent: formData.couponContent,
+          couponConditions: formData.couponConditions || '',
+          drinkType: formData.drinkType || '',
+          publishStatus: formData.publishStatus === 'active' ? '1' : '2',
+          imagePreview: formData.imagePreview || '',
+          imageUrl: formData.imageUrl || '',
+        };
+        
+        // sessionStorageに保存（画像データを含む）
+        try {
+          sessionStorage.setItem('couponConfirmData', JSON.stringify(confirmData));
+        } catch (error) {
+          console.error('sessionStorageへの保存に失敗しました:', error);
+          showError('データの保存に失敗しました。もう一度お試しください。');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // URLパラメータは最小限（画像データは除外）
+        router.push('/coupons/confirm');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // 事業者アカウントの場合は直接申請
       try {
         // まず画像なしでクーポンを作成
         const couponData: CouponCreateRequest = {
@@ -372,6 +489,33 @@ function CouponNewPageContent() {
   };
 
   const handleCancel = () => {
+    // sessionStorageをクリア
+    try {
+      sessionStorage.removeItem('couponConfirmData');
+    } catch (error) {
+      console.error('sessionStorageのクリアに失敗しました:', error);
+    }
+    
+    // フォームデータをリセット
+    setFormData({
+      shopId: '',
+      couponName: '',
+      couponContent: '',
+      couponConditions: '',
+      drinkType: '',
+      couponImage: null,
+      imagePreview: '',
+      imageUrl: '',
+      publishStatus: 'active',
+    });
+    
+    // エラーをクリア
+    setErrors({});
+    
+    // 選択状態をリセット
+    setSelectedMerchant(null);
+    setSelectedShop(null);
+    
     router.push('/coupons');
   };
 
@@ -438,7 +582,7 @@ function CouponNewPageContent() {
                 </div>
                 
                 {/* 管理者：店舗選択 */}
-                <div>
+                <div data-field="shopId">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     店舗 <span className="text-red-500">*</span>
                   </label>
@@ -477,7 +621,7 @@ function CouponNewPageContent() {
                 </div>
                 
                 {/* 事業者アカウント：店舗選択 */}
-                <div>
+                <div data-field="shopId">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     店舗名 <span className="text-red-500">*</span>
                   </label>
@@ -512,7 +656,7 @@ function CouponNewPageContent() {
                 </div>
                 
                 {/* 店舗アカウント：店舗名表示（変更不可） */}
-                <div>
+                <div data-field="shopId">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     店舗 <span className="text-red-500">*</span>
                   </label>
@@ -583,7 +727,7 @@ function CouponNewPageContent() {
             </div>
 
             {/* ドリンク種別 */}
-            <div>
+            <div data-field="drinkType">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ドリンク種別 <span className="text-red-500">*</span>
               </label>

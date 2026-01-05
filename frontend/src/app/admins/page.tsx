@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -17,6 +18,34 @@ export const dynamic = 'force-dynamic';
 
 export default function AdminsPage() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // URLパラメータまたはsessionStorageからトーストメッセージを表示（重複防止）
+  const toastShownRef = useRef(false);
+  useEffect(() => {
+    if (toastShownRef.current) return;
+    
+    // URLパラメータからトースト
+    const toastParam = searchParams?.get('toast');
+    if (toastParam) {
+      toastShownRef.current = true;
+      showSuccess(decodeURIComponent(toastParam));
+      const url = new URL(window.location.href);
+      url.searchParams.delete('toast');
+      router.replace(url.pathname + url.search, { scroll: false });
+      return;
+    }
+    
+    // sessionStorageからトースト
+    const storedToast = sessionStorage.getItem('adminToast');
+    if (storedToast) {
+      toastShownRef.current = true;
+      showSuccess(storedToast);
+      sessionStorage.removeItem('adminToast');
+    }
+  }, [searchParams, showSuccess, router]);
+  
   const [searchForm, setSearchForm] = useState<AdminSearchFormData>({
     accountId: '',
     name: '',

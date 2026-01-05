@@ -205,6 +205,24 @@ function CouponsPageContent() {
     appliedPublicStatus,
   ]);
 
+  // URLパラメータからトーストメッセージを表示（データ取得完了後、重複防止）
+  const toastShownRef = useRef(false);
+  useEffect(() => {
+    // データ取得が完了してからトーストを表示
+    if (!loading) {
+      const toast = searchParams?.get('toast');
+      if (toast && !toastShownRef.current) {
+        toastShownRef.current = true;
+        showSuccess(toast);
+        // トーストパラメータをURLから削除
+        const newParams = new URLSearchParams(searchParams?.toString() || '');
+        newParams.delete('toast');
+        const newUrl = newParams.toString() ? `/coupons?${newParams.toString()}` : '/coupons';
+        router.replace(newUrl, { scroll: false });
+      }
+    }
+  }, [loading, searchParams, showSuccess, router]);
+
   const filteredCoupons = coupons;
 
   const handleInputChange = useCallback((field: keyof CouponSearchFormData, value: string) => {

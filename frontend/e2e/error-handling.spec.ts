@@ -117,7 +117,7 @@ test.describe('エラーハンドリング - Admin', () => {
                     const _hasError = await errorElements.count() > 0;
                     const hasInvalid = await invalidEmail.count() > 0;
 
-                    expect(hasError || hasInvalid).toBeTruthy();
+                    expect(_hasError || hasInvalid).toBeTruthy();
                 }
             }
         });

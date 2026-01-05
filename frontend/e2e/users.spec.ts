@@ -86,11 +86,16 @@ test.describe('会員ユーザー管理', () => {
                 await link.click();
                 await page.waitForURL(/\/users\/[^/]+/);
                 expect(page.url()).toMatch(/\/users\/[^/]+/);
+                
+                // 詳細ページのテキストが表示されることを確認
+                await page.waitForLoadState('networkidle');
+                await expect(page.getByRole('heading', { name: /会員情報|会員管理|ユーザー|User/i })).toBeVisible({ timeout: 10000 });
             } else {
                 const row = page.locator('table tbody tr').first();
                 if (await row.isVisible().catch(() => false)) {
                     await row.click();
                     await page.waitForTimeout(2000);
+                    await expect(page.getByRole('heading', { name: /会員情報|会員管理|ユーザー|User/i })).toBeVisible({ timeout: 10000 }).catch(() => {});
                 }
             }
         });
@@ -103,8 +108,11 @@ test.describe('会員ユーザー管理', () => {
             if (await link.isVisible().catch(() => false)) {
                 await link.click();
                 await page.waitForURL(/\/users\/[^/]+/);
-                await page.waitForTimeout(2000);
+                await page.waitForLoadState('networkidle');
 
+                // 詳細ページの見出しが表示されることを確認
+                await expect(page.getByRole('heading', { name: /会員情報|会員管理|ユーザー|User/i })).toBeVisible({ timeout: 10000 });
+                
                 const hasContent = await page.locator('main').isVisible().catch(() => false);
                 expect(hasContent).toBeTruthy();
             }

@@ -63,15 +63,24 @@ test.describe('ロール別権限テスト', () => {
 
             try {
                 // ログイン成功を確認（ログインページから離れているか）
-                await page.waitForTimeout(2000);
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
+                    // ログイン成功後の画面に適切なテキストが表示されることを確認
+                    await page.waitForLoadState('networkidle');
+                    const pageHeading = page.getByRole('heading', { name: /事業者管理|店舗管理|クーポン管理|管理者|会員/i });
+                    await expect(pageHeading.first()).toBeVisible({ timeout: 10000 });
+                    
                     // 各ページにアクセス可能か確認
                     const pages = ['/merchants', '/shops', '/coupons', '/admins', '/users'];
                     for (const pagePath of pages) {
                         await page.goto(pagePath);
-                        await page.waitForTimeout(1000);
+                        await page.waitForLoadState('networkidle');
+                        
+                        // 各ページの見出しが表示されることを確認
+                        const heading = page.getByRole('heading');
+                        await expect(heading.first()).toBeVisible({ timeout: 10000 });
                         
                         // コンテンツが表示されていることを確認
                         const hasContent = await page.locator('main').isVisible().catch(() => false);
@@ -116,15 +125,24 @@ test.describe('ロール別権限テスト', () => {
             const { page, context } = await loginAsRole(browser, 'operator');
 
             try {
-                await page.waitForTimeout(2000);
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
+                    // ログイン成功後の画面に適切なテキストが表示されることを確認
+                    await page.waitForLoadState('networkidle');
+                    const pageHeading = page.getByRole('heading', { name: /事業者管理|店舗管理|クーポン管理|会員/i });
+                    await expect(pageHeading.first()).toBeVisible({ timeout: 10000 });
+                    
                     // 運営者がアクセス可能なページ
                     const accessiblePages = ['/merchants', '/shops', '/coupons', '/users'];
                     for (const pagePath of accessiblePages) {
                         await page.goto(pagePath);
-                        await page.waitForTimeout(1000);
+                        await page.waitForLoadState('networkidle');
+                        
+                        // 各ページの見出しが表示されることを確認
+                        const heading = page.getByRole('heading');
+                        await expect(heading.first()).toBeVisible({ timeout: 10000 });
                         
                         const hasContent = await page.locator('main').isVisible().catch(() => false);
                         expect(hasContent).toBeTruthy();
@@ -198,12 +216,21 @@ test.describe('ロール別権限テスト', () => {
             const { page, context } = await loginAsRole(browser, 'viewer');
 
             try {
-                await page.waitForTimeout(2000);
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
+                    // ログイン成功後の画面に適切なテキストが表示されることを確認
+                    await page.waitForLoadState('networkidle');
+                    const pageHeading = page.getByRole('heading', { name: /事業者管理|店舗管理|クーポン管理|会員/i });
+                    await expect(pageHeading.first()).toBeVisible({ timeout: 10000 });
+                    
                     await page.goto('/shops');
-                    await page.waitForTimeout(2000);
+                    await page.waitForLoadState('networkidle');
+                    
+                    // 店舗管理ページの見出しが表示されることを確認
+                    const heading = page.getByRole('heading');
+                    await expect(heading.first()).toBeVisible({ timeout: 10000 });
                     
                     // コンテンツが表示されていることを確認
                     const hasContent = await page.locator('main').isVisible().catch(() => false);
@@ -276,15 +303,18 @@ test.describe('ロール別権限テスト', () => {
                 const { page, context } = await loginAsRole(browser, role as keyof typeof ROLES);
                 
                 try {
-                    await page.waitForTimeout(2000);
+                    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
                     const isLoggedIn = !page.url().includes('/login');
                     
                     if (isLoggedIn) {
                         await page.goto('/admins');
-                        await page.waitForTimeout(2000);
+                        await page.waitForLoadState('networkidle');
 
-                        // アクセス可能かどうか
-                        const hasAccess = !page.url().includes('/login') && !await page.getByText(/403|Forbidden|権限がありません/i).isVisible().catch(() => false);
+                        // アクセス可能かどうか（管理者ページの見出しが表示されるか、またはエラーメッセージが表示されないか）
+                        const hasAccess = !page.url().includes('/login') && 
+                            !await page.getByText(/403|Forbidden|権限がありません/i).isVisible().catch(() => false) &&
+                            (await page.getByRole('heading').first().isVisible().catch(() => false) || 
+                             await page.locator('main').isVisible().catch(() => false));
                         results[role] = hasAccess;
                     } else {
                         results[role] = false;

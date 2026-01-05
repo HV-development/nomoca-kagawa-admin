@@ -110,12 +110,11 @@ function AdminEditForm() {
       }
 
       await apiClient.updateAdminAccountById(adminId, updateData as AdminAccountInput);
-      showSuccess('管理者アカウント情報を更新しました');
       
-      // 少し待ってからリダイレクト（トーストを表示するため）
-      setTimeout(() => {
-        router.push('/admins');
-      }, 1000);
+      // 一覧画面にリダイレクト（トーストは一覧画面で表示）
+      // sessionStorageにトーストメッセージを保存（同一ページ内のステップ変更からのrouter.pushでURLパラメータが失われる問題を回避）
+      sessionStorage.setItem('adminToast', '管理者アカウント情報を更新しました');
+      router.push('/admins');
     } catch (error: unknown) {
       const errorInfo = handleAdminError(error);
       

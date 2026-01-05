@@ -105,10 +105,12 @@ function ShopsPageContent() {
     }
   }, [searchParams]);
 
-  // URLパラメータからトーストメッセージを表示
+  // URLパラメータからトーストメッセージを表示（重複防止）
+  const toastShownRef = useRef(false);
   useEffect(() => {
     const toast = searchParams?.get('toast');
-    if (toast) {
+    if (toast && !toastShownRef.current) {
+      toastShownRef.current = true;
       showSuccess(toast);
       // トーストパラメータをURLから削除
       const newParams = new URLSearchParams(searchParams?.toString() || '');

@@ -15,10 +15,13 @@ test.describe('認証保護', () => {
             const page = await context.newPage();
 
             await page.goto('/merchants');
-            await page.waitForTimeout(3000);
+            await page.waitForURL(/\/login/, { timeout: 10000 });
 
             const isOnLogin = page.url().includes('/login');
             expect(isOnLogin).toBeTruthy();
+            
+            // ログインページのテキストが表示されることを確認
+            await expect(page.getByRole('heading', { name: /ログイン/i })).toBeVisible();
 
             await context.close();
         });
@@ -28,10 +31,13 @@ test.describe('認証保護', () => {
             const page = await context.newPage();
 
             await page.goto('/shops');
-            await page.waitForTimeout(3000);
+            await page.waitForURL(/\/login/, { timeout: 10000 });
 
             const isOnLogin = page.url().includes('/login');
             expect(isOnLogin).toBeTruthy();
+            
+            // ログインページのテキストが表示されることを確認
+            await expect(page.getByRole('heading', { name: /ログイン/i })).toBeVisible();
 
             await context.close();
         });
@@ -41,10 +47,13 @@ test.describe('認証保護', () => {
             const page = await context.newPage();
 
             await page.goto('/coupons');
-            await page.waitForTimeout(3000);
+            await page.waitForURL(/\/login/, { timeout: 10000 });
 
             const isOnLogin = page.url().includes('/login');
             expect(isOnLogin).toBeTruthy();
+            
+            // ログインページのテキストが表示されることを確認
+            await expect(page.getByRole('heading', { name: /ログイン/i })).toBeVisible();
 
             await context.close();
         });
@@ -54,10 +63,13 @@ test.describe('認証保護', () => {
             const page = await context.newPage();
 
             await page.goto('/admins');
-            await page.waitForTimeout(3000);
+            await page.waitForURL(/\/login/, { timeout: 10000 });
 
             const isOnLogin = page.url().includes('/login');
             expect(isOnLogin).toBeTruthy();
+            
+            // ログインページのテキストが表示されることを確認
+            await expect(page.getByRole('heading', { name: /ログイン/i })).toBeVisible();
 
             await context.close();
         });
@@ -67,10 +79,13 @@ test.describe('認証保護', () => {
             const page = await context.newPage();
 
             await page.goto('/users');
-            await page.waitForTimeout(3000);
+            await page.waitForURL(/\/login/, { timeout: 10000 });
 
             const isOnLogin = page.url().includes('/login');
             expect(isOnLogin).toBeTruthy();
+            
+            // ログインページのテキストが表示されることを確認
+            await expect(page.getByRole('heading', { name: /ログイン/i })).toBeVisible();
 
             await context.close();
         });

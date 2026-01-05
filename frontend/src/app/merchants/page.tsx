@@ -342,8 +342,9 @@ export default function MerchantsPage() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
@@ -722,6 +723,7 @@ export default function MerchantsPage() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

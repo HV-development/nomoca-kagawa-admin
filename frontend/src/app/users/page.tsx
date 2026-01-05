@@ -266,8 +266,9 @@ export default function UsersPage() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
   const fetchAllUsers = async (): Promise<User[]> => {
@@ -522,6 +523,7 @@ export default function UsersPage() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

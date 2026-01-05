@@ -470,8 +470,9 @@ function ShopsPageContent() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -847,6 +848,7 @@ function ShopsPageContent() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

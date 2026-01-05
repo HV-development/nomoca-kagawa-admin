@@ -119,8 +119,9 @@ export default function AdminsPage() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   const handleInputChange = useCallback((field: keyof AdminSearchFormData, value: string) => {
     setSearchForm(prev => ({
@@ -225,6 +226,7 @@ export default function AdminsPage() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

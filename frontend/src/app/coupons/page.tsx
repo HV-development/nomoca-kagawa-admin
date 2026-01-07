@@ -130,7 +130,12 @@ function CouponsPageContent() {
 
       const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
       setCoupons(data.coupons || []);
-      setPagination(data.pagination || pagination);
+      // pageとlimitは現在の値を維持し、totalとtotalPagesのみ更新（無限ループ防止）
+      setPagination(prev => ({
+        ...prev,
+        total: data.pagination?.total ?? prev.total,
+        totalPages: data.pagination?.totalPages ?? prev.totalPages,
+      }));
     } catch (error) {
       console.error('❌ CouponsPage: Failed to fetch coupons:', error);
       setCoupons([]);
@@ -259,9 +264,9 @@ function CouponsPageContent() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
-    if (isLoading) return;
+    if (loading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, [isLoading]);
+  }, [loading]);
 
   const handleStatusChange = useCallback(async (couponId: string, status: string) => {
     // adminアカウントのみ承認ステータスの変更を許可
@@ -700,7 +705,7 @@ function CouponsPageContent() {
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
-            disabled={isLoading}
+            disabled={loading}
           />
         )}
 

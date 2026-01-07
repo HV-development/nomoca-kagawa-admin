@@ -195,7 +195,12 @@ export default function MerchantsPage() {
       }
       
       setMerchants(merchantsArray as Merchant[]);
-      setPagination(paginationData);
+      // pageとlimitは現在の値を維持し、totalとpagesのみ更新（無限ループ防止）
+      setPagination(prev => ({
+        ...prev,
+        total: paginationData.total ?? prev.total,
+        pages: paginationData.pages ?? prev.pages,
+      }));
     } catch (err: unknown) {
       console.error('事業者データの取得に失敗しました:', err);
       setError('事業者データの取得に失敗しました');

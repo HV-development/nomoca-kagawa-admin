@@ -175,7 +175,7 @@ function CouponEditPageContent() {
 
     switch (field) {
       case 'couponName':
-        const couponNameError = validateRequired(value, 'クーポン名') || validateMaxLength(value, 15, 'クーポン名');
+        const couponNameError = validateRequired(value, 'クーポン名') || validateMaxLength(value, 25, 'クーポン名');
         if (couponNameError) {
           newErrors.couponName = couponNameError;
         } else {
@@ -238,7 +238,7 @@ function CouponEditPageContent() {
     const newErrors: Partial<Record<keyof CouponFormData, string>> = {};
 
     // 必須チェック
-    const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 15, 'クーポン名');
+    const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 25, 'クーポン名');
     if (couponNameError) newErrors.couponName = couponNameError;
 
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
@@ -449,13 +449,13 @@ function CouponEditPageContent() {
               <input
                 type="text"
                 id="couponName"
-                placeholder="クーポン名を入力（最大15文字）"
+                placeholder="クーポン名を入力（最大25文字）"
                 value={formData.couponName}
                 onChange={(e) => handleInputChange('couponName', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponName ? 'border-red-500' : 'border-gray-300'
                 }`}
-                maxLength={15}
+                maxLength={25}
               />
               {errors.couponName && (
                 <p className="mt-1 text-sm text-red-500">{errors.couponName}</p>

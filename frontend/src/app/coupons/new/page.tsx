@@ -209,7 +209,7 @@ function CouponNewPageContent() {
 
     switch (field) {
       case 'couponName':
-        const couponNameError = validateRequired(value, 'クーポン名') || validateMaxLength(value, 15, 'クーポン名');
+        const couponNameError = validateRequired(value, 'クーポン名') || validateMaxLength(value, 25, 'クーポン名');
         if (couponNameError) {
           newErrors.couponName = couponNameError;
         } else {
@@ -328,7 +328,7 @@ function CouponNewPageContent() {
     const newErrors: CouponFormErrors = {};
 
     // 必須チェック
-    const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 15, 'クーポン名');
+    const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 25, 'クーポン名');
     if (couponNameError) newErrors.couponName = couponNameError;
 
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');

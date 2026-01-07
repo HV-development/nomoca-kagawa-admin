@@ -258,8 +258,12 @@ function ShopsPageContent() {
         }
       }
       
-      // ページネーション情報を更新
-      setPagination(paginationData);
+      // ページネーション情報を更新（pageとlimitは維持、totalとpagesのみ更新で無限ループ防止）
+      setPagination(prev => ({
+        ...prev,
+        total: paginationData.total ?? prev.total,
+        pages: paginationData.pages ?? prev.pages,
+      }));
       
       // 最初の店舗からmerchant情報を取得
       if (shopsArray.length > 0 && shopsArray[0].merchant) {

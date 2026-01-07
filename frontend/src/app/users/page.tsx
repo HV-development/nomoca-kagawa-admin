@@ -133,14 +133,13 @@ export default function UsersPage() {
         };
       };
 
-      // ページネーション情報を更新
+      // ページネーション情報を更新（pageとlimitは維持、totalとpagesのみ更新で無限ループ防止）
       if (responseData.pagination) {
-        setPagination({
-          page: responseData.pagination.page,
-          limit: responseData.pagination.limit,
-          total: responseData.pagination.total,
-          pages: responseData.pagination.totalPages,
-        });
+        setPagination(prev => ({
+          ...prev,
+          total: responseData.pagination?.total ?? prev.total,
+          pages: responseData.pagination?.totalPages ?? prev.pages,
+        }));
       }
 
       // operatorロールの場合は機密情報を含めない

@@ -105,10 +105,12 @@ function ShopsPageContent() {
     }
   }, [searchParams]);
 
-  // URLパラメータからトーストメッセージを表示
+  // URLパラメータからトーストメッセージを表示（重複防止）
+  const toastShownRef = useRef(false);
   useEffect(() => {
     const toast = searchParams?.get('toast');
-    if (toast) {
+    if (toast && !toastShownRef.current) {
+      toastShownRef.current = true;
       showSuccess(toast);
       // トーストパラメータをURLから削除
       const newParams = new URLSearchParams(searchParams?.toString() || '');
@@ -468,8 +470,9 @@ function ShopsPageContent() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -845,6 +848,7 @@ function ShopsPageContent() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

@@ -8,13 +8,15 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function Pagination({ 
   currentPage, 
   totalPages, 
   onPageChange, 
-  className = '' 
+  className = '',
+  disabled = false
 }: PaginationProps) {
   // ページ番号の配列を生成（現在のページを中心に最大5ページ表示）
   const getPageNumbers = () => {
@@ -75,7 +77,7 @@ export default function Pagination({
         variant="ghost"
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
+        disabled={disabled || currentPage === 1}
         className={navigationButtonClass}
       >
         <Icon name="chevronLeft" size="sm" className="mr-1" />
@@ -93,6 +95,7 @@ export default function Pagination({
               variant={currentPage === page ? "primary" : "ghost"}
               size="sm"
               onClick={() => onPageChange(page as number)}
+              disabled={disabled || currentPage === page}
               className="px-3 py-1 text-sm min-w-[32px]"
             >
               {page}
@@ -106,7 +109,7 @@ export default function Pagination({
         variant="ghost"
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
+        disabled={disabled || currentPage === totalPages}
         className={navigationButtonClass}
       >
         次へ

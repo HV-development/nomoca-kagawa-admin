@@ -254,8 +254,9 @@ export default function CouponHistoryPage() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
   const fetchAllCouponUsages = async (): Promise<CouponUsage[]> => {
@@ -470,6 +471,7 @@ export default function CouponHistoryPage() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

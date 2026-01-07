@@ -39,7 +39,6 @@ export default function MerchantEditPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
   const [hasAccount, setHasAccount] = useState(false); // アカウント発行済みかどうか
@@ -73,6 +72,41 @@ export default function MerchantEditPage() {
   );
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
+
+  // 確認画面から戻ってきた場合、sessionStorageからデータを復元
+  useEffect(() => {
+    try {
+      const storedData = sessionStorage.getItem('merchantEditConfirmData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        // merchantIdが一致する場合のみ復元
+        if (parsedData.merchantId === merchantId) {
+          setFormData({
+            name: parsedData.name || '',
+            nameKana: parsedData.nameKana || '',
+            representativeNameLast: parsedData.representativeNameLast || '',
+            representativeNameFirst: parsedData.representativeNameFirst || '',
+            representativeNameLastKana: parsedData.representativeNameLastKana || '',
+            representativeNameFirstKana: parsedData.representativeNameFirstKana || '',
+            representativePhone: parsedData.representativePhone || '',
+            email: parsedData.email || '',
+            phone: parsedData.phone || '',
+            postalCode: parsedData.postalCode || '',
+            prefecture: parsedData.prefecture || '',
+            city: parsedData.city || '',
+            address1: parsedData.address1 || '',
+            address2: parsedData.address2 || '',
+            applications: [],
+          });
+          setIssueAccount(parsedData.issueAccount || false);
+          setHasAccount(parsedData.hasAccount || false);
+          setStatus(parsedData.status || 'inactive');
+        }
+      }
+    } catch (error) {
+      console.error('sessionStorageからのデータ復元に失敗しました:', error);
+    }
+  }, [merchantId]);
 
   // 事業者データの読み込み
   useEffect(() => {
@@ -357,54 +391,45 @@ export default function MerchantEditPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateFormData()) {
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      // APIに送信するデータを準備
-      const updateData = {
-        name: formData.name,
-        nameKana: formData.nameKana,
-        representativeNameLast: formData.representativeNameLast,
-        representativeNameFirst: formData.representativeNameFirst,
-        representativeNameLastKana: formData.representativeNameLastKana,
-        representativeNameFirstKana: formData.representativeNameFirstKana,
-        representativePhone: formData.representativePhone,
-        email: formData.email,
-        postalCode: formData.postalCode,
-        prefecture: formData.prefecture,
-        city: formData.city,
-        address1: formData.address1,
-        address2: formData.address2,
-        issueAccount, // アカウント発行フラグ
-        status, // 契約ステータス
-      };
+    // sessionStorageにデータを保存
+    const confirmData = {
+      merchantId,
+      name: formData.name,
+      nameKana: formData.nameKana,
+      representativeNameLast: formData.representativeNameLast,
+      representativeNameFirst: formData.representativeNameFirst,
+      representativeNameLastKana: formData.representativeNameLastKana,
+      representativeNameFirstKana: formData.representativeNameFirstKana,
+      representativePhone: formData.representativePhone,
+      email: formData.email,
+      phone: formData.phone,
+      postalCode: formData.postalCode,
+      prefecture: formData.prefecture,
+      city: formData.city,
+      address1: formData.address1,
+      address2: formData.address2 || '',
+      issueAccount,
+      hasAccount,
+      status,
+    };
 
-      await apiClient.updateMerchant(merchantId, updateData);
-      
-      showSuccess('事業者の更新が完了しました。');
-      // 事業者一覧に遷移
-      setTimeout(() => {
-        router.push('/merchants');
-      }, 1500);
+    try {
+      sessionStorage.setItem('merchantEditConfirmData', JSON.stringify(confirmData));
     } catch (error) {
-      console.error('更新エラー:', error);
-      if (error instanceof Error && 'response' in error) {
-        const apiError = error as Error & { response?: { data: unknown } };
-        const errorData = apiError.response?.data as { message?: string; error?: { message?: string } } | undefined;
-        showError(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
-      } else {
-        showError('更新中にエラーが発生しました。');
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error('sessionStorageへの保存に失敗しました:', error);
+      showError('データの保存に失敗しました。もう一度お試しください。');
+      return;
     }
+
+    // 確認画面に遷移
+    router.push(`/merchants/${merchantId}/confirm`);
   };
 
   if (isLoading) {
@@ -439,7 +464,7 @@ export default function MerchantEditPage() {
         </div>
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleConfirm} className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
@@ -661,6 +686,29 @@ export default function MerchantEditPage() {
                 </div>
               </div>
 
+
+              {/* 事業者電話番号 */}
+              <div className="w-100">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者電話番号 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  ref={(el) => { fieldRefs.current.phone = el; }}
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, ''))}
+                  onBlur={() => handleBlur('phone')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="事業者電話番号を入力してください（ハイフン無し）"
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                )}
+              </div>
+
               {/* アカウント発行チェックボックス（アカウント未発行の場合のみ表示） */}
               {!hasAccount && (
                 <div className="flex items-center">
@@ -866,9 +914,8 @@ export default function MerchantEditPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={isSubmitting}
               >
-                {isSubmitting ? '更新中...' : '更新する'}
+                更新内容を確認する
               </Button>
               {hasAccount && (
                 <button

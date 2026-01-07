@@ -130,7 +130,12 @@ function CouponsPageContent() {
 
       const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
       setCoupons(data.coupons || []);
-      setPagination(data.pagination || pagination);
+      // pageとlimitは現在の値を維持し、totalとtotalPagesのみ更新（無限ループ防止）
+      setPagination(prev => ({
+        ...prev,
+        total: data.pagination?.total ?? prev.total,
+        totalPages: data.pagination?.totalPages ?? prev.totalPages,
+      }));
     } catch (error) {
       console.error('❌ CouponsPage: Failed to fetch coupons:', error);
       setCoupons([]);
@@ -205,6 +210,24 @@ function CouponsPageContent() {
     appliedPublicStatus,
   ]);
 
+  // URLパラメータからトーストメッセージを表示（データ取得完了後、重複防止）
+  const toastShownRef = useRef(false);
+  useEffect(() => {
+    // データ取得が完了してからトーストを表示
+    if (!loading) {
+      const toast = searchParams?.get('toast');
+      if (toast && !toastShownRef.current) {
+        toastShownRef.current = true;
+        showSuccess(toast);
+        // トーストパラメータをURLから削除
+        const newParams = new URLSearchParams(searchParams?.toString() || '');
+        newParams.delete('toast');
+        const newUrl = newParams.toString() ? `/coupons?${newParams.toString()}` : '/coupons';
+        router.replace(newUrl, { scroll: false });
+      }
+    }
+  }, [loading, searchParams, showSuccess, router]);
+
   const filteredCoupons = coupons;
 
   const handleInputChange = useCallback((field: keyof CouponSearchFormData, value: string) => {
@@ -241,8 +264,9 @@ function CouponsPageContent() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (loading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [loading]);
 
   const handleStatusChange = useCallback(async (couponId: string, status: string) => {
     // adminアカウントのみ承認ステータスの変更を許可
@@ -681,6 +705,7 @@ function CouponsPageContent() {
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
+            disabled={loading}
           />
         )}
 

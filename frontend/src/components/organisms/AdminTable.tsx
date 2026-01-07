@@ -118,7 +118,7 @@ export default function AdminTable({
                     <div className="text-sm text-gray-900">{admin.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{getRoleLabel(admin.role.toString())}</div>
+                    <div className="text-sm text-gray-900">{getRoleLabel(String(admin.role ?? ''))}</div>
                   </td>
                 </tr>
               ))}

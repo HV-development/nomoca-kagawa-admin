@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -44,6 +45,23 @@ export default function MerchantsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // URLパラメータからトーストメッセージを表示（重複防止）
+  const toastShownRef = useRef(false);
+  useEffect(() => {
+    const toastMessage = searchParams.get('toast');
+    if (toastMessage && !toastShownRef.current) {
+      toastShownRef.current = true;
+      showSuccess(decodeURIComponent(toastMessage));
+      // URLパラメータをクリア（履歴を置換）
+      const url = new URL(window.location.href);
+      url.searchParams.delete('toast');
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
+  }, [searchParams, showSuccess, router]);
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -324,8 +342,9 @@ export default function MerchantsPage() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (isLoading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [isLoading]);
 
   const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
@@ -704,6 +723,7 @@ export default function MerchantsPage() {
             currentPage={pagination.page}
             totalPages={pagination.pages}
             onPageChange={handlePageChange}
+            disabled={isLoading}
           />
         )}
 

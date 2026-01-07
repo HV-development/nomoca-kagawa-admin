@@ -39,6 +39,7 @@ function CouponEditPageContent() {
   const couponId = params.id as string;
   const auth = useAuth();
   const { toasts, removeToast, showError } = useToast();
+  const isAdminAccount = auth?.user?.accountType === 'admin';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
 
   const [formData, setFormData] = useState<CouponFormData>({
@@ -112,6 +113,30 @@ function CouponEditPageContent() {
       }
     };
     
+    // sessionStorageからデータを復元（確認画面から戻った場合）
+    const restoreFromSessionStorage = async () => {
+      try {
+        const storedData = sessionStorage.getItem('couponEditConfirmData');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          
+          // フォームデータを復元
+          setFormData(prev => ({
+            ...prev,
+            couponName: parsedData.couponName || prev.couponName,
+            couponContent: parsedData.couponContent || prev.couponContent,
+            couponConditions: parsedData.couponConditions || prev.couponConditions,
+            drinkType: parsedData.drinkType || prev.drinkType,
+            imagePreview: parsedData.imagePreview || prev.imagePreview,
+            imageUrl: parsedData.imageUrl || prev.imageUrl,
+            couponImage: null, // ファイルは復元できない
+          }));
+        }
+      } catch (error) {
+        console.error('sessionStorageからのデータ復元に失敗しました:', error);
+      }
+    };
+    
     // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
     if (searchParams && searchParams.get('couponName')) {
       const urlData = {
@@ -130,6 +155,9 @@ function CouponEditPageContent() {
     } else {
       fetchCoupon();
     }
+    
+    // sessionStorageからデータを復元
+    restoreFromSessionStorage();
   }, [couponId, searchParams]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
@@ -223,6 +251,36 @@ function CouponEditPageContent() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     if (validateAllFields()) {
+      // 管理者アカウントの場合は確認画面に遷移
+      if (!isMerchantAccount) {
+        // 画像プレビュー（base64データ）はURLパラメータが長くなりすぎるため、sessionStorageに保存
+        const confirmData = {
+          couponId: couponId,
+          couponName: formData.couponName,
+          couponContent: formData.couponContent,
+          couponConditions: formData.couponConditions || '',
+          drinkType: formData.drinkType || '',
+          imagePreview: formData.imagePreview || '',
+          imageUrl: formData.imageUrl || '',
+        };
+        
+        // sessionStorageに保存（画像データを含む）
+        try {
+          sessionStorage.setItem('couponEditConfirmData', JSON.stringify(confirmData));
+        } catch (error) {
+          console.error('sessionStorageへの保存に失敗しました:', error);
+          showError('データの保存に失敗しました。もう一度お試しください。');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // 確認画面に遷移
+        router.push(`/coupons/${couponId}/confirm`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // 事業者アカウントの場合は直接更新
       try {
         // couponIdのバリデーション
         if (!couponId) {
@@ -294,7 +352,7 @@ function CouponEditPageContent() {
         };
         
         await apiClient.updateCoupon(couponId, updateData);
-        router.push('/coupons');
+        router.push('/coupons?toast=' + encodeURIComponent('クーポン情報を更新しました'));
       } catch (error) {
         console.error('❌ Coupon update failed:', error);
         let errorMessage = 'クーポンの更新に失敗しました。もう一度お試しください。';
@@ -317,6 +375,13 @@ function CouponEditPageContent() {
   };
 
   const handleCancel = () => {
+    // sessionStorageをクリア
+    try {
+      sessionStorage.removeItem('couponEditConfirmData');
+    } catch (error) {
+      console.error('sessionStorageのクリアに失敗しました:', error);
+    }
+    
     router.push('/coupons');
   };
 
@@ -547,7 +612,7 @@ function CouponEditPageContent() {
                 onClick={handleSubmit}
                 disabled={isSubmitting || isUploading}
               >
-                {isSubmitting ? '更新中...' : (isMerchantAccount ? '申請する' : '更新する')}
+                {isSubmitting ? '処理中...' : (isMerchantAccount ? '申請する' : '更新内容を確認する')}
               </Button>
             </div>
           </div>

@@ -55,6 +55,7 @@ interface ShopConfirmData {
   selectedQrBrands: string[];
   customQrText: string;
   selectedServices: string[];
+  customServicesText?: string;
   holidaysForSubmit: string;
   paymentCreditJson: { brands: string[]; other?: string } | null;
   paymentCodeJson: { services: string[]; other?: string } | null;
@@ -182,7 +183,7 @@ function ShopEditConfirmContent() {
         paymentCredit: shopData.paymentCreditJson,
         paymentCode: shopData.paymentCodeJson,
         paymentApps: { mydigi: shopData.paymentMydigi ?? false },
-        services: Array.isArray(shopData.selectedServices) ? shopData.selectedServices : undefined,
+        services: Array.isArray(shopData.selectedServices) && shopData.selectedServices.length > 0 ? { services: shopData.selectedServices } : undefined,
         area: shopData.area || undefined,
         status: shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
         images: shopData.existingImages,

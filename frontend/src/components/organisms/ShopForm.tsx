@@ -141,6 +141,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     couponUsageStart: '',
     couponUsageEnd: '',
     couponUsageDays: '',
+    services: '',
     paymentMydigi: false,
     paymentCash: true,
     paymentCredit: '',
@@ -278,9 +279,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
   // 定休日「その他」のフリーワード入力用
   const [customHolidayText, setCustomHolidayText] = useState<string>('');
-
-  // サービス情報チェックボックス用
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   // バリデーションフック
   const { validateField } = useShopValidation({
@@ -432,8 +430,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
 
+            // servicesを除外してからsetFormDataを呼び出す（後で文字列形式で設定）
+            const { services: _services, ...shopDataWithoutServices } = shopData;
             setFormData({
-              ...shopData,
+              ...shopDataWithoutServices,
               merchantId: finalMerchantId,
               createAccount: !!accountEmail, // accountEmailが存在する場合はcreateAccountをtrueに
               // latitude/longitudeを文字列に変換
@@ -446,6 +446,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               details: shopData.details ?? '',
               // areaがnullの場合は空文字列に変換
               area: shopData.area ?? '',
+              // servicesは後で文字列形式で設定される
+              services: '',
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -554,10 +556,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
 
-            // サービス情報の設定
-            const shopDataWithServices = shopData as ShopCreateRequest & { services?: string[] };
-            if (shopDataWithServices.services && Array.isArray(shopDataWithServices.services)) {
-              setSelectedServices(shopDataWithServices.services);
+            // サービス情報の設定（Record<string, boolean>形式から読み込み）
+            const shopDataWithServices = shopData as ShopDataResponse & { services?: Record<string, boolean> | null };
+            if (shopDataWithServices.services) {
+              // Record<string, boolean>形式として扱う
+              if (typeof shopDataWithServices.services === 'object' && !Array.isArray(shopDataWithServices.services)) {
+                // Record形式から配列に変換
+                const servicesArray: string[] = [];
+                Object.keys(shopDataWithServices.services).forEach(key => {
+                  if (shopDataWithServices.services![key] === true) {
+                    servicesArray.push(key);
+                  }
+                });
+                setFormData(prev => ({
+                  ...prev,
+                  services: servicesArray.join(',')
+                }));
+              } else if (typeof shopDataWithServices.services === 'string') {
+                // 文字列形式の場合（旧形式のフォールバック）
+                try {
+                  const parsed = JSON.parse(shopDataWithServices.services);
+                  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    // Record形式の場合
+                    const servicesArray: string[] = [];
+                    Object.keys(parsed).forEach(key => {
+                      if (parsed[key] === true) {
+                        servicesArray.push(key);
+                      }
+                    });
+                    setFormData(prev => ({
+                      ...prev,
+                      services: servicesArray.join(',')
+                    }));
+                  } else if (parsed && parsed.services && Array.isArray(parsed.services)) {
+                    // 旧形式（{ services: string[] }）の場合
+                    setFormData(prev => ({
+                      ...prev,
+                      services: parsed.services.join(',')
+                    }));
+                  }
+                } catch {
+                  // パースに失敗した場合は空文字列
+                  setFormData(prev => ({
+                    ...prev,
+                    services: ''
+                  }));
+                }
+              }
             }
 
             // フォームの基本データが取得できたので、すぐにフォームを表示
@@ -863,8 +908,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
-        // サービス情報を配列として送信
-        services: selectedServices.length > 0 ? selectedServices : undefined,
         // クーポン利用時間の空文字列をnullに変換
         couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
         couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
@@ -1097,7 +1140,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customCreditText: isCreditOtherSelected ? customCreditText : '',
         selectedQrBrands,
         customQrText: isQrOtherSelected ? customQrText : '',
-        selectedServices,
+        selectedServices: formData.services ? formData.services.split(',').filter(Boolean) : [],
         holidaysForSubmit,
         paymentCreditJson,
         paymentCodeJson,
@@ -1111,10 +1154,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
       // confirmDataのservices確認ログ
       console.log('[ShopForm] sessionStorage保存前のconfirmDataのservices確認:', {
-        'selectedServices変数の値': selectedServices,
-        'selectedServices変数の型': typeof selectedServices,
-        'selectedServices変数の配列か': Array.isArray(selectedServices),
-        'selectedServices変数の長さ': Array.isArray(selectedServices) ? selectedServices.length : 0,
+        'formData.services値': formData.services,
+        'formData.services型': typeof formData.services,
         'confirmData.selectedServices存在': 'selectedServices' in confirmData,
         'confirmData.selectedServices値': confirmData.selectedServices,
         'confirmData.selectedServices型': typeof confirmData.selectedServices,
@@ -1996,13 +2037,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   <label key={service} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedServices.includes(service)}
+                      checked={formData.services?.split(',').filter(Boolean).includes(service) || false}
                       onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedServices([...selectedServices, service]);
-                        } else {
-                          setSelectedServices(selectedServices.filter(s => s !== service));
-                        }
+                        const current = formData.services?.split(',').filter(Boolean) || [];
+                        const updated = e.target.checked
+                          ? [...current, service]
+                          : current.filter(s => s !== service);
+                        handleInputChange('services', updated.join(','));
                       }}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
@@ -2010,6 +2051,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                 ))}
               </div>
+              <p className="mt-1 text-xs text-gray-500">サービス情報を選択してください（任意）</p>
             </div>
           </div>
         </div>

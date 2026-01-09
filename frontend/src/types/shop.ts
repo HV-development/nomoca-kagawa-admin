@@ -59,6 +59,7 @@ export interface ShopDataResponse extends ShopCreateRequest {
   paymentMydigi?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string;
+  services?: Record<string, boolean> | null; // サービス情報（paymentAppsと同じ形式）
 }
 
 export interface Genre {
@@ -78,11 +79,12 @@ export interface ImagePreview {
   url: string;
 }
 
-export type ExtendedShopCreateRequest = ShopCreateRequest & {
+export type ExtendedShopCreateRequest = Omit<ShopCreateRequest, 'services'> & {
   homepageUrl?: string | null;
   couponUsageStart?: string | null;
   couponUsageEnd?: string | null;
   couponUsageDays?: string | null;
+  services?: string | null; // サービス情報（カンマ区切り文字列）
   paymentMydigi?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string;

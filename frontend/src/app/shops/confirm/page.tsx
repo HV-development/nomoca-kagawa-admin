@@ -162,7 +162,16 @@ function ShopConfirmContent() {
         paymentCash: shopData.paymentCash,
         paymentCredit: shopData.paymentCreditJson as unknown as string,
         paymentCode: shopData.paymentCodeJson as unknown as string,
-        services: Array.isArray(shopData.selectedServices) && shopData.selectedServices.length > 0 ? { services: shopData.selectedServices } : undefined,
+        services: Array.isArray(shopData.selectedServices) && shopData.selectedServices.length > 0 
+          ? (() => {
+              // Record<string, boolean>形式に変換
+              const servicesRecord: Record<string, boolean> = {};
+              shopData.selectedServices.forEach(service => {
+                servicesRecord[service] = true;
+              });
+              return servicesRecord;
+            })()
+          : undefined,
         area: shopData.area || undefined,
         status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
         sceneIds: shopData.selectedScenes,

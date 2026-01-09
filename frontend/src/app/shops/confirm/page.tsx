@@ -55,6 +55,7 @@ interface ShopConfirmData {
   customCreditText: string;
   selectedQrBrands: string[];
   customQrText: string;
+  selectedServices: string[];
   holidaysForSubmit: string;
   paymentCreditJson: { brands: string[]; other?: string } | null;
   paymentCodeJson: { services: string[]; other?: string } | null;
@@ -77,6 +78,16 @@ function ShopConfirmContent() {
       const storedData = sessionStorage.getItem('shopConfirmData');
       if (storedData) {
         const parsedData = JSON.parse(storedData) as ShopConfirmData;
+        
+        // sessionStorageから読み込んだデータのservices確認ログ
+        console.log('[新規登録確認画面] sessionStorageから読み込んだデータのservices確認:', {
+          'parsedData.selectedServices存在': 'selectedServices' in parsedData,
+          'parsedData.selectedServices値': parsedData.selectedServices,
+          'parsedData.selectedServices型': typeof parsedData.selectedServices,
+          'parsedData.selectedServices配列か': Array.isArray(parsedData.selectedServices),
+          'parsedData.selectedServices長さ': Array.isArray(parsedData.selectedServices) ? parsedData.selectedServices.length : 0,
+        });
+        
         // 新規登録確認画面なのでisEditがfalseであることを確認
         if (!parsedData.isEdit) {
           setShopData(parsedData);
@@ -150,12 +161,27 @@ function ShopConfirmContent() {
         paymentCash: shopData.paymentCash,
         paymentCredit: shopData.paymentCreditJson as unknown as string,
         paymentCode: shopData.paymentCodeJson as unknown as string,
+        services: Array.isArray(shopData.selectedServices) ? shopData.selectedServices : undefined,
         area: shopData.area || undefined,
         status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
         password: shopData.createAccount ? shopData.password : undefined,
       };
+
+      // submitDataのservices確認ログ
+      console.log('[新規登録確認画面] submitDataのservices確認:', {
+        'shopData.selectedServices存在': 'selectedServices' in shopData,
+        'shopData.selectedServices値': shopData.selectedServices,
+        'shopData.selectedServices型': typeof shopData.selectedServices,
+        'shopData.selectedServices配列か': Array.isArray(shopData.selectedServices),
+        'shopData.selectedServices長さ': Array.isArray(shopData.selectedServices) ? shopData.selectedServices.length : 0,
+        'submitData.services存在': 'services' in submitData,
+        'submitData.services値': (submitData as any).services,
+        'submitData.services型': typeof (submitData as any).services,
+        'submitData.services配列か': Array.isArray((submitData as any).services),
+        'submitData全体（JSON）': JSON.stringify(submitData).substring(0, 1000),
+      });
 
       // 店舗を作成
       const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
@@ -361,6 +387,15 @@ function ShopConfirmContent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{getSmokingTypeLabel(shopData.smokingType)}</p>
             </div>
+
+            {shopData.selectedServices && shopData.selectedServices.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">サービス情報</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedServices.join('、')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

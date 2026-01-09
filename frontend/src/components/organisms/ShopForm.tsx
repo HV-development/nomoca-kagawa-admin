@@ -17,7 +17,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, KAGAWA_AREAS } from '@/lib/constants/japan';
-import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
@@ -279,6 +279,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // 定休日「その他」のフリーワード入力用
   const [customHolidayText, setCustomHolidayText] = useState<string>('');
 
+  // サービス情報チェックボックス用
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
   // バリデーションフック
   const { validateField } = useShopValidation({
     formData,
@@ -438,6 +441,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               longitude: shopData.longitude ? String(shopData.longitude) : '',
               // paymentAppsからpaymentMydigiを設定
               paymentMydigi: paymentMydigiValue,
+              // descriptionとdetailsがnullの場合は空文字列に変換
+              description: shopData.description ?? '',
+              details: shopData.details ?? '',
               // areaがnullの場合は空文字列に変換
               area: shopData.area ?? '',
             });
@@ -546,6 +552,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
+            }
+
+            // サービス情報の設定
+            const shopDataWithServices = shopData as ShopCreateRequest & { services?: string[] };
+            if (shopDataWithServices.services && Array.isArray(shopDataWithServices.services)) {
+              setSelectedServices(shopDataWithServices.services);
             }
 
             // フォームの基本データが取得できたので、すぐにフォームを表示
@@ -691,23 +703,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
-    // 更新されたformDataを作成（バリデーション用）
-    const updatedFormData = {
-      ...formData,
-      [field]: value,
-    };
+    let updatedFormData: ExtendedShopCreateRequest;
+    let updatedTouchedFields: Record<string, boolean>;
+    
+    setFormData((prevFormData) => {
+      updatedFormData = {
+        ...prevFormData,
+        [field]: value,
+      };
+      return updatedFormData;
+    });
+    
+    setTouchedFields((prevTouchedFields) => {
+      updatedTouchedFields = {
+        ...prevTouchedFields,
+        [field]: true,
+      };
 
-    // フィールドが触られたことを記録（常に更新）
-    const updatedTouchedFields = {
-      ...touchedFields,
-      [field]: true,
-    };
+      // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
+      validateField(field, value, updatedFormData, updatedTouchedFields);
 
-    setFormData(updatedFormData);
-    setTouchedFields(updatedTouchedFields);
-
-    // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
-    validateField(field, value, updatedFormData, updatedTouchedFields);
+      return updatedTouchedFields;
+    });
   };
 
   // onBlurイベントハンドラー（フィールドが触られたことを記録してバリデーション実行）
@@ -846,6 +863,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // サービス情報を配列として送信
+        services: selectedServices.length > 0 ? selectedServices : undefined,
         // クーポン利用時間の空文字列をnullに変換
         couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
         couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
@@ -1078,6 +1097,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customCreditText: isCreditOtherSelected ? customCreditText : '',
         selectedQrBrands,
         customQrText: isQrOtherSelected ? customQrText : '',
+        selectedServices,
         holidaysForSubmit,
         paymentCreditJson,
         paymentCodeJson,
@@ -1088,6 +1108,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // シーン名のマッピング用
         sceneNames: scenes.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>),
       };
+
+      // confirmDataのservices確認ログ
+      console.log('[ShopForm] sessionStorage保存前のconfirmDataのservices確認:', {
+        'selectedServices変数の値': selectedServices,
+        'selectedServices変数の型': typeof selectedServices,
+        'selectedServices変数の配列か': Array.isArray(selectedServices),
+        'selectedServices変数の長さ': Array.isArray(selectedServices) ? selectedServices.length : 0,
+        'confirmData.selectedServices存在': 'selectedServices' in confirmData,
+        'confirmData.selectedServices値': confirmData.selectedServices,
+        'confirmData.selectedServices型': typeof confirmData.selectedServices,
+        'confirmData.selectedServices配列か': Array.isArray(confirmData.selectedServices),
+        'confirmData全体（JSON、最初の500文字）': JSON.stringify(confirmData).substring(0, 500),
+      });
 
       // sessionStorageにデータを保存
       try {
@@ -1712,7 +1745,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <textarea
                 name="description"
-                value={formData.description}
+                value={formData.description ?? ''}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
                 maxLength={500}
@@ -1736,7 +1769,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <textarea
                 name="details"
-                value={formData.details}
+                value={formData.details ?? ''}
                 onChange={(e) => handleInputChange('details', e.target.value)}
                 rows={6}
                 maxLength={1000}
@@ -1951,6 +1984,32 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 ))}
               </div>
               <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
+            </div>
+
+            {/* サービス情報 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                サービス情報
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {SERVICE_OPTIONS.map((service) => (
+                  <label key={service} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedServices.includes(service)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedServices([...selectedServices, service]);
+                        } else {
+                          setSelectedServices(selectedServices.filter(s => s !== service));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{service}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </div>

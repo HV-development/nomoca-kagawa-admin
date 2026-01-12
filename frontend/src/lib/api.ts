@@ -298,12 +298,15 @@ class ApiClient {
   }
 
   // 事業者関連
-  async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
+  async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string; accountStatuses?: string[] }): Promise<unknown> {
     const queryParams = new URLSearchParams();
     if (params?.search) queryParams.append('search', params.search);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status) queryParams.append('status', params.status);
+    if (params?.accountStatuses && params.accountStatuses.length > 0) {
+      queryParams.append('accountStatuses', params.accountStatuses.join(','));
+    }
 
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';

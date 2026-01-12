@@ -142,7 +142,7 @@ export default function MerchantsPage() {
       }
       
       // 検索条件をAPIパラメータに変換
-      const params: { page: number; limit: number; search?: string; status?: string } = {
+      const params: { page: number; limit: number; search?: string; status?: string; accountStatuses?: string[] } = {
         page: pagination.page,
         limit: pagination.limit,
       };
@@ -155,6 +155,11 @@ export default function MerchantsPage() {
       // 契約ステータスをstatusパラメータに設定（バックエンドAPIのstatusは契約ステータスを指す）
       if (appliedSearchForm.contractStatus) {
         params.status = appliedSearchForm.contractStatus;
+      }
+
+      // アカウントステータスを追加
+      if (appliedSearchForm.accountStatuses.length > 0) {
+        params.accountStatuses = appliedSearchForm.accountStatuses;
       }
       
       const data = await apiClient.getMerchants(params);
@@ -462,7 +467,7 @@ export default function MerchantsPage() {
     while (hasMore) {
       try {
         // 検索条件をクエリパラメータに追加
-        const params: { page: number; limit: number; search?: string } = {
+        const params: { page: number; limit: number; search?: string; accountStatuses?: string[] } = {
           page,
           limit,
         };
@@ -470,6 +475,11 @@ export default function MerchantsPage() {
         // フリーワード検索がある場合は追加
         if (appliedSearchForm.keyword) {
           params.search = appliedSearchForm.keyword;
+        }
+
+        // アカウントステータスを追加
+        if (appliedSearchForm.accountStatuses.length > 0) {
+          params.accountStatuses = appliedSearchForm.accountStatuses;
         }
 
         const data = await apiClient.getMerchants(params);

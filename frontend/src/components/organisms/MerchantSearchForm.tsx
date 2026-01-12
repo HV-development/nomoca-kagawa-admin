@@ -2,7 +2,16 @@
 
 import React from 'react';
 import Button from '@/components/atoms/Button';
+import Checkbox from '@/components/atoms/Checkbox';
 import { prefectures } from '@/lib/constants/merchant';
+
+// アカウントステータスの定義
+export const accountStatusOptions = [
+  { value: 'inactive', label: '未発行' },
+  { value: 'pending', label: '承認待ち' },
+  { value: 'active', label: '発行済み' },
+  { value: 'suspended', label: '停止中' },
+] as const;
 
 export interface MerchantSearchFormData {
   keyword: string;
@@ -15,7 +24,7 @@ export interface MerchantSearchFormData {
   address: string;
   postalCode: string;
   prefecture: string;
-  accountStatus: string;
+  accountStatuses: string[];
   contractStatus: string;
   createdAtFrom: string;
   createdAtTo: string;
@@ -32,6 +41,7 @@ interface MerchantSearchFormProps {
   isSearchExpanded: boolean;
   isOperatorRole: boolean;
   onInputChange: (field: keyof MerchantSearchFormData, value: string) => void;
+  onAccountStatusChange: (status: string, checked: boolean) => void;
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
@@ -43,6 +53,7 @@ export default function MerchantSearchForm({
   isSearchExpanded,
   isOperatorRole,
   onInputChange,
+  onAccountStatusChange,
   onSearch,
   onClear,
   onToggleExpand,
@@ -224,25 +235,30 @@ export default function MerchantSearchForm({
           )}
         </div>
 
-        {/* アカウント発行、契約ステータス、登録日 */}
-        <div className="flex gap-4">
-          <div className="flex-shrink-0">
-            <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
-              アカウント発行
-            </label>
-            <select
-              id="accountStatus"
-              value={searchForm.accountStatus}
-              onChange={(e) => onInputChange('accountStatus', e.target.value)}
-              className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="">すべて</option>
-              <option value="inactive">未発行</option>
-              <option value="pending">承認待ち</option>
-              <option value="active">発行済み</option>
-              <option value="suspended">停止中</option>
-            </select>
+        {/* アカウントステータス */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            アカウントステータス
+          </label>
+          <div className="flex flex-wrap gap-4">
+            {accountStatusOptions.map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Checkbox
+                  checked={searchForm.accountStatuses.includes(option.value)}
+                  onChange={(checked) => onAccountStatusChange(option.value, checked)}
+                  size="sm"
+                />
+                <span className="text-sm text-gray-700">{option.label}</span>
+              </label>
+            ))}
           </div>
+        </div>
+
+        {/* 契約ステータス、登録日 */}
+        <div className="flex gap-4">
           <div className="flex-shrink-0">
             <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
               契約ステータス

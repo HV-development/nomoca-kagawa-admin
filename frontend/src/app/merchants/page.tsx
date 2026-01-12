@@ -93,7 +93,7 @@ export default function MerchantsPage() {
     address: '',
     postalCode: '',
     prefecture: '',
-    accountStatus: '',
+    accountStatuses: [],
     contractStatus: '',
     createdAtFrom: '',
     createdAtTo: '',
@@ -109,7 +109,7 @@ export default function MerchantsPage() {
     address: '',
     postalCode: '',
     prefecture: '',
-    accountStatus: '',
+    accountStatuses: [],
     contractStatus: '',
     createdAtFrom: '',
     createdAtTo: '',
@@ -272,6 +272,18 @@ export default function MerchantsPage() {
     });
   }, []);
 
+  const handleAccountStatusChange = useCallback((status: string, checked: boolean) => {
+    setSearchForm(prev => {
+      const newStatuses = checked
+        ? [...prev.accountStatuses, status]
+        : prev.accountStatuses.filter(s => s !== status);
+      return {
+        ...prev,
+        accountStatuses: newStatuses
+      };
+    });
+  }, []);
+
   const validateSearchForm = (): boolean => {
     const errors: MerchantSearchErrors = {};
     
@@ -334,7 +346,7 @@ export default function MerchantsPage() {
       address: '',
       postalCode: '',
       prefecture: '',
-      accountStatus: '',
+      accountStatuses: [],
       contractStatus: '',
       createdAtFrom: '',
       createdAtTo: '',
@@ -533,7 +545,7 @@ export default function MerchantsPage() {
         )) &&
         (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
         (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
-        (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
+        (appliedSearchForm.accountStatuses.length === 0 || appliedSearchForm.accountStatuses.includes(merchant.account?.status || 'inactive')) &&
         (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
       
       // 日付範囲のフィルタ
@@ -717,6 +729,7 @@ export default function MerchantsPage() {
           isSearchExpanded={isSearchExpanded}
           isOperatorRole={isOperatorRole}
           onInputChange={handleInputChange}
+          onAccountStatusChange={handleAccountStatusChange}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}

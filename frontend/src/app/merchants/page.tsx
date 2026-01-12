@@ -93,7 +93,7 @@ export default function MerchantsPage() {
     address: '',
     postalCode: '',
     prefecture: '',
-    accountStatus: '',
+    accountStatuses: [],
     contractStatus: '',
     createdAtFrom: '',
     createdAtTo: '',
@@ -109,7 +109,7 @@ export default function MerchantsPage() {
     address: '',
     postalCode: '',
     prefecture: '',
-    accountStatus: '',
+    accountStatuses: [],
     contractStatus: '',
     createdAtFrom: '',
     createdAtTo: '',
@@ -142,7 +142,7 @@ export default function MerchantsPage() {
       }
       
       // 検索条件をAPIパラメータに変換
-      const params: { page: number; limit: number; search?: string; status?: string } = {
+      const params: { page: number; limit: number; search?: string; status?: string; accountStatuses?: string[] } = {
         page: pagination.page,
         limit: pagination.limit,
       };
@@ -155,6 +155,11 @@ export default function MerchantsPage() {
       // 契約ステータスをstatusパラメータに設定（バックエンドAPIのstatusは契約ステータスを指す）
       if (appliedSearchForm.contractStatus) {
         params.status = appliedSearchForm.contractStatus;
+      }
+
+      // アカウントステータスを追加
+      if (appliedSearchForm.accountStatuses.length > 0) {
+        params.accountStatuses = appliedSearchForm.accountStatuses;
       }
       
       const data = await apiClient.getMerchants(params);
@@ -272,6 +277,18 @@ export default function MerchantsPage() {
     });
   }, []);
 
+  const handleAccountStatusChange = useCallback((status: string, checked: boolean) => {
+    setSearchForm(prev => {
+      const newStatuses = checked
+        ? [...prev.accountStatuses, status]
+        : prev.accountStatuses.filter(s => s !== status);
+      return {
+        ...prev,
+        accountStatuses: newStatuses
+      };
+    });
+  }, []);
+
   const validateSearchForm = (): boolean => {
     const errors: MerchantSearchErrors = {};
     
@@ -334,7 +351,7 @@ export default function MerchantsPage() {
       address: '',
       postalCode: '',
       prefecture: '',
-      accountStatus: '',
+      accountStatuses: [],
       contractStatus: '',
       createdAtFrom: '',
       createdAtTo: '',
@@ -450,7 +467,7 @@ export default function MerchantsPage() {
     while (hasMore) {
       try {
         // 検索条件をクエリパラメータに追加
-        const params: { page: number; limit: number; search?: string } = {
+        const params: { page: number; limit: number; search?: string; accountStatuses?: string[] } = {
           page,
           limit,
         };
@@ -458,6 +475,11 @@ export default function MerchantsPage() {
         // フリーワード検索がある場合は追加
         if (appliedSearchForm.keyword) {
           params.search = appliedSearchForm.keyword;
+        }
+
+        // アカウントステータスを追加
+        if (appliedSearchForm.accountStatuses.length > 0) {
+          params.accountStatuses = appliedSearchForm.accountStatuses;
         }
 
         const data = await apiClient.getMerchants(params);
@@ -533,7 +555,7 @@ export default function MerchantsPage() {
         )) &&
         (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
         (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
-        (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
+        (appliedSearchForm.accountStatuses.length === 0 || appliedSearchForm.accountStatuses.includes(merchant.account?.status || 'inactive')) &&
         (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
       
       // 日付範囲のフィルタ
@@ -717,6 +739,7 @@ export default function MerchantsPage() {
           isSearchExpanded={isSearchExpanded}
           isOperatorRole={isOperatorRole}
           onInputChange={handleInputChange}
+          onAccountStatusChange={handleAccountStatusChange}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}

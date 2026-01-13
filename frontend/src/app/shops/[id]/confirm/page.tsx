@@ -59,6 +59,7 @@ interface ShopConfirmData {
   holidaysForSubmit: string;
   paymentCreditJson: { brands: string[]; other?: string } | null;
   paymentCodeJson: { services: string[]; other?: string } | null;
+  servicesJson: Record<string, boolean> | null;
   existingImages: string[];
   imagePreviews: string[];
   hasExistingAccount: boolean;

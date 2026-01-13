@@ -141,7 +141,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     couponUsageStart: '',
     couponUsageEnd: '',
     couponUsageDays: '',
-    services: '',
     paymentMydigi: false,
     paymentCash: true,
     paymentCredit: '',
@@ -161,6 +160,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [customServicesText, setCustomServicesText] = useState<string>('');
 
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<Merchant | null>(null);
@@ -430,7 +431,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
 
-            // servicesを除外してからsetFormDataを呼び出す（後で文字列形式で設定）
             const { services: _services, ...shopDataWithoutServices } = shopData;
             setFormData({
               ...shopDataWithoutServices,
@@ -446,8 +446,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               details: shopData.details ?? '',
               // areaがnullの場合は空文字列に変換
               area: shopData.area ?? '',
-              // servicesは後で文字列形式で設定される
-              services: '',
+              // servicesはRecord形式を維持
+              services: shopData.services ?? undefined,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -556,52 +556,45 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
 
-            // サービス情報の設定（Record<string, boolean>形式から読み込み）
-            const shopDataWithServices = shopData as ShopDataResponse & { services?: Record<string, boolean> | null };
-            if (shopDataWithServices.services) {
-              // Record<string, boolean>形式として扱う
-              if (typeof shopDataWithServices.services === 'object' && !Array.isArray(shopDataWithServices.services)) {
-                // Record形式から配列に変換
+            // サービス情報の設定（Record<string, boolean>形式を配列に変換）
+            const shopDataWithServices = shopData as ShopDataResponse & { services?: Record<string, boolean> | string | null };
+            let servicesValue: Record<string, boolean> | string | null | undefined = shopDataWithServices.services;
+
+            if (servicesValue === null || servicesValue === undefined) {
+              setSelectedServices([]);
+              setCustomServicesText('');
+            } else {
+              if (typeof servicesValue === 'string') {
+                try {
+                  if (servicesValue.trim() === '') {
+                    servicesValue = null;
+                  } else {
+                    servicesValue = JSON.parse(servicesValue) as Record<string, boolean>;
+                  }
+                } catch {
+                  servicesValue = null;
+                }
+              }
+
+              if (servicesValue && typeof servicesValue === 'object' && !Array.isArray(servicesValue)) {
                 const servicesArray: string[] = [];
-                Object.keys(shopDataWithServices.services).forEach(key => {
-                  if (shopDataWithServices.services![key] === true) {
+                Object.keys(servicesValue).forEach((key) => {
+                  if ((servicesValue as Record<string, boolean>)[key] === true) {
                     servicesArray.push(key);
                   }
                 });
-                setFormData(prev => ({
-                  ...prev,
-                  services: servicesArray.join(',')
-                }));
-              } else if (typeof shopDataWithServices.services === 'string') {
-                // 文字列形式の場合（旧形式のフォールバック）
-                try {
-                  const parsed = JSON.parse(shopDataWithServices.services);
-                  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                    // Record形式の場合
-                    const servicesArray: string[] = [];
-                    Object.keys(parsed).forEach(key => {
-                      if (parsed[key] === true) {
-                        servicesArray.push(key);
-                      }
-                    });
-                    setFormData(prev => ({
-                      ...prev,
-                      services: servicesArray.join(',')
-                    }));
-                  } else if (parsed && parsed.services && Array.isArray(parsed.services)) {
-                    // 旧形式（{ services: string[] }）の場合
-                    setFormData(prev => ({
-                      ...prev,
-                      services: parsed.services.join(',')
-                    }));
-                  }
-                } catch {
-                  // パースに失敗した場合は空文字列
-                  setFormData(prev => ({
-                    ...prev,
-                    services: ''
-                  }));
-                }
+                setSelectedServices(servicesArray);
+              } else if (
+                servicesValue &&
+                typeof servicesValue === 'object' &&
+                'services' in (servicesValue as Record<string, unknown>) &&
+                Array.isArray((servicesValue as { services?: unknown }).services)
+              ) {
+                const parsedServices = ((servicesValue as { services?: string[] }).services || []).filter(Boolean);
+                setSelectedServices(parsedServices);
+              } else {
+                setSelectedServices([]);
+                setCustomServicesText('');
               }
             }
 
@@ -892,6 +885,18 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
       
+      const isServicesOtherSelected = selectedServices.includes('その他');
+      const servicesJson = selectedServices.length > 0 ? (() => {
+        const servicesRecord: Record<string, boolean> = {};
+        selectedServices.filter(s => s !== 'その他').forEach(service => {
+          servicesRecord[service] = true;
+        });
+        if (isServicesOtherSelected && customServicesText) {
+          servicesRecord['その他'] = true;
+        }
+        return servicesRecord;
+      })() : null;
+      
       // 「その他」選択時にテキストを含める定休日文字列を生成
       const isHolidayOtherSelected = selectedHolidays.includes('その他');
       const holidaysForSubmit = selectedHolidays.map(h => {
@@ -901,13 +906,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         return h;
       }).join(',');
 
+      const { services: _formDataServices, ...formDataWithoutServices } = formData;
+
       const dataToValidate = {
-        ...formData,
+        ...formDataWithoutServices,
         // 空文字列の場合はnullに変換（zodのバリデーションに対応）
         accountEmail: formData.accountEmail || null,
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        services: servicesJson,
         // クーポン利用時間の空文字列をnullに変換
         couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
         couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
@@ -1090,8 +1098,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
 
+      const { services: _dataToValidateServices, ...dataToValidateWithoutServices } = dataToValidate;
+      const servicesForValidation = servicesJson === null ? undefined : servicesJson;
+
       // アカウント発行が無効な場合はパスワードフィールドを除外
-      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = {
+        ...dataToValidateWithoutServices,
+        services: servicesForValidation,
+      } as ExtendedShopCreateRequest & { applications?: string[] };
       // applications はZodチェック前に除去（後で送信データに 'tamanomi' を設定）
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;
@@ -1101,7 +1115,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         dataForZodValidation = { ...rest, accountEmail: null };
       }
 
-      const validationResult = schema.safeParse(dataForZodValidation);
+      // Zodのスキーマ側でservicesが配列形式を期待するケースがあり、
+      // Record<string, boolean>を渡すとinvalid_typeになることがあるため、servicesを一時的に除外して検証する。
+      const { services: _servicesForSubmit, ...dataForZodValidationWithoutServices } = dataForZodValidation;
+      const validationResult = schema.safeParse(dataForZodValidationWithoutServices);
 
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
@@ -1140,10 +1157,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customCreditText: isCreditOtherSelected ? customCreditText : '',
         selectedQrBrands,
         customQrText: isQrOtherSelected ? customQrText : '',
-        selectedServices: formData.services ? formData.services.split(',').filter(Boolean) : [],
+        selectedServices,
+        customServicesText: isServicesOtherSelected ? customServicesText : '',
         holidaysForSubmit,
         paymentCreditJson,
         paymentCodeJson,
+        servicesJson,
         existingImages,
         imagePreviews,
         hasExistingAccount,
@@ -1152,15 +1171,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         sceneNames: scenes.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>),
       };
 
-      // confirmDataのservices確認ログ
-      console.log('[ShopForm] sessionStorage保存前のconfirmDataのservices確認:', {
-        'formData.services値': formData.services,
-        'formData.services型': typeof formData.services,
-        'confirmData.selectedServices存在': 'selectedServices' in confirmData,
-        'confirmData.selectedServices値': confirmData.selectedServices,
-        'confirmData.selectedServices型': typeof confirmData.selectedServices,
-        'confirmData.selectedServices配列か': Array.isArray(confirmData.selectedServices),
-        'confirmData全体（JSON、最初の500文字）': JSON.stringify(confirmData).substring(0, 500),
+      // services確認ログ
+      console.log('[ShopForm] sessionStorage保存前のservices確認:', {
+        selectedServices,
+        servicesJson,
+        servicesJsonType: typeof servicesJson,
+        selectedServicesLength: selectedServices.length,
+        confirmDataPreview: JSON.stringify(confirmData).substring(0, 500),
       });
 
       // sessionStorageにデータを保存
@@ -2037,13 +2054,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   <label key={service} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.services?.split(',').filter(Boolean).includes(service) || false}
+                      checked={selectedServices.includes(service)}
                       onChange={(e) => {
-                        const current = formData.services?.split(',').filter(Boolean) || [];
-                        const updated = e.target.checked
-                          ? [...current, service]
-                          : current.filter(s => s !== service);
-                        handleInputChange('services', updated.join(','));
+                        if (e.target.checked) {
+                          setSelectedServices([...selectedServices, service]);
+                        } else {
+                          setSelectedServices(selectedServices.filter(s => s !== service));
+                        }
                       }}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />

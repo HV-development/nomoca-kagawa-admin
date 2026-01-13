@@ -29,3 +29,15 @@ export const statusOptions = [
   { value: 'suspended', label: '停止中' },
   { value: 'terminated', label: '終了' },
 ] as const;
+
+// サービス情報の選択項目
+export const SERVICE_OPTIONS = [
+  '個室あり',
+  '半個室あり',
+  'お座敷あり',
+  'ペット可',
+  '食べ放題',
+  '飲み放題',
+  '事前予約推奨（ディナー）',
+  '事前予約推奨（ランチ）',
+] as const;

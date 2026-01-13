@@ -17,7 +17,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, KAGAWA_AREAS } from '@/lib/constants/japan';
-import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
@@ -160,6 +160,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [customServicesText, setCustomServicesText] = useState<string>('');
 
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<Merchant | null>(null);
@@ -429,8 +431,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               : rawPaymentApps;
             const paymentMydigiValue = paymentAppsData?.mydigi ?? shopData.paymentMydigi ?? false;
 
+            const { services: _services, ...shopDataWithoutServices } = shopData;
             setFormData({
-              ...shopData,
+              ...shopDataWithoutServices,
               merchantId: finalMerchantId,
               createAccount: !!accountEmail, // accountEmailが存在する場合はcreateAccountをtrueに
               // latitude/longitudeを文字列に変換
@@ -438,8 +441,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               longitude: shopData.longitude ? String(shopData.longitude) : '',
               // paymentAppsからpaymentMydigiを設定
               paymentMydigi: paymentMydigiValue,
+              // descriptionとdetailsがnullの場合は空文字列に変換
+              description: shopData.description ?? '',
+              details: shopData.details ?? '',
               // areaがnullの場合は空文字列に変換
               area: shopData.area ?? '',
+              // servicesはRecord形式を維持
+              services: shopData.services ?? undefined,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -546,6 +554,48 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
+            }
+
+            // サービス情報の設定（Record<string, boolean>形式を配列に変換）
+            const shopDataWithServices = shopData as ShopDataResponse & { services?: Record<string, boolean> | string | null };
+            let servicesValue: Record<string, boolean> | string | null | undefined = shopDataWithServices.services;
+
+            if (servicesValue === null || servicesValue === undefined) {
+              setSelectedServices([]);
+              setCustomServicesText('');
+            } else {
+              if (typeof servicesValue === 'string') {
+                try {
+                  if (servicesValue.trim() === '') {
+                    servicesValue = null;
+                  } else {
+                    servicesValue = JSON.parse(servicesValue) as Record<string, boolean>;
+                  }
+                } catch {
+                  servicesValue = null;
+                }
+              }
+
+              if (servicesValue && typeof servicesValue === 'object' && !Array.isArray(servicesValue)) {
+                const servicesArray: string[] = [];
+                Object.keys(servicesValue).forEach((key) => {
+                  if ((servicesValue as Record<string, boolean>)[key] === true) {
+                    servicesArray.push(key);
+                  }
+                });
+                setSelectedServices(servicesArray);
+              } else if (
+                servicesValue &&
+                typeof servicesValue === 'object' &&
+                'services' in (servicesValue as Record<string, unknown>) &&
+                Array.isArray((servicesValue as { services?: unknown }).services)
+              ) {
+                const parsedServices = ((servicesValue as { services?: string[] }).services || []).filter(Boolean);
+                setSelectedServices(parsedServices);
+              } else {
+                setSelectedServices([]);
+                setCustomServicesText('');
+              }
             }
 
             // フォームの基本データが取得できたので、すぐにフォームを表示
@@ -691,23 +741,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
-    // 更新されたformDataを作成（バリデーション用）
-    const updatedFormData = {
-      ...formData,
-      [field]: value,
-    };
+    let updatedFormData: ExtendedShopCreateRequest;
+    let updatedTouchedFields: Record<string, boolean>;
+    
+    setFormData((prevFormData) => {
+      updatedFormData = {
+        ...prevFormData,
+        [field]: value,
+      };
+      return updatedFormData;
+    });
+    
+    setTouchedFields((prevTouchedFields) => {
+      updatedTouchedFields = {
+        ...prevTouchedFields,
+        [field]: true,
+      };
 
-    // フィールドが触られたことを記録（常に更新）
-    const updatedTouchedFields = {
-      ...touchedFields,
-      [field]: true,
-    };
+      // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
+      validateField(field, value, updatedFormData, updatedTouchedFields);
 
-    setFormData(updatedFormData);
-    setTouchedFields(updatedTouchedFields);
-
-    // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
-    validateField(field, value, updatedFormData, updatedTouchedFields);
+      return updatedTouchedFields;
+    });
   };
 
   // onBlurイベントハンドラー（フィールドが触られたことを記録してバリデーション実行）
@@ -830,6 +885,18 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
       
+      const isServicesOtherSelected = selectedServices.includes('その他');
+      const servicesJson = selectedServices.length > 0 ? (() => {
+        const servicesRecord: Record<string, boolean> = {};
+        selectedServices.filter(s => s !== 'その他').forEach(service => {
+          servicesRecord[service] = true;
+        });
+        if (isServicesOtherSelected && customServicesText) {
+          servicesRecord['その他'] = true;
+        }
+        return servicesRecord;
+      })() : null;
+      
       // 「その他」選択時にテキストを含める定休日文字列を生成
       const isHolidayOtherSelected = selectedHolidays.includes('その他');
       const holidaysForSubmit = selectedHolidays.map(h => {
@@ -839,13 +906,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         return h;
       }).join(',');
 
+      const { services: _formDataServices, ...formDataWithoutServices } = formData;
+
       const dataToValidate = {
-        ...formData,
+        ...formDataWithoutServices,
         // 空文字列の場合はnullに変換（zodのバリデーションに対応）
         accountEmail: formData.accountEmail || null,
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        services: servicesJson,
         // クーポン利用時間の空文字列をnullに変換
         couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
         couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
@@ -1028,8 +1098,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
 
+      const { services: _dataToValidateServices, ...dataToValidateWithoutServices } = dataToValidate;
+      const servicesForValidation = servicesJson === null ? undefined : servicesJson;
+
       // アカウント発行が無効な場合はパスワードフィールドを除外
-      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = {
+        ...dataToValidateWithoutServices,
+        services: servicesForValidation,
+      } as ExtendedShopCreateRequest & { applications?: string[] };
       // applications はZodチェック前に除去（後で送信データに 'tamanomi' を設定）
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;
@@ -1039,7 +1115,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         dataForZodValidation = { ...rest, accountEmail: null };
       }
 
-      const validationResult = schema.safeParse(dataForZodValidation);
+      // Zodのスキーマ側でservicesが配列形式を期待するケースがあり、
+      // Record<string, boolean>を渡すとinvalid_typeになることがあるため、servicesを一時的に除外して検証する。
+      const { services: _servicesForSubmit, ...dataForZodValidationWithoutServices } = dataForZodValidation;
+      const validationResult = schema.safeParse(dataForZodValidationWithoutServices);
 
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
@@ -1078,9 +1157,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customCreditText: isCreditOtherSelected ? customCreditText : '',
         selectedQrBrands,
         customQrText: isQrOtherSelected ? customQrText : '',
+        selectedServices,
+        customServicesText: isServicesOtherSelected ? customServicesText : '',
         holidaysForSubmit,
         paymentCreditJson,
         paymentCodeJson,
+        servicesJson,
         existingImages,
         imagePreviews,
         hasExistingAccount,
@@ -1088,6 +1170,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // シーン名のマッピング用
         sceneNames: scenes.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>),
       };
+
+      // services確認ログ
+      console.log('[ShopForm] sessionStorage保存前のservices確認:', {
+        selectedServices,
+        servicesJson,
+        servicesJsonType: typeof servicesJson,
+        selectedServicesLength: selectedServices.length,
+        confirmDataPreview: JSON.stringify(confirmData).substring(0, 500),
+      });
 
       // sessionStorageにデータを保存
       try {
@@ -1712,7 +1803,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <textarea
                 name="description"
-                value={formData.description}
+                value={formData.description ?? ''}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
                 maxLength={500}
@@ -1736,7 +1827,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <textarea
                 name="details"
-                value={formData.details}
+                value={formData.details ?? ''}
                 onChange={(e) => handleInputChange('details', e.target.value)}
                 rows={6}
                 maxLength={1000}
@@ -1951,6 +2042,33 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 ))}
               </div>
               <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
+            </div>
+
+            {/* サービス情報 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                サービス情報
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {SERVICE_OPTIONS.map((service) => (
+                  <label key={service} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedServices.includes(service)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedServices([...selectedServices, service]);
+                        } else {
+                          setSelectedServices(selectedServices.filter(s => s !== service));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{service}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">サービス情報を選択してください（任意）</p>
             </div>
           </div>
         </div>

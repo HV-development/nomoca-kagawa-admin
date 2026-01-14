@@ -39,6 +39,7 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
 
 export default function MerchantsPage() {
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const lastFetchKeyRef = useRef<string | null>(null);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [myMerchant, setMyMerchant] = useState<Merchant | null>(null);
@@ -710,7 +711,7 @@ export default function MerchantsPage() {
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center">
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

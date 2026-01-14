@@ -173,6 +173,7 @@ export default function UserDetailPage() {
   const params = useParams<{ id?: string }>();
   const userId = params?.id ?? '';
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
 
   const [user, setUser] = useState<UserDetailView | null>(null);
@@ -402,7 +403,7 @@ export default function UserDetailPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+              <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

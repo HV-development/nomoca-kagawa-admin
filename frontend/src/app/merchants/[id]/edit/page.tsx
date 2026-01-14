@@ -17,6 +17,7 @@ export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const merchantId = params.id as string;
   
@@ -457,7 +458,7 @@ export default function MerchantEditPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

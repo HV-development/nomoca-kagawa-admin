@@ -11,12 +11,8 @@ export default function UserHeader({ className = '' }: UserHeaderProps) {
   const auth = useAuth();
   const router = useRouter();
   
-  // 実際の実装では認証コンテキストやセッションから取得
-  const currentUser = {
-    name: '管理者太郎',
-    role: '管理者',
-    loginTime: '2024/01/15 10:30'
-  };
+  const displayName = auth?.user?.name ?? '—';
+  const roleLabel = auth?.user?.role ?? auth?.user?.accountType ?? '—';
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -36,14 +32,11 @@ export default function UserHeader({ className = '' }: UserHeaderProps) {
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium text-gray-900">
-              {currentUser.name}
+            {displayName}
             </span>
             <span className="text-xs text-gray-500">
-              ({currentUser.role})
+            ({roleLabel})
             </span>
-          </div>
-          <div className="text-xs text-gray-500">
-            ログイン時刻: {currentUser.loginTime}
           </div>
         </div>
         <button

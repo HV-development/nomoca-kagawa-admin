@@ -28,6 +28,7 @@ export default function MerchantShopsPage() {
   const baseReturnTo = useMemo(() => `/merchants/${merchantId}/shops`, [merchantId]);
   const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -354,7 +355,7 @@ export default function MerchantShopsPage() {
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center">
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

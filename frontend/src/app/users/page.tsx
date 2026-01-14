@@ -32,6 +32,7 @@ interface User {
 
 export default function UsersPage() {
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const lastFetchKeyRef = useRef<string | null>(null);
 
   // operatorロールかどうかを判定
@@ -498,7 +499,7 @@ export default function UsersPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

@@ -32,6 +32,7 @@ interface CouponUsage {
 
 export default function CouponHistoryPage() {
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const accountType = auth?.user?.accountType;
   const role = auth?.user?.role;
   const isAdmin = accountType === 'admin' && ['sysadmin', 'operator', 'viewer'].includes(role || '');
@@ -246,7 +247,7 @@ export default function CouponHistoryPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

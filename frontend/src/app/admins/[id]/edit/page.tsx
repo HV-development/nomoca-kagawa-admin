@@ -13,12 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
 import { handleAdminError } from '@/hooks/use-admin-error-handler';
 import { type AdminFormData, type AdminAccountInput } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
 
 export const dynamic = 'force-dynamic';
 
 function AdminEditForm() {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const adminId = params.id as string;
   
@@ -160,7 +163,7 @@ function AdminEditForm() {
                 <div className="text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Icon name="admin" size="sm" className="text-gray-600" />
-                    <span className="font-medium text-gray-900">管理者太郎</span>
+                      <span className="font-medium text-gray-900">{displayName}</span>
                   </div>
                 </div>
               </div>
@@ -214,7 +217,7 @@ function AdminEditForm() {
                 <div className="text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Icon name="admin" size="sm" className="text-gray-600" />
-                    <span className="font-medium text-gray-900">管理者太郎</span>
+                      <span className="font-medium text-gray-900">{displayName}</span>
                   </div>
                 </div>
               </div>

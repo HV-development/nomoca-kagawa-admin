@@ -7,6 +7,7 @@ import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface UserData {
   nickname: string;
@@ -22,6 +23,8 @@ export default function UserEditConfirmPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const userId = params.id as string;
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const [userData, setUserData] = useState<UserData | null>(null);
   const { toasts, removeToast, showSuccess } = useToast();
 
@@ -100,7 +103,7 @@ export default function UserEditConfirmPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

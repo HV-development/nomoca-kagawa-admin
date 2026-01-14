@@ -38,6 +38,7 @@ function CouponEditPageContent() {
   const searchParams = useSearchParams();
   const couponId = params.id as string;
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showError } = useToast();
   const isAdminAccount = auth?.user?.accountType === 'admin';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
@@ -400,7 +401,7 @@ function CouponEditPageContent() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

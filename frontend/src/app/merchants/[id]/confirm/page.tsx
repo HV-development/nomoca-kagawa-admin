@@ -8,6 +8,7 @@ import Icon from '@/components/atoms/Icon';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
+import { useAuth } from '@/components/contexts/auth-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,8 @@ interface MerchantEditConfirmData {
 function MerchantEditConfirmContent() {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const merchantId = params.id as string;
   const { toasts, removeToast, showError } = useToast();
   const [merchantData, setMerchantData] = useState<MerchantEditConfirmData | null>(null);
@@ -157,7 +160,7 @@ function MerchantEditConfirmContent() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

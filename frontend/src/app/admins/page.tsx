@@ -12,6 +12,7 @@ import { type Admin, type AdminSearchForm as AdminSearchFormData } from '@hv-dev
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,8 @@ export default function AdminsPage() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   
   // URLパラメータまたはsessionStorageからトーストメッセージを表示（重複防止）
   const toastShownRef = useRef(false);
@@ -209,7 +212,7 @@ export default function AdminsPage() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

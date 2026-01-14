@@ -25,6 +25,7 @@ const FloatingFooter = dynamic(() => import('@/components/molecules/floating-foo
 
 function ShopsPageContent() {
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const router = useRouter();
   const lastFetchKeyRef = useRef<string | null>(null);
   const searchParams = useSearchParams();
@@ -761,6 +762,11 @@ function ShopsPageContent() {
               <p className="text-gray-600">
                 {isShopAccount ? '自身の店舗情報を確認できます' : '店舗の管理・編集を行います'}
               </p>
+            </div>
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center space-x-2">
+                <span className="font-medium text-gray-900">{displayName}</span>
+              </div>
             </div>
           </div>
           

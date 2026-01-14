@@ -9,12 +9,15 @@ import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
 
 type ShopManagementProps = {
   merchantId?: string;
 };
 
 export default function ShopManagement({ merchantId }: ShopManagementProps) {
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const lastFetchKeyRef = useRef<string | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
@@ -225,7 +228,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center">
-                <span className="font-medium text-gray-900">管理者太郎</span>
+              <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>

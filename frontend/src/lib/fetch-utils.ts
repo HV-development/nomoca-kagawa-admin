@@ -73,9 +73,16 @@ export async function secureFetchWithCommonHeaders(
   options: RequestInit & { headerOptions?: HeaderOptions } = {}
 ): Promise<Response> {
   const { headerOptions, ...fetchOptions } = options
-  
+
+  // ボディの有無に応じてContent-Typeを自動設定（明示指定がある場合はそれを優先）
+  const hasBody = typeof fetchOptions.body !== 'undefined' && fetchOptions.body !== null
+  const effectiveHeaderOptions: HeaderOptions = {
+    ...headerOptions,
+    setContentType: headerOptions?.setContentType ?? hasBody,
+  }
+
   // 共通ヘッダーを生成
-  const commonHeaders = buildCommonHeaders(request, headerOptions)
+  const commonHeaders = buildCommonHeaders(request, effectiveHeaderOptions)
   
   // 既存のヘッダーとマージ（options.headersが優先）
   const headers = {

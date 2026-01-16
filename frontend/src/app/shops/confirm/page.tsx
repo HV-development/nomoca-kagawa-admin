@@ -171,6 +171,7 @@ function ShopConfirmContent() {
         status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
+        createAccount: shopData.createAccount,
         password: shopData.createAccount ? shopData.password : undefined,
       };
 

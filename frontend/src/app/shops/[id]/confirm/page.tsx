@@ -202,6 +202,8 @@ function ShopEditConfirmContent() {
         images: shopData.existingImages,
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
+        createAccount: shopData.createAccount,
+        password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
       };
 
       // submitDataのservices確認ログ

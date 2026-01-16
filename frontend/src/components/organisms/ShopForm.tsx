@@ -718,6 +718,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const merchant = selectedMerchantDetails?.id === formData.merchantId
       ? selectedMerchantDetails
       : merchants.find(m => m.id === formData.merchantId);
+    const merchantPhone = merchant?.phone || merchant?.representativePhone || '';
     
     if (merchant) {
       setFormData(prev => ({
@@ -735,7 +736,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 番地以降
         address1: merchant.address1 || '',
         // 建物名
-        address2: merchant.address2 || ''
+        address2: merchant.address2 || '',
+        // 電話番号は親事業者からコピーしない（仕様合わせ）
+        phone: prev.phone === merchantPhone ? '' : prev.phone
       }));
     }
   };

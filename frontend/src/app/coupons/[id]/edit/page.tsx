@@ -235,6 +235,25 @@ function CouponEditPageContent() {
     }
   };
 
+  const handleImageRemove = () => {
+    // 既存画像を削除し、アップロード中のファイルもリセット
+    setFormData(prev => ({
+      ...prev,
+      couponImage: null,
+      imagePreview: '',
+      imageUrl: ''
+    }));
+
+    const newErrors = { ...errors };
+    delete newErrors.couponImage;
+    setErrors(newErrors);
+
+    const fileInput = document.getElementById('couponImage') as HTMLInputElement | null;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const validateAllFields = (): boolean => {
     const newErrors: Partial<Record<keyof CouponFormData, string>> = {};
 
@@ -349,8 +368,13 @@ function CouponEditPageContent() {
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
           drinkType: (formData.drinkType === 'alcohol' || formData.drinkType === 'soft_drink' || formData.drinkType === 'other') ? formData.drinkType : null,
-          imageUrl: finalImageUrl || null
         };
+        
+        if (finalImageUrl) {
+          updateData.imageUrl = finalImageUrl;
+        } else if (finalImageUrl === '') {
+          updateData.imageUrl = null;
+        }
         
         await apiClient.updateCoupon(couponId, updateData);
         router.push('/coupons?toast=' + encodeURIComponent('クーポン情報を更新しました'));
@@ -574,7 +598,7 @@ function CouponEditPageContent() {
                 )}
                 
                 {/* アップロードボタン */}
-                <div>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
                   <input
                     type="file"
                     id="couponImage"
@@ -590,10 +614,20 @@ function CouponEditPageContent() {
                   >
                     {isUploading ? 'アップロード中...' : '画像アップロード'}
                   </Button>
-                  <p className="mt-1 text-xs text-gray-500">
-                    PNG, JPG, WEBP形式の画像をアップロードできます（最大10MB）
-                  </p>
+                  {(formData.imagePreview || formData.imageUrl) && (
+                    <Button
+                      variant="outline"
+                      onClick={handleImageRemove}
+                      className="w-full md:w-auto border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={isUploading}
+                    >
+                      画像を削除
+                    </Button>
+                  )}
                 </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  PNG, JPG, WEBP形式の画像をアップロードできます（最大10MB）
+                </p>
               </div>
               {errors.couponImage && (
                 <p className="mt-1 text-sm text-red-500">{errors.couponImage}</p>

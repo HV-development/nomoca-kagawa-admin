@@ -11,6 +11,7 @@ import type { CouponUpdateRequest } from '@hv-development/schemas';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { useAuth } from '@/components/contexts/auth-context';
+import { compressImageFile } from '@/utils/imageUtils';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -93,8 +94,83 @@ function CouponEditConfirmPageContent() {
     
     setIsSubmitting(true);
     try {
-      // imageUrlが空文字列の場合はプロパティ自体を含めない
-      const imageUrl = couponData.imageUrl && couponData.imageUrl.trim() !== '' ? couponData.imageUrl : undefined;
+      // 新しく追加された画像をアップロード
+      let uploadedImageUrl: string | undefined = undefined;
+      if (couponData.imagePreview && couponData.imagePreview.startsWith('data:')) {
+        try {
+          // クーポン情報を取得してshopIdとmerchantIdを取得
+          const couponInfo = await apiClient.getCoupon(couponId) as { shopId?: string; shop?: { id: string; merchantId?: string; merchant?: { id: string } } };
+          const shopId = couponInfo.shopId || couponInfo.shop?.id;
+          const merchantId = couponInfo.shop?.merchantId || couponInfo.shop?.merchant?.id;
+          
+          if (!shopId || !merchantId) {
+            throw new Error('店舗IDまたは事業者IDが取得できませんでした');
+          }
+          
+          // data:URLから画像を取得してFileオブジェクトに変換
+          const base64Data = couponData.imagePreview.split(',')[1];
+          const mimeType = couponData.imagePreview.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: mimeType });
+          const file = new File([blob], 'coupon-image.jpg', { type: mimeType });
+          
+          // 画像を圧縮
+          const fileForUpload = await compressImageFile(file, {
+            maxBytes: 9.5 * 1024 * 1024,
+            maxWidth: 2560,
+            maxHeight: 2560,
+            initialQuality: 0.9,
+            minQuality: 0.6,
+            qualityStep: 0.1,
+          });
+          
+          // タイムスタンプを生成
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          
+          // FormDataを作成
+          const uploadFormData = new FormData();
+          uploadFormData.append('image', fileForUpload);
+          uploadFormData.append('type', 'coupon');
+          uploadFormData.append('shopId', shopId);
+          uploadFormData.append('merchantId', merchantId);
+          uploadFormData.append('couponId', couponId);
+          uploadFormData.append('timestamp', timestamp);
+          
+          // 画像をアップロード
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+            credentials: 'include',
+          });
+          
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json().catch(() => ({}));
+            const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
+            console.error('❌ Upload failed:', uploadResponse.status, errorData);
+            throw new Error(`${message} (status: ${uploadResponse.status})`);
+          }
+          
+          const uploadData = await uploadResponse.json();
+          uploadedImageUrl = uploadData.url;
+        } catch (uploadError) {
+          console.error('画像のアップロードに失敗しました:', uploadError);
+          const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
+          showError(`画像のアップロードに失敗しました: ${errorMessage}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // バリデーションエラー回避のため、URI形式の場合のみ送信
+      const previewHttpUrl = couponData.imagePreview?.startsWith('http') ? couponData.imagePreview : undefined;
+      const imageUrl = uploadedImageUrl
+        ?? (couponData.imageUrl && couponData.imageUrl.trim() !== '' ? couponData.imageUrl : undefined)
+        ?? previewHttpUrl;
+      const shouldDeleteImage = !imageUrl && !couponData.imagePreview;
       
       const updateData: Partial<CouponUpdateRequest> = {
         title: couponData.couponName,
@@ -103,9 +179,10 @@ function CouponEditConfirmPageContent() {
         drinkType: (couponData.drinkType === 'alcohol' || couponData.drinkType === 'soft_drink' || couponData.drinkType === 'other') ? couponData.drinkType : undefined,
       };
       
-      // imageUrlが有効な場合のみ追加
       if (imageUrl) {
         updateData.imageUrl = imageUrl;
+      } else if (shouldDeleteImage) {
+        updateData.imageUrl = null;
       }
       
       await apiClient.updateCoupon(couponId, updateData);

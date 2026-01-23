@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { getAuthHeader, getRefreshToken } from '@/lib/header-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
-import { COOKIE_MAX_AGE } from '@/lib/cookie-config';
+import { COOKIE_MAX_AGE, COOKIE_NAMES } from '@/lib/cookie-config';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
@@ -94,7 +94,11 @@ export async function GET(request: NextRequest) {
       })();
 
       // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
-      nextResponse.cookies.set('accessToken', token, {
+      // 旧Cookie（プレフィックス無し）を削除して衝突を解消
+      nextResponse.cookies.set('accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
+      nextResponse.cookies.set('__Host-accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
+
+      nextResponse.cookies.set(COOKIE_NAMES.ACCESS_TOKEN, token, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
@@ -104,7 +108,7 @@ export async function GET(request: NextRequest) {
 
       // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
       if (isSecure) {
-        nextResponse.cookies.set('__Host-accessToken', token, {
+        nextResponse.cookies.set(COOKIE_NAMES.HOST_ACCESS_TOKEN, token, {
           httpOnly: true,
           secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
@@ -115,7 +119,11 @@ export async function GET(request: NextRequest) {
 
       if (refreshResult.refreshToken) {
         // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
-        nextResponse.cookies.set('refreshToken', refreshResult.refreshToken, {
+        // 旧Cookie（プレフィックス無し）を削除して衝突を解消
+        nextResponse.cookies.set('refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
+        nextResponse.cookies.set('__Host-refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
+
+        nextResponse.cookies.set(COOKIE_NAMES.REFRESH_TOKEN, refreshResult.refreshToken, {
           httpOnly: true,
           secure: isSecure,
           sameSite: 'lax',
@@ -124,7 +132,7 @@ export async function GET(request: NextRequest) {
         });
         // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
         if (isSecure) {
-          nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
+          nextResponse.cookies.set(COOKIE_NAMES.HOST_REFRESH_TOKEN, refreshResult.refreshToken, {
             httpOnly: true,
             secure: true, // __Host-プレフィックスは必ずsecure: true
             sameSite: 'lax',

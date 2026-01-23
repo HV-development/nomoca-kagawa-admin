@@ -255,7 +255,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
     });
 
   describe('🍪 Cookie処理', () => {
-    it('__Host-accessToken から取得できる', async () => {
+    it('__Host-付きのアクセストークンCookieから取得できる', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -263,7 +263,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
     });
 
       const headers = new Headers();
-      headers.set('cookie', '__Host-accessToken=my-token-value');
+      headers.set('cookie', '__Host-nomoca_admin_accessToken=my-token-value');
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,
@@ -281,7 +281,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       );
     });
 
-    it('accessToken が優先される', async () => {
+    it('通常Cookieのアクセストークンが優先される', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -289,7 +289,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
     });
 
       const headers = new Headers();
-      headers.set('cookie', 'accessToken=token1; __Host-accessToken=token2');
+      headers.set('cookie', 'nomoca_admin_accessToken=token1; __Host-nomoca_admin_accessToken=token2');
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,

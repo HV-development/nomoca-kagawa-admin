@@ -2071,7 +2071,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-gray-500">サービス情報を選択してください（任意）</p>
+              <p className="mt-1 text-xs text-gray-500">サービス情報を選択してください（任意）　</p>
             </div>
           </div>
         </div>

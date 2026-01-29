@@ -88,6 +88,7 @@ export type ExtendedShopCreateRequest = Omit<ShopCreateRequest, 'services'> & {
   paymentMydigi?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string;
+  confirmPassword?: string; // パスワード確認用
 };
 
 

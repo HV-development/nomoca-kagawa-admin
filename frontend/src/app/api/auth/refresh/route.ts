@@ -50,7 +50,12 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: Refresh token failed', { status: response.status, error: errorData });
+      console.error('❌ API Route: Refresh token failed', {
+        status: response.status,
+        error: errorData,
+        hasRefreshCookie: true,
+        host: request.headers.get('host'),
+      });
       return createNoCacheResponse(errorData, { status: response.status });
     }
 

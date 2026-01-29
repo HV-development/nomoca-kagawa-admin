@@ -149,6 +149,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     status: 'registering',
     createAccount: false,
     password: '',
+    confirmPassword: '',
   });
 
   // 利用シーンの複数選択用
@@ -1113,7 +1114,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;
       }
-      if (!formData.createAccount) {
+      
+      // 編集時は、パスワードが空文字列の場合は除外（変更しないという意図）
+      if (isEdit) {
+        if (!dataForZodValidation.password || dataForZodValidation.password.trim().length === 0) {
+          const { password: _password, confirmPassword: _confirmPassword, ...rest } = dataForZodValidation;
+          dataForZodValidation = { ...rest };
+        }
+      } else if (!formData.createAccount) {
+        // 新規作成時でアカウント発行が無効な場合はパスワードフィールドを除外
         const { password: _password, ...rest } = dataForZodValidation;
         dataForZodValidation = { ...rest, accountEmail: null };
       }
@@ -2131,10 +2140,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           createAccount={formData.createAccount ?? false}
           accountEmail={formData.accountEmail || ''}
           password={formData.password || ''}
+          confirmPassword={formData.confirmPassword || ''}
           validationErrors={validationErrors}
           onCreateAccountChange={(value) => handleInputChange('createAccount', value)}
           onAccountEmailChange={(value) => handleInputChange('accountEmail', value)}
           onPasswordChange={(value) => handleInputChange('password', value)}
+          onConfirmPasswordChange={(value) => handleInputChange('confirmPassword', value)}
           onValidationErrorChange={(field, error) => {
             setValidationErrors(prev => {
               const newErrors = { ...prev };

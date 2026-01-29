@@ -56,7 +56,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
+        // /api/me から現在のアカウント種別を取得
+        // accessToken期限切れ等で401になった場合は /api/auth/refresh を試してから再取得する
         type MeResponse = {
           accountType?: 'admin' | 'merchant' | 'user' | 'shop';
           email?: string | null;
@@ -64,7 +65,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           merchantId?: string | null;
           role?: string;
         } | null;
-        const me = await apiClient.getMe().catch(() => null) as MeResponse;
+
+        const fetchMe = async (): Promise<{ status: number; data: MeResponse | null }> => {
+          try {
+            const res = await fetch('/api/me', { credentials: 'include' });
+            if (!res.ok) return { status: res.status, data: null };
+            const data = (await res.json()) as MeResponse;
+            return { status: res.status, data };
+          } catch (e) {
+            console.error('Auth init: /api/me fetch failed', e);
+            return { status: 0, data: null };
+          }
+        };
+
+        const tryRefresh = async (): Promise<boolean> => {
+          try {
+            const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+            return res.ok;
+          } catch (e) {
+            console.error('Auth init: /api/auth/refresh fetch failed', e);
+            return false;
+          }
+        };
+
+        let meResult = await fetchMe();
+        if (meResult.status === 401) {
+          const refreshed = await tryRefresh();
+          if (refreshed) {
+            meResult = await fetchMe();
+          }
+        }
+
+        const me = meResult.data as MeResponse;
         if (me && me.accountType) {
           const role = me.role;
           const userData = {

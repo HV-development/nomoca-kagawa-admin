@@ -160,8 +160,8 @@ class ApiClient {
             if (typeof window !== 'undefined') {
               window.location.href = '/login?session=expired';
             }
-
-            return new Promise(() => { }) as Promise<T>;
+            // ここで握りつぶすと呼び出し元が永遠に待つため、明示的に失敗させる
+            throw new Error('Unauthorized');
           }
         }
 
@@ -282,7 +282,8 @@ class ApiClient {
 
       return response;
     } catch (_error) {
-      return;
+      // 失敗を握りつぶすと上位の401ハンドリングが誤動作するため、呼び出し元へ伝播させる
+      throw _error;
     }
   }
 
@@ -442,6 +443,13 @@ class ApiClient {
   async getUser(id: string): Promise<unknown> {
     return this.request<unknown>(`/admin/users/${id}`, {
       method: 'GET',
+    });
+  }
+
+  async updateUser(id: string, userData: unknown): Promise<unknown> {
+    return this.request<unknown>(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
     });
   }
 

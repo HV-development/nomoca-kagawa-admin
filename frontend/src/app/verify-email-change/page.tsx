@@ -24,12 +24,19 @@ function VerifyEmailChangeContent() {
       try {
         const response = await apiClient.confirmEmailChange(token);
         
-        if (response.success && response.data?.success) {
+        // バックエンドのレスポンス形式: { data: { success: true, message: '...' } }
+        if (response.data?.success) {
           setStatus('success');
           setMessage(response.data.message || 'メールアドレスが正常に変更されました。');
         } else {
           setStatus('error');
-          setMessage(response.error || 'メールアドレスの変更に失敗しました。');
+          // エラーレスポンスの形式: { error: { code: '...', message: '...' } } または { error: '...' }
+          const errorMessage = 
+            (response as any).error?.message || 
+            (typeof (response as any).error === 'string' ? (response as any).error : null) ||
+            response.error ||
+            'メールアドレスの変更に失敗しました。';
+          setMessage(errorMessage);
         }
       } catch (error) {
         console.error('Email change verification failed:', error);

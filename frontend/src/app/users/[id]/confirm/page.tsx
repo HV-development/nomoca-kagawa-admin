@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { useAuth } from '@/components/contexts/auth-context';
+import { apiClient } from '@/lib/api';
 
 interface UserData {
   nickname: string;
@@ -22,11 +23,13 @@ interface UserData {
 export default function UserEditConfirmPage() {
   const searchParams = useSearchParams();
   const params = useParams();
+  const router = useRouter();
   const userId = params.id as string;
   const auth = useAuth();
   const displayName = auth?.user?.name ?? '—';
   const [userData, setUserData] = useState<UserData | null>(null);
-  const { toasts, removeToast, showSuccess } = useToast();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const data: UserData = {
@@ -69,13 +72,42 @@ export default function UserEditConfirmPage() {
     window.location.href = `/users/${userId}/edit?${queryParams.toString()}`;
   };
 
-  const handleUpdate = () => {
-    // 実際の更新処理（APIコール等）
-    showSuccess('ユーザー情報を更新しました');
-    // 更新後はユーザー一覧画面に遷移
-    setTimeout(() => {
-      window.location.href = '/users';
-    }, 1500);
+  const handleUpdate = async () => {
+    if (!userData || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const updateData = {
+        nickname: userData.nickname,
+        email: userData.email,
+        postalCode: userData.postalCode,
+        address: userData.address,
+        birthDate: userData.birthDate,
+        gender: userData.gender,
+        phone: '', // phoneフィールドが存在する場合は追加
+      };
+
+      const result = await apiClient.updateUser(userId, updateData) as {
+        emailChangeRequested?: boolean;
+        message?: string;
+      };
+
+      if (result.emailChangeRequested) {
+        showSuccess(result.message || 'メールアドレス変更確認メールを送信しました。リンクをクリックして変更を完了してください。');
+      } else {
+        showSuccess('ユーザー情報を更新しました');
+      }
+
+      // 更新後はユーザー一覧画面に遷移
+      setTimeout(() => {
+        router.push('/users');
+      }, 1500);
+    } catch (error) {
+      console.error('ユーザー情報更新エラー:', error);
+      const errorMessage = error instanceof Error ? error.message : 'ユーザー情報の更新に失敗しました';
+      showError(errorMessage);
+      setIsSubmitting(false);
+    }
   };
 
   if (!userData) {
@@ -170,9 +202,10 @@ export default function UserEditConfirmPage() {
               variant="primary"
               size="lg"
               onClick={handleUpdate}
+              disabled={isSubmitting}
               className="px-8"
             >
-              変更する
+              {isSubmitting ? '処理中...' : '変更する'}
             </Button>
           </div>
         </div>

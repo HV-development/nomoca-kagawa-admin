@@ -9,10 +9,12 @@ interface AccountSectionProps {
   createAccount: boolean;
   accountEmail: string;
   password: string;
+  confirmPassword?: string;
   validationErrors: Record<string, string>;
   onCreateAccountChange: (value: boolean) => void;
   onAccountEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange?: (value: string) => void;
   onValidationErrorChange: (field: string, error: string | null) => void;
   onFieldBlur?: (field: string, value: string) => void;
   onDeleteAccountChange?: (deleteAccount: boolean) => void;
@@ -24,10 +26,12 @@ export default function AccountSection({
   createAccount,
   accountEmail,
   password,
+  confirmPassword = '',
   validationErrors,
   onCreateAccountChange,
   onAccountEmailChange,
   onPasswordChange,
+  onConfirmPasswordChange,
   onValidationErrorChange,
   onFieldBlur,
   onDeleteAccountChange,
@@ -109,10 +113,12 @@ export default function AccountSection({
               <ErrorMessage message={validationErrors.accountEmail} />
             </div>
 
-            {createAccount && (
+            {/* パスワードフィールド: 新規作成時または編集時（既存アカウントがある場合）に表示 */}
+            {(createAccount || (isEdit && hasExistingAccount)) && (
+              <div className="space-y-4">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード <span className="text-red-500">*</span>
+                    パスワード {createAccount && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="password"
@@ -121,7 +127,7 @@ export default function AccountSection({
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   onBlur={handlePasswordBlur}
-                  placeholder="8文字以上"
+                    placeholder={isEdit && hasExistingAccount ? "変更する場合は新しいパスワードを入力" : "8文字以上"}
                   maxLength={255}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.password ? 'border-red-500' : 'border-gray-300'
@@ -129,8 +135,33 @@ export default function AccountSection({
                 />
                 <ErrorMessage message={validationErrors.password} />
                 <p className="mt-1 text-xs text-gray-500">
-                  パスワードは8文字以上で入力してください
+                    {isEdit && hasExistingAccount 
+                      ? "変更しない場合は空欄のままにしてください" 
+                      : "パスワードは8文字以上で入力してください"}
                 </p>
+                </div>
+
+                {/* 編集時（既存アカウントがある場合）は確認用パスワードも表示 */}
+                {isEdit && hasExistingAccount && onConfirmPasswordChange && (
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                      確認用パスワード
+                    </label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                      placeholder="パスワードを変更する場合は確認用パスワードを入力"
+                      maxLength={255}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    <ErrorMessage message={validationErrors.confirmPassword} />
+                  </div>
+                )}
               </div>
             )}
 

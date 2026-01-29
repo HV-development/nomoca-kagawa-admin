@@ -43,6 +43,7 @@ interface ShopConfirmData {
   status: string;
   createAccount: boolean;
   password: string;
+  confirmPassword?: string;
   // 追加データ
   shopId: string | null;
   isEdit: boolean;
@@ -175,7 +176,7 @@ function ShopConfirmContent() {
         // パスワードが入力されている場合は送信
         password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
         // 確認用パスワードも送信
-        confirmPassword: (shopData as any).confirmPassword && (shopData as any).confirmPassword.trim().length > 0 ? (shopData as any).confirmPassword : undefined,
+        confirmPassword: shopData.confirmPassword && shopData.confirmPassword.trim().length > 0 ? shopData.confirmPassword : undefined,
       };
 
       // submitDataのservices確認ログ

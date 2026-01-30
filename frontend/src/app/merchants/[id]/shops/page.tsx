@@ -51,6 +51,18 @@ export default function MerchantShopsPage() {
     city: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
   });
+  // 検索ボタン押下時に適用される検索条件
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    keyword: '',
+    name: '',
+    nameKana: '',
+    phone: '',
+    accountEmail: '',
+    postalCode: '',
+    prefecture: '',
+    city: '',
+    status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+  });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   const canSelectShops = useMemo(() => {
@@ -72,17 +84,17 @@ export default function MerchantShopsPage() {
         queryParams.append('merchantId', merchantId);
       }
       
-      // 検索フォームの各項目を追加
-      if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
-      if (searchForm.name) queryParams.append('name', searchForm.name);
-      if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
-      if (searchForm.phone) queryParams.append('phone', searchForm.phone);
-      if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
-      if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
-      if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-      if (searchForm.city) queryParams.append('city', searchForm.city);
-      if (searchForm.status && searchForm.status !== 'all') {
-        queryParams.append('status', searchForm.status);
+      // 検索フォームの各項目を追加（適用済みの検索条件を使用）
+      if (appliedSearchForm.keyword) queryParams.append('keyword', appliedSearchForm.keyword);
+      if (appliedSearchForm.name) queryParams.append('name', appliedSearchForm.name);
+      if (appliedSearchForm.nameKana) queryParams.append('nameKana', appliedSearchForm.nameKana);
+      if (appliedSearchForm.phone) queryParams.append('phone', appliedSearchForm.phone);
+      if (appliedSearchForm.accountEmail) queryParams.append('accountEmail', appliedSearchForm.accountEmail);
+      if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
+      if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
+      if (appliedSearchForm.city) queryParams.append('city', appliedSearchForm.city);
+      if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
+        queryParams.append('status', appliedSearchForm.status);
       }
       
       const data = await apiClient.getShops(queryParams.toString());
@@ -137,7 +149,10 @@ export default function MerchantShopsPage() {
 
   // 初回マウント時とmerchantId変更時にデータ取得
   useEffect(() => {
-    const key = merchantId ?? 'all';
+    const key = JSON.stringify({
+      merchantId: merchantId ?? 'all',
+      search: appliedSearchForm,
+    });
 
     if (lastFetchKeyRef.current === key) {
       return;
@@ -145,7 +160,7 @@ export default function MerchantShopsPage() {
 
     lastFetchKeyRef.current = key;
     fetchShops();
-  }, [merchantId]);
+  }, [merchantId, appliedSearchForm]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -157,12 +172,15 @@ export default function MerchantShopsPage() {
 
   // 検索実行ハンドラー
   const handleSearch = () => {
-    fetchShops();
+    // 検索条件を適用
+    setAppliedSearchForm({ ...searchForm });
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   // クリアハンドラー
   const handleClear = () => {
-    setSearchForm({
+    const clearedForm = {
       keyword: '',
       name: '',
       nameKana: '',
@@ -171,10 +189,12 @@ export default function MerchantShopsPage() {
       postalCode: '',
       prefecture: '',
       city: '',
-      status: 'all',
-    });
-    // クリア後にデータを再取得
-    setTimeout(() => fetchShops(), 100);
+      status: 'all' as const,
+    };
+    setSearchForm(clearedForm);
+    setAppliedSearchForm(clearedForm);
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   const handleIndividualStatusChange = async (shopId: string, newStatus: string) => {

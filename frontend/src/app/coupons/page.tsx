@@ -245,6 +245,8 @@ function CouponsPageContent() {
     setAppliedPublicStatus(publicStatus);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastCouponsFetchKeyRef.current = null;
   }, [searchForm, approvalStatus, publicStatus]);
 
   const handleClear = useCallback(() => {
@@ -261,6 +263,8 @@ function CouponsPageContent() {
     setAppliedPublicStatus('all');
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastCouponsFetchKeyRef.current = null;
   }, []);
 
   // ページ変更ハンドラー

@@ -121,7 +121,9 @@ export default function Sidebar() {
     setIsLogoReady(true);
   }, []);
 
-  const isReady = isLoaded && !auth?.isLoading && auth?.user && isFontReady && (isCollapsed || isLogoReady);
+  // auth?.user を必須条件から外し、認証ローディング完了後は表示する
+  // これにより、APIが一時的に遅い場合やネットワークエラー時でもサイドバーが表示される
+  const isReady = isLoaded && !auth?.isLoading && isFontReady && (isCollapsed || isLogoReady);
 
   return (
     <div

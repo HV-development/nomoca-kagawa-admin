@@ -9,6 +9,7 @@ import Icon from '@/components/atoms/Icon';
 interface User {
   id: string;
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -122,6 +123,11 @@ export default function UserTable({
               </th>
               {!isOperatorRole && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  メールアドレス
+                </th>
+              )}
+              {!isOperatorRole && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   郵便番号
                 </th>
               )}
@@ -197,6 +203,11 @@ export default function UserTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
                 </td>
+                {!isOperatorRole && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{user.email}</div>
+                  </td>
+                )}
                 {!isOperatorRole && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{user.postalCode}</div>

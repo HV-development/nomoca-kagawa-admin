@@ -104,10 +104,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         let meResult = await fetchMeWithRetry(0);
-        if (meResult.status === 401) {
+        if (meResult.status === 401 || meResult.status === 403) {
           const refreshed = await tryRefresh();
           if (refreshed) {
             meResult = await fetchMeWithRetry(0);
+          }
+          
+          // リフレッシュ後も認証エラーの場合はログイン画面へリダイレクト
+          if (meResult.status === 401 || meResult.status === 403) {
+            // ログインページにいる場合はリダイレクトしない（無限ループ防止）
+            const isLoginPage = typeof window !== 'undefined' && 
+              (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
+            
+            if (!isLoginPage && typeof window !== 'undefined') {
+              console.warn(`Auth error (${meResult.status}): redirecting to login`);
+              window.location.href = '/login?session=expired';
+              return;
+            }
           }
         }
 

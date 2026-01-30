@@ -43,6 +43,7 @@ interface ShopConfirmData {
   status: string;
   createAccount: boolean;
   password: string;
+  confirmPassword?: string;
   // 追加データ
   shopId: string | null;
   isEdit: boolean;
@@ -172,7 +173,10 @@ function ShopConfirmContent() {
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
         createAccount: shopData.createAccount,
-        password: shopData.createAccount ? shopData.password : undefined,
+        // パスワードが入力されている場合は送信
+        password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
+        // 確認用パスワードも送信
+        confirmPassword: shopData.confirmPassword && shopData.confirmPassword.trim().length > 0 ? shopData.confirmPassword : undefined,
       };
 
       // submitDataのservices確認ログ

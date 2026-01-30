@@ -112,11 +112,16 @@ function AdminEditForm() {
         updateData.password = trimmedPassword;
       }
 
-      await apiClient.updateAdminAccountById(adminId, updateData as AdminAccountInput);
+      const result = await apiClient.updateAdminAccountById(adminId, updateData as AdminAccountInput) as { emailChangeRequested?: boolean; message?: string };
       
       // 一覧画面にリダイレクト（トーストは一覧画面で表示）
       // sessionStorageにトーストメッセージを保存（同一ページ内のステップ変更からのrouter.pushでURLパラメータが失われる問題を回避）
-      sessionStorage.setItem('adminToast', '管理者アカウント情報を更新しました');
+      if (result?.emailChangeRequested) {
+        // メールアドレス変更時は確認メール送信のメッセージを表示
+        sessionStorage.setItem('adminToast', 'メールアドレス変更確認メールを送信しました。メール内のリンクをクリックして変更を完了してください。');
+      } else {
+        sessionStorage.setItem('adminToast', '管理者アカウント情報を更新しました');
+      }
       router.push('/admins');
     } catch (error: unknown) {
       const errorInfo = handleAdminError(error);

@@ -48,6 +48,14 @@ export default function MerchantsPage() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // 認証が取れない場合はログインへ（フルリロードではなくソフト遷移）
+  useEffect(() => {
+    if (auth?.isLoading) return;
+    if (!auth?.user) {
+      router.replace('/login?session=expired');
+    }
+  }, [auth?.isLoading, auth?.user, router]);
   
   // URLパラメータからトーストメッセージを表示（重複防止）
   const toastShownRef = useRef(false);

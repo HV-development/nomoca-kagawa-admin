@@ -132,15 +132,23 @@ export function buildCommonHeaders(
   headers['X-Request-ID'] = requestId
 
   // X-App-Domainヘッダーを追加（バックエンドでのアプリケーション判定用）
-  // 環境変数 APP_DOMAIN が設定されている場合はそれを優先使用
+  // 開発環境（localhost）の場合は常にHostヘッダーを使用
+  // 本番環境では環境変数 APP_DOMAIN が設定されている場合はそれを優先使用
   // 注意: X-Forwarded-Host は Railway プロキシに上書きされるため、X-App-Domain を使用
-  const appDomain = process.env.APP_DOMAIN
-  if (appDomain) {
-    headers['X-App-Domain'] = appDomain
-  } else {
-    // フォールバック: 実際のリクエストのHostヘッダーを転送
     const host = request.headers.get('host')
+  const isLocalhost = host && (host.includes('localhost') || host.includes('127.0.0.1'))
+
+  if (isLocalhost) {
+    // 開発環境: 常にHostヘッダーを使用
     if (host) {
+      headers['X-App-Domain'] = host
+    }
+  } else {
+    // 本番環境: 環境変数 APP_DOMAIN を優先、なければHostヘッダー
+    const appDomain = process.env.APP_DOMAIN
+    if (appDomain) {
+      headers['X-App-Domain'] = appDomain
+    } else if (host) {
       headers['X-App-Domain'] = host
     }
   }

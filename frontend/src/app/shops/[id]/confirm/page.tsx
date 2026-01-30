@@ -203,7 +203,10 @@ function ShopEditConfirmContent() {
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
         createAccount: shopData.createAccount,
-        password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
+        // パスワードが入力されている場合は送信（新規アカウント作成時または既存アカウントのパスワード変更時）
+        password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
+        // 確認用パスワードも送信
+        confirmPassword: (shopData as any).confirmPassword && (shopData as any).confirmPassword.trim().length > 0 ? (shopData as any).confirmPassword : undefined,
       };
 
       // submitDataのservices確認ログ

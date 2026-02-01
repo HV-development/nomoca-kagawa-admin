@@ -141,11 +141,11 @@ export default function AccountSection({
                 </p>
                 </div>
 
-                {/* 編集時（既存アカウントがある場合）は確認用パスワードも表示 */}
-                {isEdit && hasExistingAccount && onConfirmPasswordChange && (
+                {/* 確認用パスワード: 新規登録でアカウント発行時、または編集時で既存アカウントがある場合に表示 */}
+                {((createAccount && !isEdit) || (isEdit && hasExistingAccount)) && onConfirmPasswordChange && (
                   <div>
                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      確認用パスワード
+                      パスワード（確認用） {createAccount && !isEdit && <span className="text-red-500">*</span>}
                     </label>
                     <input
                       type="password"
@@ -153,7 +153,9 @@ export default function AccountSection({
                       name="confirmPassword"
                       value={confirmPassword}
                       onChange={(e) => onConfirmPasswordChange(e.target.value)}
-                      placeholder="パスワードを変更する場合は確認用パスワードを入力"
+                      placeholder={isEdit && hasExistingAccount 
+                        ? "パスワードを変更する場合は確認用パスワードを入力" 
+                        : "パスワードをもう一度入力"}
                       maxLength={255}
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'

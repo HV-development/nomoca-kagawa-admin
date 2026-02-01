@@ -1138,6 +1138,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         } else if (!isEdit && formData.password && formData.password.length < 8) {
           customErrors.password = 'パスワードは8文字以上で入力してください';
         }
+
+        // 新規登録時のみ確認用パスワード必須
+        if (!isEdit) {
+          if (!formData.confirmPassword || formData.confirmPassword.trim().length === 0) {
+            customErrors.confirmPassword = 'パスワード（確認用）は必須です';
+          } else if (formData.password !== formData.confirmPassword) {
+            customErrors.confirmPassword = 'パスワードが一致しません';
+          }
+        }
       }
 
       // 説明文

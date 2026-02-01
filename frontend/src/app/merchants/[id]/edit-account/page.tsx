@@ -307,7 +307,8 @@ export default function MerchantAccountEditPage() {
       setServerError('');
 
       await apiClient.updateMerchant(merchantId, {
-        password: passwordFormData.newPassword
+        password: passwordFormData.newPassword,
+        confirmPassword: passwordFormData.confirmPassword
       });
       
       addToast({ type: 'success', message: 'パスワードを更新しました' });

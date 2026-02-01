@@ -79,10 +79,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // shopIdの取得（編集時のみ存在）
   // /merchants/[id]/shops/[shopId]/edit -> params.shopId
   // /shops/[id]/edit -> params.id（merchantId未指定の場合）
-  const shopId = useMemo(
-    () => (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined,
-    [params.shopId, params.id, propMerchantId]
-  );
+  // 店舗アカウントの場合、URLパラメータがなければauth.user.shopIdを使用
+  const shopId = useMemo(() => {
+    // URLパラメータから取得を試みる
+    const urlShopId = (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined;
+    // 店舗アカウントの場合、URLパラメータがなければauth.user.shopIdを使用
+    if (!urlShopId && isShopAccount && auth?.user?.shopId) {
+      return auth.user.shopId;
+    }
+    return urlShopId;
+  }, [params.shopId, params.id, propMerchantId, isShopAccount, auth?.user?.shopId]);
   
   const merchantIdFromParams = useMemo(
     () => params.id as string,
@@ -765,7 +771,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       isMounted = false;
       abortController.abort();
     };
-  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount]);
+  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount, isShopAccount]);
 
   // formData.merchantIdが変更されたときに加盟店名とselectedMerchantDetailsを更新
   useEffect(() => {

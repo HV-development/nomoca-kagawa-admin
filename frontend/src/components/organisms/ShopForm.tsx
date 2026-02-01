@@ -275,6 +275,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     handleRemoveImage,
     handleRemoveExistingImage,
     uploadImages,
+    restoreFromDataUrls,
   } = useImageUpload({ maxImages: 3 });
 
   // 定休日チェックボックス用
@@ -289,6 +290,115 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     isEdit,
     setValidationErrors,
   });
+
+  // sessionStorageからのデータ復元（確認画面から戻ってきた場合）
+  useEffect(() => {
+    try {
+      const storedData = sessionStorage.getItem('shopConfirmData');
+      const returnedFromConfirm = sessionStorage.getItem('returnedFromConfirm');
+      
+      // 確認画面から戻ってきた場合のみ復元
+      if (storedData && returnedFromConfirm === 'true') {
+        // 復元フラグをクリア
+        sessionStorage.removeItem('returnedFromConfirm');
+        
+        const parsedData = JSON.parse(storedData);
+        // 新規登録モードで、保存されたデータも新規登録の場合のみ復元
+        // または、編集モードで、保存されたデータのshopIdが一致する場合のみ復元
+        const shouldRestore = 
+          (!isEdit && !parsedData.isEdit) || 
+          (isEdit && parsedData.isEdit && parsedData.shopId === shopId);
+        
+        if (shouldRestore) {
+          // フォームデータの復元
+          setFormData(prev => ({
+            ...prev,
+            merchantId: parsedData.merchantId || prev.merchantId,
+            genreId: parsedData.genreId || '',
+            accountEmail: parsedData.accountEmail || '',
+            name: parsedData.name || '',
+            nameKana: parsedData.nameKana || '',
+            phone: parsedData.phone || '',
+            postalCode: parsedData.postalCode || '',
+            prefecture: parsedData.prefecture || '',
+            city: parsedData.city || '',
+            address1: parsedData.address1 || '',
+            address2: parsedData.address2 || '',
+            latitude: parsedData.latitude || '',
+            longitude: parsedData.longitude || '',
+            description: parsedData.description || '',
+            details: parsedData.details || '',
+            smokingType: parsedData.smokingType || undefined,
+            homepageUrl: parsedData.homepageUrl || '',
+            couponUsageStart: parsedData.couponUsageStart || '',
+            couponUsageEnd: parsedData.couponUsageEnd || '',
+            couponUsageDays: parsedData.couponUsageDays || '',
+            paymentMydigi: parsedData.paymentMydigi ?? false,
+            paymentCash: parsedData.paymentCash ?? true,
+            area: parsedData.area || '',
+            status: parsedData.status || 'registering',
+            createAccount: parsedData.createAccount ?? false,
+            password: parsedData.password || '',
+            confirmPassword: parsedData.password || '',
+          }));
+
+          // 事業者名の復元
+          if (parsedData.merchantName) {
+            setMerchantName(parsedData.merchantName);
+          }
+
+          // 選択項目の復元
+          if (parsedData.selectedScenes && Array.isArray(parsedData.selectedScenes)) {
+            setSelectedScenes(parsedData.selectedScenes);
+          }
+          if (parsedData.customSceneText) {
+            setCustomSceneText(parsedData.customSceneText);
+          }
+          if (parsedData.selectedHolidays && Array.isArray(parsedData.selectedHolidays)) {
+            setSelectedHolidays(parsedData.selectedHolidays);
+          }
+          if (parsedData.customHolidayText) {
+            setCustomHolidayText(parsedData.customHolidayText);
+          }
+          if (parsedData.selectedCreditBrands && Array.isArray(parsedData.selectedCreditBrands)) {
+            setSelectedCreditBrands(parsedData.selectedCreditBrands);
+          }
+          if (parsedData.customCreditText) {
+            setCustomCreditText(parsedData.customCreditText);
+          }
+          if (parsedData.selectedQrBrands && Array.isArray(parsedData.selectedQrBrands)) {
+            setSelectedQrBrands(parsedData.selectedQrBrands);
+          }
+          if (parsedData.customQrText) {
+            setCustomQrText(parsedData.customQrText);
+          }
+          if (parsedData.selectedServices && Array.isArray(parsedData.selectedServices)) {
+            setSelectedServices(parsedData.selectedServices);
+          }
+          if (parsedData.customServicesText) {
+            setCustomServicesText(parsedData.customServicesText);
+          }
+
+          // 既存画像の復元
+          if (parsedData.existingImages && Array.isArray(parsedData.existingImages)) {
+            setExistingImages(parsedData.existingImages);
+          }
+
+          // 新規追加画像の復元（data:URL形式で保存されている）
+          if (parsedData.imagePreviews && Array.isArray(parsedData.imagePreviews) && parsedData.imagePreviews.length > 0) {
+            restoreFromDataUrls(parsedData.imagePreviews);
+          }
+
+          // アカウント関連の復元
+          if (parsedData.hasExistingAccount !== undefined) {
+            setHasExistingAccount(parsedData.hasExistingAccount);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('sessionStorageからのデータ復元に失敗しました:', error);
+    }
+  }, [isEdit, shopId, setExistingImages, restoreFromDataUrls]);
 
   useEffect(() => {
     let isMounted = true;

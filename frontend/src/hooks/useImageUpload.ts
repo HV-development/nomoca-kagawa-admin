@@ -127,6 +127,35 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
     setImagePreviews([]);
   }, [imagePreviews]);
 
+  // data:URLからImagePreviewを復元する関数
+  const restoreFromDataUrls = useCallback((dataUrls: string[]) => {
+    const newPreviews: ImagePreview[] = [];
+    
+    dataUrls.forEach((dataUrl, index) => {
+      if (dataUrl.startsWith('data:')) {
+        try {
+          // data:URLをBlobに変換してFileオブジェクトを作成
+          const base64Data = dataUrl.split(',')[1];
+          const mimeType = dataUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: mimeType });
+          const file = new File([blob], `restored-image-${index}.jpg`, { type: mimeType });
+          
+          // data:URLをそのまま使用（blob:URLを作成するとCSP問題が発生する可能性があるため）
+          newPreviews.push({ file, url: dataUrl });
+        } catch (error) {
+          console.error(`画像の復元に失敗しました (${index}):`, error);
+        }
+      }
+    });
+    
+    setImagePreviews(newPreviews);
+  }, []);
+
   return {
     imagePreviews,
     existingImages,
@@ -136,6 +165,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
     handleRemoveExistingImage,
     uploadImages,
     clearPreviews,
+    restoreFromDataUrls,
   };
 }
 

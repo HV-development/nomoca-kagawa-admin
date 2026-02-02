@@ -51,7 +51,17 @@ function ShopTable({
   getStatusColor,
 }: ShopTableProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
+      {/* ローディングオーバーレイ */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">データを読み込み中...</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
           店舗一覧 ({pagination.total}件)
@@ -258,13 +268,6 @@ function ShopTable({
           </tbody>
         </table>
       </div>
-
-      {isLoading && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">データを読み込み中...</p>
-        </div>
-      )}
 
       {!isLoading && shops.length === 0 && (
         <div className="text-center py-12">

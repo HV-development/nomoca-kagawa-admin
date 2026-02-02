@@ -72,13 +72,23 @@ export default function UserEditPage() {
           throw new Error('ユーザーデータの取得に失敗しました');
         }
 
+        // バックエンドのenum値をフロントエンドの数値にマッピング
+        const genderEnumToNumber: Record<string, string> = {
+          'male': '1',
+          'female': '2',
+          'other': '3',
+        };
+        const genderValue = data.gender 
+          ? (genderEnumToNumber[String(data.gender)] || String(data.gender)) 
+          : '';
+
         setFormData({
           nickname: data.nickname || '',
           email: data.email || '',
           postalCode: data.postalCode || '',
           address: data.address || '',
           birthDate: data.birthDate || '',
-          gender: data.gender ? String(data.gender) : '',
+          gender: genderValue,
           saitamaAppId: data.saitamaAppId || '',
         });
       } catch (error) {

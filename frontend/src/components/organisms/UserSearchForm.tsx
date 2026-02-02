@@ -4,18 +4,9 @@ import React from 'react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
-const prefectures = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-];
-
 export interface UserSearchFormData {
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -26,6 +17,7 @@ export interface UserSearchFormData {
   ranks: number[];
   registeredDateStart: string;
   registeredDateEnd: string;
+  accountStatus: string;
 }
 
 interface UserSearchFormProps {
@@ -33,7 +25,6 @@ interface UserSearchFormProps {
   isSearchExpanded: boolean;
   isOperatorRole: boolean;
   onInputChange: (field: keyof UserSearchFormData, value: string) => void;
-  onRankChange: (rank: number, checked: boolean) => void;
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
@@ -44,7 +35,6 @@ export default function UserSearchForm({
   isSearchExpanded,
   isOperatorRole,
   onInputChange,
-  onRankChange,
   onSearch,
   onClear,
   onToggleExpand,
@@ -81,6 +71,23 @@ export default function UserSearchForm({
               />
             </div>
 
+            {/* メールアドレス */}
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス
+                </label>
+                <input
+                  type="text"
+                  id="email"
+                  placeholder="メールアドレスを入力"
+                  value={searchForm.email}
+                  onChange={(e) => onInputChange('email', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
+
             {/* 郵便番号 */}
             {!isOperatorRole && (
               <div>
@@ -93,43 +100,6 @@ export default function UserSearchForm({
                   placeholder="郵便番号を入力"
                   value={searchForm.postalCode}
                   onChange={(e) => onInputChange('postalCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 都道府県 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                  都道府県
-                </label>
-                <select
-                  id="prefecture"
-                  value={searchForm.prefecture}
-                  onChange={(e) => onInputChange('prefecture', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">都道府県を選択してください</option>
-                  {prefectures.map((pref) => (
-                    <option key={pref} value={pref}>{pref}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* 市区町村 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  市区町村
-                </label>
-                <input
-                  type="text"
-                  id="city"
-                  placeholder="市区町村を入力"
-                  value={searchForm.city}
-                  onChange={(e) => onInputChange('city', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
@@ -202,54 +172,9 @@ export default function UserSearchForm({
             </div>
           </div>
 
-          {/* ランクと性別を横並びに配置 */}
+          {/* 性別とステータスを横並びに配置 */}
           <div className="md:col-span-2 mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* ランク（複数選択可） */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ランク（複数選択可）
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(1)}
-                      onChange={(e) => onRankChange(1, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ブロンズ</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(2)}
-                      onChange={(e) => onRankChange(2, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">シルバー</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(3)}
-                      onChange={(e) => onRankChange(3, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ゴールド</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(4)}
-                      onChange={(e) => onRankChange(4, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ダイヤモンド</span>
-                  </label>
-                </div>
-              </div>
-
               {/* 性別 */}
               {!isOperatorRole && (
                 <div>
@@ -272,8 +197,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="1"
-                        checked={searchForm.gender === '1'}
+                        value="male"
+                        checked={searchForm.gender === 'male'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
@@ -283,8 +208,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="2"
-                        checked={searchForm.gender === '2'}
+                        value="female"
+                        checked={searchForm.gender === 'female'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
@@ -294,8 +219,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="3"
-                        checked={searchForm.gender === '3'}
+                        value="other"
+                        checked={searchForm.gender === 'other'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
@@ -304,6 +229,48 @@ export default function UserSearchForm({
                   </div>
                 </div>
               )}
+
+              {/* アカウントステータス */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value=""
+                      checked={searchForm.accountStatus === ''}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">すべて</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value="active"
+                      checked={searchForm.accountStatus === 'active'}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">契約中</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value="suspended"
+                      checked={searchForm.accountStatus === 'suspended'}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">退会済み</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -321,4 +288,3 @@ export default function UserSearchForm({
     </div>
   );
 }
-

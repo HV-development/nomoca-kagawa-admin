@@ -10,7 +10,8 @@ interface UserHeaderProps {
 export default function UserHeader({ className = '' }: UserHeaderProps) {
   const auth = useAuth();
   const router = useRouter();
-  
+
+  const isLoading = auth?.isLoading ?? true;
   const displayName = auth?.user?.name ?? '—';
   const roleLabel = auth?.user?.role ?? auth?.user?.accountType ?? '—';
 
@@ -31,17 +32,32 @@ export default function UserHeader({ className = '' }: UserHeaderProps) {
             ログインユーザー:
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-900">
-            {displayName}
-            </span>
-            <span className="text-xs text-gray-500">
-            ({roleLabel})
-            </span>
+            {isLoading ? (
+              <>
+                <span className="text-sm font-medium text-gray-400 animate-pulse">
+                  読み込み中...
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-medium text-gray-900">
+                  {displayName}
+                </span>
+                <span className="text-xs text-gray-500">
+                  ({roleLabel})
+                </span>
+              </>
+            )}
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          disabled={isLoading}
+          className={`text-sm transition-colors ${
+            isLoading 
+              ? 'text-gray-400 cursor-not-allowed' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
         >
           ログアウト
         </button>

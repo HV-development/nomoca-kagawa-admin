@@ -369,7 +369,8 @@ export type UserForCSV = {
   birthDate?: string;
   gender?: number;
   saitamaAppId?: string;
-  rank: number;
+  accountStatus?: string;
+  registeredStore?: string;
   registeredAt: string;
 };
 
@@ -386,15 +387,15 @@ function getGenderLabel(gender: number): string {
 }
 
 /**
- * ランクのラベルを取得
+ * ユーザーステータスのラベルを取得
  */
-function getRankLabel(rank: number): string {
-  switch (rank) {
-    case 1: return 'ブロンズ';
-    case 2: return 'シルバー';
-    case 3: return 'ゴールド';
-    case 4: return 'ダイヤモンド';
-    default: return 'ブロンズ';
+function getUserStatusLabel(status: string): string {
+  switch (status) {
+    case 'active': return '契約中';
+    case 'suspended': return '退会済み';
+    case 'inactive': return '未契約';
+    case 'pending': return '保留中';
+    default: return status;
   }
 }
 
@@ -410,18 +411,17 @@ export function convertUsersToCSV(
   const headers: string[] = [];
 
   if (isOperatorRole) {
-    headers.push('ニックネーム', 'ランク', '登録日');
+    headers.push('ニックネーム', 'ステータス', '登録日');
   } else {
     headers.push(
       'ニックネーム',
       '郵便番号',
-      '都道府県',
-      '市区町村',
       '住所',
       '生年月日',
       '性別',
       'さいこいんアプリID',
-      'ランク',
+      'ステータス',
+      '登録店舗',
       '登録日'
     );
   }
@@ -434,20 +434,21 @@ export function convertUsersToCSV(
     if (isOperatorRole) {
       values.push(
         escapeCSVValue(user.nickname || ''),
-        escapeCSVValue(getRankLabel(user.rank)),
+        escapeCSVValue(getUserStatusLabel(user.accountStatus || 'active')),
         escapeCSVValue(formatDate(user.registeredAt))
       );
     } else {
+      // 住所を結合して1つのカラムにする
+      const fullAddress = [user.prefecture, user.city, user.address].filter(Boolean).join('');
       values.push(
         escapeCSVValue(user.nickname || ''),
         escapeCSVValue(user.postalCode || ''),
-        escapeCSVValue(user.prefecture || ''),
-        escapeCSVValue(user.city || ''),
-        escapeCSVValue(user.address || ''),
+        escapeCSVValue(fullAddress),
         escapeCSVValue(user.birthDate || ''),
         escapeCSVValue(getGenderLabel(user.gender || 3)),
         escapeCSVValue(user.saitamaAppId || ''),
-        escapeCSVValue(getRankLabel(user.rank)),
+        escapeCSVValue(getUserStatusLabel(user.accountStatus || 'active')),
+        escapeCSVValue(user.registeredStore || ''),
         escapeCSVValue(formatDate(user.registeredAt))
       );
     }

@@ -115,6 +115,8 @@ function ShopEditConfirmContent() {
   }, [shopId, router]);
 
   const handleModify = () => {
+    // 確認画面から戻ることを示すフラグを設定
+    sessionStorage.setItem('returnedFromConfirm', 'true');
     // sessionStorageのデータは保持したまま戻る
     router.back();
   };

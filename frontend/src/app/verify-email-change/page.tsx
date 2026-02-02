@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { apiClient } from '@/lib/api';
+import Button from '@/components/atoms/Button';
 
 function VerifyEmailChangeContent() {
   const searchParams = useSearchParams();
@@ -96,12 +97,13 @@ function VerifyEmailChangeContent() {
               <p className="text-sm text-gray-500 mb-6">
                 新しいメールアドレスでログインしてください。
               </p>
-              <button
+              <Button
                 onClick={() => router.push('/login')}
-                className="w-full inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
+                variant="primary"
+                className="w-full"
               >
                 ログインページへ
-              </button>
+              </Button>
             </div>
           )}
 
@@ -118,12 +120,13 @@ function VerifyEmailChangeContent() {
               <p className="text-gray-600 mb-6">
                 {message}
               </p>
-              <button
+              <Button
                 onClick={() => router.push('/login')}
-                className="w-full inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500"
+                variant="outline"
+                className="w-full"
               >
                 ログインページへ
-              </button>
+              </Button>
             </div>
           )}
         </div>

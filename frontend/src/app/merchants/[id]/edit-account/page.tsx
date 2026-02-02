@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Icon from '@/components/atoms/Icon';
+import Button from '@/components/atoms/Button';
 import { useAuth } from '@/components/contexts/auth-context';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -306,7 +307,8 @@ export default function MerchantAccountEditPage() {
       setServerError('');
 
       await apiClient.updateMerchant(merchantId, {
-        password: passwordFormData.newPassword
+        password: passwordFormData.newPassword,
+        confirmPassword: passwordFormData.confirmPassword
       });
       
       addToast({ type: 'success', message: 'パスワードを更新しました' });
@@ -474,13 +476,13 @@ export default function MerchantAccountEditPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <button
+                  <Button
                     type="submit"
+                    variant="primary"
                     disabled={isEmailSubmitting}
-                    className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
                   >
                     {isEmailSubmitting ? '送信中...' : '確認メールを送信'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -542,13 +544,13 @@ export default function MerchantAccountEditPage() {
               </div>
 
               <div className="flex justify-end">
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
                   disabled={isPasswordSubmitting}
-                  className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
                 >
                   {isPasswordSubmitting ? '更新中...' : 'パスワードを更新'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

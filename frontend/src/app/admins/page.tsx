@@ -143,6 +143,8 @@ export default function AdminsPage() {
     setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, [searchForm]);
 
   const handleClear = useCallback(() => {
@@ -160,6 +162,8 @@ export default function AdminsPage() {
     });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, []);
 
   const handleToggleExpand = useCallback(() => {

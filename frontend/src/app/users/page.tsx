@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 interface User {
   id: string;
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -28,6 +29,7 @@ interface User {
   rank: number;
   registeredStore: string;
   registeredAt: string;
+  accountStatus: string;
 }
 
 export default function UsersPage() {
@@ -40,6 +42,7 @@ export default function UsersPage() {
 
   const [searchForm, setSearchForm] = useState<UserSearchFormData>({
     nickname: '',
+    email: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -50,9 +53,11 @@ export default function UsersPage() {
     ranks: [],
     registeredDateStart: '',
     registeredDateEnd: '',
+    accountStatus: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState<UserSearchFormData>({
     nickname: '',
+    email: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -63,6 +68,7 @@ export default function UsersPage() {
     ranks: [],
     registeredDateStart: '',
     registeredDateEnd: '',
+    accountStatus: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -90,6 +96,7 @@ export default function UsersPage() {
 
       // operatorロールでない場合のみ機密情報での検索パラメータを追加
       if (!isOperatorRole) {
+        if (searchParams?.email) searchBody.email = searchParams.email;
         if (searchParams?.postalCode) searchBody.postalCode = searchParams.postalCode;
         if (searchParams?.prefecture) searchBody.prefecture = searchParams.prefecture;
         if (searchParams?.city) searchBody.city = searchParams.city;
@@ -104,6 +111,7 @@ export default function UsersPage() {
       }
       if (searchParams?.registeredDateStart) searchBody.registeredDateStart = searchParams.registeredDateStart;
       if (searchParams?.registeredDateEnd) searchBody.registeredDateEnd = searchParams.registeredDateEnd;
+      if (searchParams?.accountStatus) searchBody.accountStatus = searchParams.accountStatus;
 
       // ページネーションパラメータを追加
       searchBody.page = pagination.page;
@@ -115,6 +123,7 @@ export default function UsersPage() {
         users: Array<{
           id: string;
           nickname: string;
+          email?: string;
           postalCode?: string;
           prefecture?: string;
           city?: string;
@@ -125,6 +134,7 @@ export default function UsersPage() {
           rank: number;
           registeredStore?: string;
           registeredAt: string;
+          accountStatus?: string;
         }>;
         pagination?: {
           page: number;
@@ -148,6 +158,7 @@ export default function UsersPage() {
         const base: User = {
           id: user.id,
           nickname: user.nickname,
+          email: '',
           postalCode: '',
           prefecture: '',
           city: '',
@@ -158,12 +169,14 @@ export default function UsersPage() {
           rank: user.rank,
           registeredStore: '',
           registeredAt: user.registeredAt || '',
+          accountStatus: user.accountStatus || 'active',
         };
 
         // operatorロールでない場合のみ機密情報を設定
         if (!isOperatorRole) {
           return {
             ...base,
+            email: user.email ?? '',
             postalCode: user.postalCode ?? '',
             prefecture: user.prefecture ?? '',
             city: user.city ?? '',
@@ -228,25 +241,19 @@ export default function UsersPage() {
     }));
   }, []);
 
-  const handleRankChange = useCallback((rank: number, checked: boolean) => {
-    setSearchForm(prev => ({
-      ...prev,
-      ranks: checked
-        ? [...prev.ranks, rank]
-        : prev.ranks.filter(r => r !== rank)
-    }));
-  }, []);
-
   const handleSearch = useCallback(() => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, [searchForm]);
 
   const handleClear = useCallback(() => {
     const emptyForm: UserSearchFormData = {
       nickname: '',
+      email: '',
       postalCode: '',
       prefecture: '',
       city: '',
@@ -257,11 +264,14 @@ export default function UsersPage() {
       ranks: [],
       registeredDateStart: '',
       registeredDateEnd: '',
+      accountStatus: '',
     };
     setSearchForm(emptyForm);
     setAppliedSearchForm(emptyForm);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, []);
 
   // ページ変更ハンドラー
@@ -284,6 +294,7 @@ export default function UsersPage() {
         if (appliedSearchForm.nickname) searchBody.nickname = appliedSearchForm.nickname;
 
         if (!isOperatorRole) {
+          if (appliedSearchForm.email) searchBody.email = appliedSearchForm.email;
           if (appliedSearchForm.postalCode) searchBody.postalCode = appliedSearchForm.postalCode;
           if (appliedSearchForm.prefecture) searchBody.prefecture = appliedSearchForm.prefecture;
           if (appliedSearchForm.city) searchBody.city = appliedSearchForm.city;
@@ -298,6 +309,7 @@ export default function UsersPage() {
         }
         if (appliedSearchForm.registeredDateStart) searchBody.registeredDateStart = appliedSearchForm.registeredDateStart;
         if (appliedSearchForm.registeredDateEnd) searchBody.registeredDateEnd = appliedSearchForm.registeredDateEnd;
+        if (appliedSearchForm.accountStatus) searchBody.accountStatus = appliedSearchForm.accountStatus;
 
         searchBody.page = page;
         searchBody.limit = limit;
@@ -306,6 +318,7 @@ export default function UsersPage() {
           users?: Array<{
             id: string;
             nickname: string;
+            email?: string;
             postalCode?: string;
             prefecture?: string;
             city?: string;
@@ -316,6 +329,7 @@ export default function UsersPage() {
             rank: number;
             registeredStore?: string;
             registeredAt: string;
+            accountStatus?: string;
           }>;
           pagination?: {
             totalPages?: number;
@@ -344,6 +358,7 @@ export default function UsersPage() {
               const base: User = {
                 id: user.id,
                 nickname: user.nickname,
+                email: '',
                 postalCode: '',
                 prefecture: '',
                 city: '',
@@ -354,12 +369,14 @@ export default function UsersPage() {
                 rank: user.rank,
                 registeredStore: '',
                 registeredAt: user.registeredAt || '',
+                accountStatus: user.accountStatus || 'active',
               };
 
               // operatorロールでない場合のみ機密情報を設定
               if (!isOperatorRole) {
                 return {
                   ...base,
+                  email: user.email ?? '',
                   postalCode: user.postalCode ?? '',
                   prefecture: user.prefecture ?? '',
                   city: user.city ?? '',
@@ -461,7 +478,8 @@ export default function UsersPage() {
         birthDate: user.birthDate,
         gender: user.gender,
         saitamaAppId: user.saitamaAppId,
-        rank: user.rank,
+        accountStatus: user.accountStatus,
+        registeredStore: user.registeredStore,
         registeredAt: user.registeredAt,
       }));
 
@@ -511,7 +529,6 @@ export default function UsersPage() {
           isSearchExpanded={isSearchExpanded}
           isOperatorRole={isOperatorRole}
           onInputChange={handleInputChange}
-          onRankChange={handleRankChange}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}

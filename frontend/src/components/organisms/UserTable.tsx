@@ -9,6 +9,7 @@ import Icon from '@/components/atoms/Icon';
 interface User {
   id: string;
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -19,6 +20,7 @@ interface User {
   rank: number;
   registeredStore: string;
   registeredAt: string;
+  accountStatus: string;
 }
 
 interface UserTableProps {
@@ -69,23 +71,48 @@ export default function UserTable({
     }
   };
 
-  const getRankLabel = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'ブロンズ';
-      case 2:
-        return 'シルバー';
-      case 3:
-        return 'ゴールド';
-      case 4:
-        return 'ダイヤモンド';
+  const getAccountStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '契約中';
+      case 'suspended':
+        return '退会済み';
+      case 'inactive':
+        return '未契約';
+      case 'pending':
+        return '保留中';
       default:
-        return 'ブロンズ';
+        return status;
+    }
+  };
+
+  const getAccountStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'suspended':
+        return 'bg-red-100 text-red-800';
+      case 'inactive':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'pending':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
+      {/* ローディングオーバーレイ */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">データを読み込み中...</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
           ユーザー一覧 ({pagination.total}件)
@@ -104,41 +131,46 @@ export default function UserTable({
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px', minWidth: '140px' }}>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style={{ width: '140px', minWidth: '140px' }}>
                 アクション
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 ニックネーム
               </th>
               {!isOperatorRole && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  メールアドレス
+                </th>
+              )}
+              {!isOperatorRole && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   郵便番号
                 </th>
               )}
               {!isOperatorRole && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   住所
                 </th>
               )}
               {!isOperatorRole && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   生年月日
                 </th>
               )}
               {!isOperatorRole && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   性別
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ランク
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                ステータス
               </th>
               {!isOperatorRole && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   登録店舗
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 登録日
               </th>
             </tr>
@@ -189,6 +221,11 @@ export default function UserTable({
                 </td>
                 {!isOperatorRole && (
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{user.email}</div>
+                  </td>
+                )}
+                {!isOperatorRole && (
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{user.postalCode}</div>
                   </td>
                 )}
@@ -210,7 +247,9 @@ export default function UserTable({
                   </td>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{getRankLabel(user.rank)}</div>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAccountStatusBadgeColor(user.accountStatus)}`}>
+                    {getAccountStatusLabel(user.accountStatus)}
+                  </span>
                 </td>
                 {!isOperatorRole && (
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -225,13 +264,6 @@ export default function UserTable({
           </tbody>
         </table>
       </div>
-
-      {isLoading && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">データを読み込み中...</p>
-        </div>
-      )}
 
       {!isLoading && error && (
         <div className="text-center py-12">
@@ -251,4 +283,3 @@ export default function UserTable({
     </div>
   );
 }
-

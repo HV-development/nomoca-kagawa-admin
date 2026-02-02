@@ -73,6 +73,24 @@ function ShopsPageContent() {
     updatedAtFrom: '',
     updatedAtTo: '',
   });
+  // 検索ボタン押下時に適用される検索条件
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    keyword: '',
+    merchantName: '',
+    merchantNameKana: '',
+    name: '',
+    nameKana: '',
+    phone: '',
+    accountEmail: '',
+    postalCode: '',
+    prefecture: '',
+    address: '',
+    status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+    createdAtFrom: '',
+    createdAtTo: '',
+    updatedAtFrom: '',
+    updatedAtTo: '',
+  });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   
   // URLパラメータから検索条件を読み込んで検索フォームに反映
@@ -98,6 +116,7 @@ function ShopsPageContent() {
     };
     
     setSearchForm(newSearchForm);
+    setAppliedSearchForm(newSearchForm);
     
     // 検索条件がある場合、検索フォームを展開して表示
     const hasSearchParams = Object.values(newSearchForm).some(value => value && value !== 'all');
@@ -202,24 +221,24 @@ function ShopsPageContent() {
         queryParams.append('merchantId', merchantId);
       }
       
-      // 検索フォームの各項目を追加
-      if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
-      if (searchForm.merchantName) queryParams.append('merchantName', searchForm.merchantName);
-      if (searchForm.merchantNameKana) queryParams.append('merchantNameKana', searchForm.merchantNameKana);
-      if (searchForm.name) queryParams.append('name', searchForm.name);
-      if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
-      if (searchForm.phone) queryParams.append('phone', searchForm.phone);
-      if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
-      if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
-      if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-      if (searchForm.address) queryParams.append('address', searchForm.address);
-      if (searchForm.status && searchForm.status !== 'all') {
-        queryParams.append('status', searchForm.status);
+      // 検索フォームの各項目を追加（適用済みの検索条件を使用）
+      if (appliedSearchForm.keyword) queryParams.append('keyword', appliedSearchForm.keyword);
+      if (appliedSearchForm.merchantName) queryParams.append('merchantName', appliedSearchForm.merchantName);
+      if (appliedSearchForm.merchantNameKana) queryParams.append('merchantNameKana', appliedSearchForm.merchantNameKana);
+      if (appliedSearchForm.name) queryParams.append('name', appliedSearchForm.name);
+      if (appliedSearchForm.nameKana) queryParams.append('nameKana', appliedSearchForm.nameKana);
+      if (appliedSearchForm.phone) queryParams.append('phone', appliedSearchForm.phone);
+      if (appliedSearchForm.accountEmail) queryParams.append('accountEmail', appliedSearchForm.accountEmail);
+      if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
+      if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
+      if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
+      if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
+        queryParams.append('status', appliedSearchForm.status);
       }
-      if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
-      if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
-      if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
-      if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+      if (appliedSearchForm.createdAtFrom) queryParams.append('createdAtFrom', appliedSearchForm.createdAtFrom);
+      if (appliedSearchForm.createdAtTo) queryParams.append('createdAtTo', appliedSearchForm.createdAtTo);
+      if (appliedSearchForm.updatedAtFrom) queryParams.append('updatedAtFrom', appliedSearchForm.updatedAtFrom);
+      if (appliedSearchForm.updatedAtTo) queryParams.append('updatedAtTo', appliedSearchForm.updatedAtTo);
       
       const data = await apiClient.getShops(queryParams.toString());
       
@@ -295,7 +314,7 @@ function ShopsPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [merchantId, searchForm, pagination.page, pagination.limit]);
+  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit]);
 
   // 初回マウント時とmerchantId変更時にデータ取得
   // 事業者アカウントの場合はmerchantIdが設定されるまで待機
@@ -322,7 +341,7 @@ function ShopsPageContent() {
       auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
       pagination.page,
       pagination.limit,
-      JSON.stringify(searchForm),
+      JSON.stringify(appliedSearchForm),
     ].join('|');
 
     if (lastFetchKeyRef.current === key) {
@@ -347,6 +366,8 @@ function ShopsPageContent() {
     if (!validateSearchForm()) {
       return;
     }
+    // 検索条件を適用
+    setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
     // URLパラメータを更新（ブラウザの戻る/進むボタンで検索条件を維持）
@@ -358,7 +379,8 @@ function ShopsPageContent() {
     });
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     window.history.pushState({}, '', newUrl);
-    fetchShops();
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   // 日付バリデーション関数
@@ -442,7 +464,7 @@ function ShopsPageContent() {
 
   // クリアハンドラー
   const handleClear = () => {
-    setSearchForm({
+    const clearedForm = {
       keyword: '',
       merchantName: '',
       merchantNameKana: '',
@@ -453,12 +475,14 @@ function ShopsPageContent() {
       postalCode: '',
       prefecture: '',
       address: '',
-      status: 'all',
+      status: 'all' as const,
       createdAtFrom: '',
       createdAtTo: '',
       updatedAtFrom: '',
       updatedAtTo: '',
-    });
+    };
+    setSearchForm(clearedForm);
+    setAppliedSearchForm(clearedForm);
     setSearchErrors({
       createdAtFrom: '',
       createdAtTo: '',
@@ -469,8 +493,8 @@ function ShopsPageContent() {
     setPagination(prev => ({ ...prev, page: 1 }));
     // URLパラメータをクリア
     window.history.pushState({}, '', window.location.pathname);
-    // クリア後にデータを再取得
-    setTimeout(() => fetchShops(), 100);
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   // ページ変更ハンドラー

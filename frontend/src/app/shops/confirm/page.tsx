@@ -112,6 +112,8 @@ function ShopConfirmContent() {
   }, [router]);
 
   const handleModify = () => {
+    // 確認画面から戻ることを示すフラグを設定
+    sessionStorage.setItem('returnedFromConfirm', 'true');
     // sessionStorageのデータは保持したまま戻る
     router.back();
   };
@@ -175,7 +177,7 @@ function ShopConfirmContent() {
         createAccount: shopData.createAccount,
         // パスワードが入力されている場合は送信
         password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
-        // 確認用パスワードも送信
+        // 確認用パスワードも送信（APIのバリデーション用）
         confirmPassword: shopData.confirmPassword && shopData.confirmPassword.trim().length > 0 ? shopData.confirmPassword : undefined,
       };
 

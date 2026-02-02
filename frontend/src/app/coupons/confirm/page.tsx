@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api';
 import type { CouponCreateRequest, CouponStatus } from '@hv-development/schemas';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { compressImageFile } from '@/utils/imageUtils';
 import { useAuth } from '@/components/contexts/auth-context';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ function CouponConfirmPageContent() {
   const displayName = auth?.user?.name ?? '—';
   const [couponData, setCouponData] = useState<CouponData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toasts, removeToast, showSuccess, showError } = useToast();
+  const { toasts, removeToast, showError } = useToast();
 
   useEffect(() => {
     // sessionStorageからデータを取得（画像データを含む）
@@ -106,7 +107,86 @@ function CouponConfirmPageContent() {
         isPublic: false
       };
       
-      await apiClient.createCoupon(createData);
+      const createdCoupon = await apiClient.createCoupon(createData) as { id: string };
+      
+      // 画像をアップロード
+      if (couponData.imagePreview && couponData.imagePreview.startsWith('data:') && createdCoupon.id) {
+        try {
+          // 店舗情報を取得してmerchantIdを取得
+          const shopData = await apiClient.getShop(couponData.shopId) as { merchantId?: string; merchant?: { id: string } };
+          const merchantId = shopData.merchantId || shopData.merchant?.id;
+          
+          if (!merchantId) {
+            throw new Error('事業者IDが取得できませんでした');
+          }
+          
+          // data:URLから画像を取得してFileオブジェクトに変換
+          const base64Data = couponData.imagePreview.split(',')[1];
+          const mimeType = couponData.imagePreview.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: mimeType });
+          const file = new File([blob], 'coupon-image.jpg', { type: mimeType });
+          
+          // 画像を圧縮
+          const fileForUpload = await compressImageFile(file, {
+            maxBytes: 9.5 * 1024 * 1024,
+            maxWidth: 2560,
+            maxHeight: 2560,
+            initialQuality: 0.9,
+            minQuality: 0.6,
+            qualityStep: 0.1,
+          });
+          
+          // タイムスタンプを生成
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          
+          // FormDataを作成
+          const uploadFormData = new FormData();
+          uploadFormData.append('image', fileForUpload);
+          uploadFormData.append('type', 'coupon');
+          uploadFormData.append('shopId', couponData.shopId);
+          uploadFormData.append('merchantId', merchantId);
+          uploadFormData.append('couponId', createdCoupon.id);
+          uploadFormData.append('timestamp', timestamp);
+          
+          // 画像をアップロード
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+            credentials: 'include',
+          });
+          
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json().catch(() => ({}));
+            const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
+            console.error('❌ Upload failed:', uploadResponse.status, errorData);
+            throw new Error(message);
+          }
+          
+          const uploadData = await uploadResponse.json();
+          
+          // アップロードされた画像URLをクーポンデータに含めて更新
+          try {
+            await apiClient.updateCoupon(createdCoupon.id, {
+              imageUrl: uploadData.url,
+            });
+            console.log('✅ クーポン画像を更新しました:', uploadData.url);
+          } catch (updateError) {
+            console.error('❌ クーポン画像の更新に失敗しました:', updateError);
+            // 画像アップロードは成功しているが、クーポンデータの更新に失敗した場合
+            showError('画像のアップロードは完了しましたが、クーポンデータの更新に失敗しました。管理者にお問い合わせください。');
+          }
+        } catch (uploadError) {
+          console.error('画像のアップロードに失敗しました:', uploadError);
+          // 画像アップロードが失敗してもクーポン作成は成功しているので、エラーを表示して続行
+          const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
+          showError(`クーポンは作成されましたが、${errorMessage}`);
+        }
+      }
       
       // 登録成功後、sessionStorageをクリア
       try {

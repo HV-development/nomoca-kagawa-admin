@@ -177,8 +177,6 @@ function ShopConfirmContent() {
         createAccount: shopData.createAccount,
         // パスワードが入力されている場合は送信
         password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
-        // 確認用パスワードも送信（APIのバリデーション用）
-        confirmPassword: shopData.confirmPassword && shopData.confirmPassword.trim().length > 0 ? shopData.confirmPassword : undefined,
       };
 
       // submitDataのservices確認ログ

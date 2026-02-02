@@ -179,7 +179,7 @@ function ShopConfirmContent() {
         password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
         // 確認用パスワードも送信（APIのバリデーション用）
         confirmPassword: shopData.confirmPassword && shopData.confirmPassword.trim().length > 0 ? shopData.confirmPassword : undefined,
-      };
+      } as ShopCreateRequest;
 
       // submitDataのservices確認ログ
       console.log('[新規登録確認画面] submitDataのservices確認:', {

@@ -21,6 +21,7 @@ import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { compressImageFile } from '@/utils/imageUtils';
 import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
 
 const PaymentMethodSelector = dynamicImport(() => import('@/components/molecules/PaymentMethodSelector'), {
@@ -1277,6 +1278,43 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // ジャンル名を取得
       const selectedGenre = genres.find(g => g.id === formData.genreId);
       
+      // FileをBase64 data:URLに変換するヘルパー関数
+      const fileToDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
+
+      // imagePreviewsのblob:URLをdata:URLに変換（圧縮してから変換）
+      const imagePreviewDataUrls = await Promise.all(
+        imagePreviews.map(async (preview) => {
+          // 既にdata:URLの場合はそのまま返す
+          if (preview.url.startsWith('data:')) {
+            return preview.url;
+          }
+          // blob:URLの場合はFileオブジェクトを圧縮してからdata:URLを生成
+          try {
+            // 画像を圧縮（sessionStorageの容量を節約するため、小さめに圧縮）
+            const compressedFile = await compressImageFile(preview.file, {
+              maxBytes: 500 * 1024, // 500KB以下に圧縮（sessionStorage用）
+              maxWidth: 1280,
+              maxHeight: 1280,
+              initialQuality: 0.7,
+              minQuality: 0.5,
+              qualityStep: 0.1,
+            });
+            return await fileToDataUrl(compressedFile);
+          } catch (error) {
+            console.error('画像の変換に失敗しました:', error);
+            // 圧縮に失敗した場合は元のファイルで試行
+            return await fileToDataUrl(preview.file);
+          }
+        })
+      );
+      
       // 確認画面用のデータを準備
       const confirmData = {
         // 基本データ
@@ -1301,7 +1339,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         paymentCodeJson,
         servicesJson,
         existingImages,
-        imagePreviews,
+        // data:URLに変換したURLを保存
+        imagePreviews: imagePreviewDataUrls,
         hasExistingAccount,
         fallbackRedirect,
         // シーン名のマッピング用

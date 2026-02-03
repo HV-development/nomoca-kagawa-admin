@@ -11,6 +11,7 @@ import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import type { ShopCreateRequest, CouponStatus } from '@hv-development/schemas';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { compressImageFile } from '@/utils/imageUtils';
 import { useAuth } from '@/components/contexts/auth-context';
 
 export const dynamic = 'force-dynamic';
@@ -197,6 +198,101 @@ function ShopConfirmContent() {
 
       // 店舗を作成
       const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
+      
+      // 画像をアップロード
+      if (shopData.imagePreviews && shopData.imagePreviews.length > 0) {
+        try {
+          const uploadedImageUrls: string[] = [];
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          
+          for (let index = 0; index < shopData.imagePreviews.length; index++) {
+            const imageUrl = shopData.imagePreviews[index];
+            
+            // data:URLまたはblob:URLから画像を取得してFileオブジェクトに変換
+            let file: File;
+            if (imageUrl.startsWith('data:')) {
+              // data:URLの場合 - fetchを使わずに直接Blobに変換
+              const base64Data = imageUrl.split(',')[1];
+              const mimeType = imageUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+              const binaryString = atob(base64Data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: mimeType });
+              file = new File([blob], `image-${index}.jpg`, { type: mimeType });
+            } else if (imageUrl.startsWith('blob:')) {
+              // blob:URLの場合（フォールバック）
+              try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                file = new File([blob], `image-${index}.jpg`, { type: blob.type || 'image/jpeg' });
+              } catch (error) {
+                console.error(`blob:URLからの画像取得に失敗しました (${index + 1}):`, error);
+                throw new Error(`画像 ${index + 1} の読み込みに失敗しました`);
+              }
+            } else {
+              // 通常のURLの場合（既存画像）- スキップ
+              continue;
+            }
+            
+            // 画像を圧縮
+            const fileForUpload = await compressImageFile(file, {
+              maxBytes: 9.5 * 1024 * 1024,
+              maxWidth: 2560,
+              maxHeight: 2560,
+              initialQuality: 0.9,
+              minQuality: 0.6,
+              qualityStep: 0.1,
+            });
+            
+            // FormDataを作成
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', fileForUpload);
+            uploadFormData.append('type', 'shop');
+            uploadFormData.append('merchantId', createdShop.merchantId);
+            uploadFormData.append('shopId', createdShop.id);
+            uploadFormData.append('timestamp', timestamp);
+            
+            // 画像をアップロード
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              credentials: 'include',
+            });
+            
+            if (!uploadResponse.ok) {
+              const errorData = await uploadResponse.json().catch(() => ({}));
+              const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
+              console.error(`❌ Upload failed for image ${index + 1}:`, uploadResponse.status, errorData);
+              throw new Error(message);
+            }
+            
+            const uploadData = await uploadResponse.json();
+            uploadedImageUrls.push(uploadData.url);
+          }
+          
+          // アップロードされた画像URLを店舗データに含めて更新
+          if (uploadedImageUrls.length > 0) {
+            const allImages = [...(shopData.existingImages || []), ...uploadedImageUrls];
+            try {
+              await apiClient.updateShop(createdShop.id, {
+                images: allImages,
+              });
+              console.log('✅ 店舗画像を更新しました:', allImages);
+            } catch (updateError) {
+              console.error('❌ 店舗画像の更新に失敗しました:', updateError);
+              // 画像アップロードは成功しているが、店舗データの更新に失敗した場合
+              showError('画像のアップロードは完了しましたが、店舗データの更新に失敗しました。管理者にお問い合わせください。');
+            }
+          }
+        } catch (uploadError) {
+          console.error('画像のアップロードに失敗しました:', uploadError);
+          // 画像アップロードが失敗しても店舗作成は成功しているので、エラーを表示して続行
+          const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
+          showError(`店舗は作成されましたが、${errorMessage}`);
+        }
+      }
       
       // 登録成功後、sessionStorageをクリア
       try {

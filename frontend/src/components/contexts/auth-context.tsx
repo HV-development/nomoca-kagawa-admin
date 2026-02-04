@@ -112,11 +112,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // リフレッシュ後も認証エラーの場合はログイン画面へリダイレクト
           if (meResult.status === 401 || meResult.status === 403) {
-            // ログインページにいる場合はリダイレクトしない（無限ループ防止）
+            // ログインページやパスワード設定ページにいる場合はリダイレクトしない（無限ループ防止）
             const isLoginPage = typeof window !== 'undefined' && 
               (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
+            const isPasswordSetupPage = typeof window !== 'undefined' && 
+              (window.location.pathname === '/auth/set-password' || window.location.pathname.startsWith('/auth/set-password'));
             
-            if (!isLoginPage && typeof window !== 'undefined') {
+            if (!isLoginPage && !isPasswordSetupPage && typeof window !== 'undefined') {
               console.warn(`Auth error (${meResult.status}): redirecting to login`);
               window.location.href = '/login?session=expired';
               return;

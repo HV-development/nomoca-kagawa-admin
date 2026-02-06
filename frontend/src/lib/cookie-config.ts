@@ -20,10 +20,14 @@ export const COOKIE_NAMES = {
 } as const
 
 // Cookie有効期限の設定
+// 注意: バックエンドのJWTトークンの有効期限と一致させる必要があります
+// バックエンドのデフォルト設定:
+// - JWT_ACCESS_TOKEN_EXPIRES_IN: '30d' (30日)
+// - JWT_REFRESH_TOKEN_EXPIRES_IN: '30d' (30日)
 export const COOKIE_MAX_AGE = {
-  // アクセストークン: 30日（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INに合わせる）
+  // アクセストークン: 30日（1か月）
   ACCESS_TOKEN: 60 * 60 * 24 * 30,
-  // リフレッシュトークン: 30日（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INに合わせる）
+  // リフレッシュトークン: 30日（1か月）
   REFRESH_TOKEN: 60 * 60 * 24 * 30,
 } as const
 

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const res = createNoCacheResponse({ ok: true });
     if (data.accessToken) {
-      // アクセストークン: 30日（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INのデフォルト値と一致）
+      // アクセストークン: 環境変数JWT_ACCESS_TOKEN_EXPIRES_INから取得（cookie-config.tsで一元管理）
       const accessTokenMaxAge = COOKIE_MAX_AGE.ACCESS_TOKEN;
       const accessTokenDays = accessTokenMaxAge / (60 * 60 * 24);
       console.log('🍪 [auth/refresh] アクセストークンCookie設定:', {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (data.refreshToken) {
-      // リフレッシュトークン: 30日（1か月、バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INのデフォルト値と一致）
+      // リフレッシュトークン: 環境変数JWT_REFRESH_TOKEN_EXPIRES_INから取得（cookie-config.tsで一元管理）
       const refreshTokenMaxAge = COOKIE_MAX_AGE.REFRESH_TOKEN;
       const refreshTokenDays = refreshTokenMaxAge / (60 * 60 * 24);
       console.log('🍪 [auth/refresh] リフレッシュトークンCookie設定:', {

@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         try { return new URL(request.url).protocol === 'https:'; } catch { return process.env.NODE_ENV === 'production'; }
       })();
       
-      // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
+      // アクセストークン: 環境変数JWT_ACCESS_TOKEN_EXPIRES_INから取得（cookie-config.tsで一元管理）
       // 旧Cookie（プレフィックス無し）を削除して衝突を解消
       nextResponse.cookies.set('accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
       nextResponse.cookies.set('__Host-accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
       
       if (refreshResult.refreshToken) {
-        // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
+        // リフレッシュトークン: 環境変数JWT_REFRESH_TOKEN_EXPIRES_INから取得（cookie-config.tsで一元管理）
         // 旧Cookie（プレフィックス無し）を削除して衝突を解消
         nextResponse.cookies.set('refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
         nextResponse.cookies.set('__Host-refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });

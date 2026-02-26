@@ -7,6 +7,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { useAuth } from '@/components/contexts/auth-context';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -74,41 +75,37 @@ export default function CouponHistoryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // APIからデータを取得
+  // APIからデータを取得（POSTボディで送信するため apiClient を使用）
   useEffect(() => {
     const fetchUsageHistory = async () => {
       if (!couponId) return;
-      
+
       setIsLoading(true);
       try {
-        const queryParams = new URLSearchParams();
-        queryParams.append('couponId', couponId);
+        const searchBody: Record<string, string | number> = {
+          couponId,
+        };
 
         // 検索条件を追加
-        if (appliedSearchForm.usageId) queryParams.append('usageId', appliedSearchForm.usageId);
-        if (appliedSearchForm.shopName) queryParams.append('shopName', appliedSearchForm.shopName);
-        if (appliedSearchForm.userId) queryParams.append('userId', appliedSearchForm.userId);
-        if (appliedSearchForm.nickname && isAdmin) queryParams.append('nickname', appliedSearchForm.nickname);
-        if (appliedSearchForm.email && isAdmin) queryParams.append('email', appliedSearchForm.email);
-        if (appliedSearchForm.gender && isAdmin) queryParams.append('gender', appliedSearchForm.gender);
-        if (appliedSearchForm.birthDate && isAdmin) queryParams.append('birthDate', appliedSearchForm.birthDate);
-        if (appliedSearchForm.address && isAdmin) queryParams.append('address', appliedSearchForm.address);
+        if (appliedSearchForm.usageId) searchBody.usageId = appliedSearchForm.usageId;
+        if (appliedSearchForm.shopName) searchBody.shopName = appliedSearchForm.shopName;
+        if (appliedSearchForm.userId) searchBody.userId = appliedSearchForm.userId;
+        if (appliedSearchForm.nickname && isAdmin) searchBody.nickname = appliedSearchForm.nickname;
+        if (appliedSearchForm.email && isAdmin) searchBody.email = appliedSearchForm.email;
+        if (appliedSearchForm.gender && isAdmin) searchBody.gender = appliedSearchForm.gender;
+        if (appliedSearchForm.birthDate && isAdmin) searchBody.birthDate = appliedSearchForm.birthDate;
+        if (appliedSearchForm.address && isAdmin) searchBody.address = appliedSearchForm.address;
         if (appliedSearchForm.usedDateStart) {
           const startDate = new Date(appliedSearchForm.usedDateStart);
-          queryParams.append('usedAtStart', startDate.toISOString());
+          searchBody.usedAtStart = startDate.toISOString();
         }
         if (appliedSearchForm.usedDateEnd) {
           const endDate = new Date(appliedSearchForm.usedDateEnd);
           endDate.setHours(23, 59, 59, 999);
-          queryParams.append('usedAtEnd', endDate.toISOString());
+          searchBody.usedAtEnd = endDate.toISOString();
         }
 
-        const response = await fetch(`/api/admin/coupon-usage-history?${queryParams.toString()}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch usage history');
-        }
-        
-        const data = await response.json() as { history: Array<{
+        const data = await apiClient.getCouponUsageHistory(searchBody) as { history: Array<{
           id: string;
           usageId?: string;
           couponId: string;

@@ -72,29 +72,33 @@ export default function CouponHistoryPage() {
       
       setIsLoading(true);
       try {
-        const queryParams = new URLSearchParams();
-        queryParams.append('userId', userId);
-
-        // 検索条件を追加
-        if (appliedSearchForm.usageId) queryParams.append('usageId', appliedSearchForm.usageId);
-        if (appliedSearchForm.couponId) queryParams.append('couponId', appliedSearchForm.couponId);
-        if (appliedSearchForm.couponName) queryParams.append('couponName', appliedSearchForm.couponName);
-        if (appliedSearchForm.shopName) queryParams.append('shopName', appliedSearchForm.shopName);
+        // APIはPOSTボディで検索条件を受け取る（GETクエリは未対応）
+        const body: Record<string, string | number> = {
+          userId,
+        };
+        if (appliedSearchForm.usageId) body.usageId = appliedSearchForm.usageId;
+        if (appliedSearchForm.couponId) body.couponId = appliedSearchForm.couponId;
+        if (appliedSearchForm.couponName) body.couponName = appliedSearchForm.couponName;
+        if (appliedSearchForm.shopName) body.shopName = appliedSearchForm.shopName;
         if (appliedSearchForm.usedDateStart) {
           const startDate = new Date(appliedSearchForm.usedDateStart);
-          queryParams.append('usedAtStart', startDate.toISOString());
+          body.usedAtStart = startDate.toISOString();
         }
         if (appliedSearchForm.usedDateEnd) {
           const endDate = new Date(appliedSearchForm.usedDateEnd);
           endDate.setHours(23, 59, 59, 999);
-          queryParams.append('usedAtEnd', endDate.toISOString());
+          body.usedAtEnd = endDate.toISOString();
         }
 
-        const response = await fetch(`/api/admin/coupon-usage-history?${queryParams.toString()}`);
+        const response = await fetch('/api/admin/coupon-usage-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch usage history');
         }
-        
+
         const data = await response.json() as { history: Array<{
           id: string;
           usageId?: string;

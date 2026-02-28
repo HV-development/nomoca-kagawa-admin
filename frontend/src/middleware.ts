@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 import { COOKIE_NAMES } from '@/lib/cookie-config';
+
+/** 管理者アカウントのみアクセス可能なパス（直リンク時の権限制御） */
+const ADMIN_ONLY_PATHS = ['/admins', '/users'];
+function isAdminOnlyPath(pathname: string): boolean {
+  return ADMIN_ONLY_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
 
 /**
  * IPv4-mapped IPv6アドレスからIPv4部分を抽出
@@ -288,7 +297,38 @@ export async function middleware(request: NextRequest) {
       redirectResponse.headers.set('Expires', '0');
       return redirectResponse;
     }
-    // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
+    // 管理者専用パスはJWTのaccountTypeを検証し、adminでなければ/merchantsへリダイレクト
+    if (isAdminOnlyPath(pathname)) {
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || 'your-jwt-secret-key-change-in-production'
+      );
+      try {
+        const { payload } = await jwtVerify(token, secret);
+        const accountType = payload.accountType as string | undefined;
+        if (accountType !== 'admin') {
+          const url = request.nextUrl.clone();
+          url.pathname = '/merchants';
+          url.search = '';
+          const redirectResponse = NextResponse.redirect(url, 307);
+          redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+          redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+          redirectResponse.headers.set('Pragma', 'no-cache');
+          redirectResponse.headers.set('Expires', '0');
+          return redirectResponse;
+        }
+      } catch {
+        // トークン不正・期限切れの場合はログインへ
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        url.searchParams.set('session', 'expired');
+        const redirectResponse = NextResponse.redirect(url, 307);
+        redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        redirectResponse.headers.set('Pragma', 'no-cache');
+        redirectResponse.headers.set('Expires', '0');
+        return redirectResponse;
+      }
+    }
   }
 
   // セキュリティヘッダーを設定

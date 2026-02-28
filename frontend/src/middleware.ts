@@ -299,8 +299,9 @@ export async function middleware(request: NextRequest) {
     }
     // 管理者専用パスはJWTのaccountTypeを検証し、adminでなければ/merchantsへリダイレクト
     if (isAdminOnlyPath(pathname)) {
+      // API（AuthUtils）と同じ秘密鍵を使用。未設定時はAPIのデフォルトと揃える
       const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || 'your-jwt-secret-key-change-in-production'
+        process.env.JWT_SECRET || 'default-secret-key'
       );
       try {
         const { payload } = await jwtVerify(token, secret);

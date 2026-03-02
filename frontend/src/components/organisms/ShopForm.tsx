@@ -1088,16 +1088,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.address1 = '番地以降は必須です';
       }
 
-      // 緯度
-      if (!formData.latitude || String(formData.latitude).trim().length === 0) {
-        customErrors.latitude = '緯度は必須です';
-      }
-
-      // 経度
-      if (!formData.longitude || String(formData.longitude).trim().length === 0) {
-        customErrors.longitude = '経度は必須です';
-      }
-
       // ジャンル
       if (!formData.genreId || formData.genreId.trim().length === 0) {
         customErrors.genreId = 'ジャンルを選択してください';
@@ -1823,7 +1813,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* 緯度・経度 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                緯度・経度 <span className="text-red-500">*</span>
+                緯度・経度
               </label>
               <div className="flex gap-2 items-start">
                 <div className="w-48">
@@ -1840,7 +1830,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         : 'border-gray-300 focus:ring-blue-500'
                     }`}
                     placeholder="緯度（例: 35.681236）"
-                    required
                   />
                   <ErrorMessage message={validationErrors.latitude} field="latitude" />
                 </div>
@@ -1858,7 +1847,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         : 'border-gray-300 focus:ring-blue-500'
                     }`}
                     placeholder="経度（例: 139.767125）"
-                    required
                   />
                   <ErrorMessage message={validationErrors.longitude} field="longitude" />
                 </div>
@@ -1871,6 +1859,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </button>
               </div>
               <div className="mt-2 text-xs text-gray-500">
+                <p className="mb-1">※未入力の場合は住所情報に基づき事務局にて登録します。</p>
                 <p className="font-semibold mb-1">座標取得手順：</p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>「地図で確認」ボタンをクリック</li>

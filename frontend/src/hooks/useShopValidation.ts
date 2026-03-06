@@ -27,8 +27,6 @@ const REQUIRED_FIELD_LABELS: Partial<Record<keyof ExtendedShopCreateRequest, str
   prefecture: '都道府県',
   city: '市区町村',
   address1: '番地以降',
-  latitude: '緯度',
-  longitude: '経度',
   smokingType: '喫煙タイプ',
 };
 

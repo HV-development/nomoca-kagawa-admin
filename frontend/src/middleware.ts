@@ -4,11 +4,17 @@ import { jwtVerify } from 'jose';
 import { COOKIE_NAMES } from '@/lib/cookie-config';
 
 /** 管理者アカウントのみアクセス可能なパス（直リンク時の権限制御） */
-const ADMIN_ONLY_PATHS = ['/admins', '/users'];
+const ADMIN_ONLY_PATHS = ['/admins', '/users', '/coupon-history'];
 function isAdminOnlyPath(pathname: string): boolean {
-  return ADMIN_ONLY_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
+  if (
+    ADMIN_ONLY_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`)
+    )
+  ) {
+    return true;
+  }
+  // クーポン別利用履歴ページも /admin/coupon-usage-history と同じ管理者専用APIのため
+  return /^\/coupons\/[^/]+\/history/.test(pathname);
 }
 
 /**

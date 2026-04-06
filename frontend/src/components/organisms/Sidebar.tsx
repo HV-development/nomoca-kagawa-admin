@@ -45,13 +45,17 @@ export default function Sidebar() {
       if (auth?.isLoading || !auth?.user) return [];
       
       return menuItems.filter((item) => {
-        // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
+        // 店舗アカウントの場合、店舗管理・クーポン管理のみ表示（利用履歴APIは管理者専用のため非表示）
         if (auth?.user?.accountType === 'shop') {
-          return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
+          return item.href === '/shops' || item.href === '/coupons';
         }
-        // 事業者アカウントの場合、ユーザー管理と管理者アカウントを非表示
+        // 事業者アカウントの場合、ユーザー管理・管理者アカウント・クーポン利用履歴を非表示（利用履歴は管理者専用API）
         if (auth?.user?.accountType === 'merchant') {
-          return item.href !== '/users' && item.href !== '/admins';
+          return (
+            item.href !== '/users' &&
+            item.href !== '/admins' &&
+            item.href !== '/coupon-history'
+          );
         }
         return true;
       });

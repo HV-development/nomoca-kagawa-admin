@@ -38,8 +38,11 @@ export default function CouponHistoryPage() {
   const displayName = auth?.user?.name ?? '—';
   const isSysAdmin = accountType === 'admin' && role === 'sysadmin';
   const isShopAccount = accountType === 'shop';
+  const isMerchantAccount = accountType === 'merchant';
 
   const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
+  const [embeddedMerchantName, setEmbeddedMerchantName] = useState<string | undefined>(undefined);
+  const [embeddedShopName, setEmbeddedShopName] = useState<string | undefined>(undefined);
   const lastFetchKeyRef = useRef<string | null>(null);
   const pathname = usePathname();
   const _router = useRouter(); // 将来的に使用予定
@@ -86,6 +89,50 @@ export default function CouponHistoryPage() {
     pages: 0,
   });
 
+  // 事業者・店舗アカウント: 検索欄に事業者名・店舗名を埋め込み
+  useEffect(() => {
+    if (auth?.isLoading || !auth?.user) return;
+    if (isMerchantAccount) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const m = (await apiClient.getMyMerchant()) as { data?: { name?: string } };
+          if (cancelled) return;
+          setEmbeddedMerchantName(m?.data?.name ?? '');
+        } catch (e) {
+          console.error('事業者情報の取得に失敗しました:', e);
+          setEmbeddedMerchantName('');
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (isShopAccount && _shopId) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const s = (await apiClient.getShop(_shopId)) as {
+            name?: string;
+            merchant?: { name?: string };
+          };
+          if (cancelled) return;
+          setEmbeddedMerchantName(s?.merchant?.name ?? '');
+          setEmbeddedShopName(s?.name ?? '');
+        } catch (e) {
+          console.error('店舗情報の取得に失敗しました:', e);
+          setEmbeddedMerchantName('');
+          setEmbeddedShopName('');
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+    setEmbeddedMerchantName(undefined);
+    setEmbeddedShopName(undefined);
+  }, [auth?.isLoading, auth?.user, isMerchantAccount, isShopAccount, _shopId]);
+
   // APIからデータを取得
   useEffect(() => {
     // authがロードされるまで待機
@@ -127,7 +174,9 @@ export default function CouponHistoryPage() {
         if (appliedSearchForm.usageId) searchBody.usageId = appliedSearchForm.usageId;
         if (appliedSearchForm.couponId) searchBody.couponId = appliedSearchForm.couponId;
         if (appliedSearchForm.couponName) searchBody.couponName = appliedSearchForm.couponName;
-        if (appliedSearchForm.shopName) searchBody.shopName = appliedSearchForm.shopName;
+        if (appliedSearchForm.shopName && !isShopAccount) {
+          searchBody.shopName = appliedSearchForm.shopName;
+        }
         if (appliedSearchForm.nickname && isSysAdmin) searchBody.nickname = appliedSearchForm.nickname;
         if (appliedSearchForm.email && isSysAdmin) searchBody.email = appliedSearchForm.email;
         if (appliedSearchForm.gender && isSysAdmin) searchBody.gender = appliedSearchForm.gender;
@@ -169,6 +218,7 @@ export default function CouponHistoryPage() {
             totalPages: number;
           };
         };
+        
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -203,7 +253,7 @@ export default function CouponHistoryPage() {
     };
 
     fetchUsageHistory();
-  }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading, auth?.user?.id, auth?.user?.email, pagination.page, pagination.limit]);
+  }, [pathname, appliedSearchForm, isSysAdmin, isShopAccount, auth?.isLoading, auth?.user?.id, auth?.user?.email, pagination.page, pagination.limit]);
 
   useEffect(() => {
     // 遷移元を判定してページタイトルを設定
@@ -240,7 +290,7 @@ export default function CouponHistoryPage() {
       usageId: '',
       couponId: '',
       couponName: '',
-      shopName: '',
+      shopName: isShopAccount ? (embeddedShopName ?? '') : '',
       nickname: '',
       email: '',
       gender: '',
@@ -255,7 +305,7 @@ export default function CouponHistoryPage() {
     setPagination(prev => ({ ...prev, page: 1 }));
     // キャッシュをリセットして強制的に再フェッチ
     lastFetchKeyRef.current = null;
-  }, []);
+  }, [isShopAccount, embeddedShopName]);
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
@@ -288,7 +338,9 @@ export default function CouponHistoryPage() {
         if (appliedSearchForm.usageId) searchBody.usageId = appliedSearchForm.usageId;
         if (appliedSearchForm.couponId) searchBody.couponId = appliedSearchForm.couponId;
         if (appliedSearchForm.couponName) searchBody.couponName = appliedSearchForm.couponName;
-        if (appliedSearchForm.shopName) searchBody.shopName = appliedSearchForm.shopName;
+        if (appliedSearchForm.shopName && !isShopAccount) {
+          searchBody.shopName = appliedSearchForm.shopName;
+        }
         if (appliedSearchForm.nickname && isSysAdmin) searchBody.nickname = appliedSearchForm.nickname;
         if (appliedSearchForm.email && isSysAdmin) searchBody.email = appliedSearchForm.email;
         if (appliedSearchForm.gender && isSysAdmin) searchBody.gender = appliedSearchForm.gender;
@@ -429,8 +481,7 @@ export default function CouponHistoryPage() {
   }, [pathname, appliedSearchForm, isSysAdmin, showSuccess, showError]);
 
   const shouldShowSearchForm = !(pathname.includes('/coupons/') && pathname.includes('/history')) &&
-    !(pathname.includes('/users/') && pathname.includes('/coupon-history')) &&
-    !isShopAccount;
+    !(pathname.includes('/users/') && pathname.includes('/coupon-history'));
 
   return (
     <AdminLayout>
@@ -467,6 +518,10 @@ export default function CouponHistoryPage() {
             onSearch={handleSearch}
             onClear={handleClear}
             onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
+            embeddedMerchantName={
+              isMerchantAccount || isShopAccount ? embeddedMerchantName : undefined
+            }
+            embeddedShopName={isShopAccount ? embeddedShopName : undefined}
           />
         )}
 

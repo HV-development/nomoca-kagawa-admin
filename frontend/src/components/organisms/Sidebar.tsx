@@ -45,17 +45,17 @@ export default function Sidebar() {
       if (auth?.isLoading || !auth?.user) return [];
       
       return menuItems.filter((item) => {
-        // 店舗アカウントの場合、店舗管理・クーポン管理のみ表示（利用履歴APIは管理者専用のため非表示）
+        // 店舗アカウント: 店舗・クーポン管理・クーポン利用履歴
         if (auth?.user?.accountType === 'shop') {
-          return item.href === '/shops' || item.href === '/coupons';
-        }
-        // 事業者アカウントの場合、ユーザー管理・管理者アカウント・クーポン利用履歴を非表示（利用履歴は管理者専用API）
-        if (auth?.user?.accountType === 'merchant') {
           return (
-            item.href !== '/users' &&
-            item.href !== '/admins' &&
-            item.href !== '/coupon-history'
+            item.href === '/shops' ||
+            item.href === '/coupons' ||
+            item.href === '/coupon-history'
           );
+        }
+        // 事業者アカウント: ユーザー管理・管理者アカウントを非表示
+        if (auth?.user?.accountType === 'merchant') {
+          return item.href !== '/users' && item.href !== '/admins';
         }
         return true;
       });
@@ -177,7 +177,7 @@ export default function Sidebar() {
         {!isCollapsed && (
           <div className="px-4 pb-4">
             <div className="text-sm text-gray-500 text-center">
-              © 2024 nomoca 香川
+              © 2024 たまのみ
             </div>
           </div>
         )}

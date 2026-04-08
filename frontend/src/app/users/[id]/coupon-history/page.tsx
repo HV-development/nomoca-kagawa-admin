@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter, useParams } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -36,7 +36,6 @@ export default function CouponHistoryPage() {
   const role = auth?.user?.role;
   const isAdmin = accountType === 'admin' && ['sysadmin', 'operator', 'viewer'].includes(role || '');
   const pathname = usePathname();
-  const router = useRouter();
   const params = useParams();
   const userId = params?.id as string;
   
@@ -57,8 +56,6 @@ export default function CouponHistoryPage() {
     usedDateEnd: '',
   });
 
-  const [showBackButton, _setShowBackButton] = useState(true);
-  const [backUrl, _setBackUrl] = useState(`/users/${userId}`);
   const [pageTitle, _setPageTitle] = useState('クーポン利用履歴');
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
@@ -189,10 +186,6 @@ export default function CouponHistoryPage() {
       usedDateStart: '',
       usedDateEnd: '',
     });
-  };
-
-  const handleBack = () => {
-    router.push(backUrl);
   };
 
   const getGenderLabel = (gender?: string) => {
@@ -499,19 +492,6 @@ export default function CouponHistoryPage() {
           )}
         </div>
 
-        {/* 戻るボタン（画面下部） */}
-        {showBackButton && (
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleBack}
-              className="px-8"
-            >
-              戻る
-            </Button>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );

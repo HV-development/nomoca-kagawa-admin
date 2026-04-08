@@ -26,6 +26,10 @@ interface CouponHistorySearchFormProps {
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
+  /** 事業者名を埋め込み表示（事業者・店舗アカウント） */
+  embeddedMerchantName?: string;
+  /** 店舗名を埋め込み表示（店舗アカウントのみ） */
+  embeddedShopName?: string;
 }
 
 export default function CouponHistorySearchForm({
@@ -36,6 +40,8 @@ export default function CouponHistorySearchForm({
   onSearch,
   onClear,
   onToggleExpand,
+  embeddedMerchantName,
+  embeddedShopName,
 }: CouponHistorySearchFormProps) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -54,6 +60,21 @@ export default function CouponHistorySearchForm({
       {isSearchExpanded && (
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {embeddedMerchantName !== undefined && (
+              <div>
+                <label htmlFor="embeddedMerchant" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者
+                </label>
+                <input
+                  type="text"
+                  id="embeddedMerchant"
+                  readOnly
+                  value={embeddedMerchantName}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
+                />
+              </div>
+            )}
+
             {/* 利用ID */}
             <div>
               <label htmlFor="usageId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -99,7 +120,7 @@ export default function CouponHistorySearchForm({
               />
             </div>
 
-            {/* 店舗名 */}
+            {/* 店舗名（店舗アカウントは埋め込み表示） */}
             <div>
               <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-2">
                 店舗名
@@ -107,10 +128,13 @@ export default function CouponHistorySearchForm({
               <input
                 type="text"
                 id="shopName"
-                placeholder="店舗名を入力"
-                value={searchForm.shopName}
+                placeholder={embeddedShopName !== undefined ? undefined : '店舗名を入力'}
+                value={embeddedShopName !== undefined ? embeddedShopName : searchForm.shopName}
+                readOnly={embeddedShopName !== undefined}
                 onChange={(e) => onInputChange('shopName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  embeddedShopName !== undefined ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''
+                }`}
               />
             </div>
 

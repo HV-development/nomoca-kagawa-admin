@@ -24,6 +24,10 @@ interface CouponSearchFormProps {
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
+  /** 事業者アカウント: 事業者名を埋め込み表示（編集不可） */
+  lockedMerchantName?: string;
+  /** 店舗アカウント: 店舗名を埋め込み表示（編集不可） */
+  lockedShopName?: string;
 }
 
 export default function CouponSearchForm({
@@ -37,6 +41,8 @@ export default function CouponSearchForm({
   onSearch,
   onClear,
   onToggleExpand,
+  lockedMerchantName,
+  lockedShopName,
 }: CouponSearchFormProps) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -64,9 +70,12 @@ export default function CouponSearchForm({
                 type="text"
                 id="merchantName"
                 placeholder="事業者名を入力"
-                value={searchForm.merchantName}
+                value={lockedMerchantName !== undefined ? lockedMerchantName : searchForm.merchantName}
+                readOnly={lockedMerchantName !== undefined}
                 onChange={(e) => onInputChange('merchantName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  lockedMerchantName !== undefined ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''
+                }`}
               />
             </div>
 
@@ -79,9 +88,12 @@ export default function CouponSearchForm({
                 type="text"
                 id="shopName"
                 placeholder="店舗名を入力"
-                value={searchForm.shopName}
+                value={lockedShopName !== undefined ? lockedShopName : searchForm.shopName}
+                readOnly={lockedShopName !== undefined}
                 onChange={(e) => onInputChange('shopName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  lockedShopName !== undefined ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''
+                }`}
               />
             </div>
 

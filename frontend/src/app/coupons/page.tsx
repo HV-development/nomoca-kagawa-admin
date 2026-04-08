@@ -88,6 +88,7 @@ function CouponsPageContent() {
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
+  const [embeddedMerchantName, setEmbeddedMerchantName] = useState('');
   const lastCouponsFetchKeyRef = useRef<string | null>(null);
   const lastShopFetchIdRef = useRef<string | null>(null);
 
@@ -109,11 +110,13 @@ function CouponsPageContent() {
         params.append('merchantId', merchantId);
       }
 
-      if (appliedSearchForm.merchantName) {
+      // 事業者アカウントはAPI側でmerchantIdが固定されるため、事業者名検索は送らない
+      if (appliedSearchForm.merchantName && !isMerchantAccount) {
         params.append('merchantName', appliedSearchForm.merchantName);
       }
 
-      if (appliedSearchForm.shopName) {
+      // 店舗アカウントは自店舗に固定のため、店舗名検索は送らない
+      if (appliedSearchForm.shopName && !isShopAccount) {
         params.append('shopName', appliedSearchForm.shopName);
       }
 
@@ -168,6 +171,36 @@ function CouponsPageContent() {
 
     fetchShop();
   }, [shopId]);
+
+  // 事業者アカウント: 自事業者名を検索欄に埋め込み（APIは merchantId でスコープ）
+  useEffect(() => {
+    if (!isMerchantAccount || auth?.isLoading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = (await apiClient.getMyMerchant()) as { data?: { name?: string } };
+        if (cancelled) return;
+        const n = m?.data?.name ?? '';
+        setEmbeddedMerchantName(n);
+        setSearchForm((prev) => ({ ...prev, merchantName: n }));
+        setAppliedSearchForm((prev) => ({ ...prev, merchantName: n }));
+      } catch (error) {
+        console.error('事業者情報の取得に失敗しました:', error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isMerchantAccount, auth?.isLoading]);
+
+  // 店舗アカウント: 事業者名・店舗名を検索欄に埋め込み
+  useEffect(() => {
+    if (!isShopAccount || !shop) return;
+    const mn = shop.merchant?.name ?? '';
+    const sn = shop.name ?? '';
+    setSearchForm((prev) => ({ ...prev, merchantName: mn, shopName: sn }));
+    setAppliedSearchForm((prev) => ({ ...prev, merchantName: mn, shopName: sn }));
+  }, [isShopAccount, shop]);
 
   // クーポン一覧を取得
   useEffect(() => {
@@ -251,8 +284,8 @@ function CouponsPageContent() {
 
   const handleClear = useCallback(() => {
     const emptyForm: CouponSearchFormData = {
-      merchantName: '',
-      shopName: '',
+      merchantName: isMerchantAccount ? embeddedMerchantName : isShopAccount ? (shop?.merchant?.name ?? '') : '',
+      shopName: isShopAccount ? (shop?.name ?? '') : '',
       couponName: '',
     };
     setSearchForm(emptyForm);
@@ -265,7 +298,7 @@ function CouponsPageContent() {
     setPagination(prev => ({ ...prev, page: 1 }));
     // キャッシュをリセットして強制的に再フェッチ
     lastCouponsFetchKeyRef.current = null;
-  }, []);
+  }, [isMerchantAccount, isShopAccount, embeddedMerchantName, shop]);
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
@@ -528,11 +561,11 @@ function CouponsPageContent() {
           params.append('merchantId', merchantId);
         }
 
-        if (appliedSearchForm.merchantName) {
+        if (appliedSearchForm.merchantName && !isMerchantAccount) {
           params.append('merchantName', appliedSearchForm.merchantName);
         }
 
-        if (appliedSearchForm.shopName) {
+        if (appliedSearchForm.shopName && !isShopAccount) {
           params.append('shopName', appliedSearchForm.shopName);
         }
 
@@ -688,21 +721,21 @@ function CouponsPageContent() {
           </div>
         </div>
 
-        {/* 検索フォーム（店舗アカウントの場合は非表示） */}
-        {!isShopAccount && (
-          <CouponSearchForm
-            searchForm={searchForm}
-            approvalStatus={approvalStatus}
-            publicStatus={publicStatus}
-            isSearchExpanded={isSearchExpanded}
-            onInputChange={handleInputChange}
-            onApprovalStatusChange={setApprovalStatus}
-            onPublicStatusChange={setPublicStatus}
-            onSearch={handleSearch}
-            onClear={handleClear}
-            onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
-          />
-        )}
+        {/* 検索フォーム */}
+        <CouponSearchForm
+          searchForm={searchForm}
+          approvalStatus={approvalStatus}
+          publicStatus={publicStatus}
+          isSearchExpanded={isSearchExpanded}
+          onInputChange={handleInputChange}
+          onApprovalStatusChange={setApprovalStatus}
+          onPublicStatusChange={setPublicStatus}
+          onSearch={handleSearch}
+          onClear={handleClear}
+          onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
+          lockedMerchantName={isMerchantAccount ? embeddedMerchantName : isShopAccount ? (shop?.merchant?.name ?? '') : undefined}
+          lockedShopName={isShopAccount ? (shop?.name ?? '') : undefined}
+        />
 
         {/* ページネーション */}
         {pagination.totalPages > 1 && (

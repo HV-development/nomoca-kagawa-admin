@@ -362,6 +362,7 @@ export function convertCouponsToCSV(
 // ユーザーデータの型（一覧表示用）
 export type UserForCSV = {
   nickname: string;
+  email?: string;
   postalCode?: string;
   prefecture?: string;
   city?: string;
@@ -415,6 +416,7 @@ export function convertUsersToCSV(
   } else {
     headers.push(
       'ニックネーム',
+      'メールアドレス',
       '郵便番号',
       '住所',
       '生年月日',
@@ -442,6 +444,7 @@ export function convertUsersToCSV(
       const fullAddress = [user.prefecture, user.city, user.address].filter(Boolean).join('');
       values.push(
         escapeCSVValue(user.nickname || ''),
+        escapeCSVValue(user.email || ''),
         escapeCSVValue(user.postalCode || ''),
         escapeCSVValue(fullAddress),
         escapeCSVValue(user.birthDate || ''),

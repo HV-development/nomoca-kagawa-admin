@@ -471,6 +471,7 @@ export default function UsersPage() {
 
       const usersForCSV: UserForCSV[] = allUsers.map((user) => ({
         nickname: user.nickname,
+        email: user.email,
         postalCode: user.postalCode,
         prefecture: user.prefecture,
         city: user.city,

@@ -21,6 +21,7 @@ interface User {
   registeredStore: string;
   registeredAt: string;
   accountStatus: string;
+  planName: string;
 }
 
 interface UserTableProps {
@@ -165,6 +166,9 @@ export default function UserTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 ステータス
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                プラン名
+              </th>
               {!isOperatorRole && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   登録店舗
@@ -250,6 +254,9 @@ export default function UserTable({
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAccountStatusBadgeColor(user.accountStatus)}`}>
                     {getAccountStatusLabel(user.accountStatus)}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{user.planName}</div>
                 </td>
                 {!isOperatorRole && (
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -350,6 +350,12 @@ class ApiClient {
     });
   }
 
+  async getPlans(): Promise<unknown> {
+    return this.request<unknown>('/admin/plans', {
+      method: 'GET',
+    });
+  }
+
   // パスワード関連
   async verifyToken(token: string): Promise<unknown> {
     return this.request<unknown>(`/password/verify-token?token=${token}`, {

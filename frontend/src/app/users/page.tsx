@@ -30,6 +30,7 @@ interface User {
   registeredStore: string;
   registeredAt: string;
   accountStatus: string;
+  planName: string;
 }
 
 export default function UsersPage() {
@@ -54,6 +55,7 @@ export default function UsersPage() {
     registeredDateStart: '',
     registeredDateEnd: '',
     accountStatus: '',
+    planNames: [],
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState<UserSearchFormData>({
     nickname: '',
@@ -69,9 +71,11 @@ export default function UsersPage() {
     registeredDateStart: '',
     registeredDateEnd: '',
     accountStatus: '',
+    planNames: [],
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [plans, setPlans] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
@@ -82,6 +86,21 @@ export default function UsersPage() {
     total: 0,
     pages: 0,
   });
+
+  // プラン一覧取得
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await apiClient.getPlans() as { plans: Array<{ id: string; name: string }> };
+        if (data?.plans) {
+          setPlans(data.plans);
+        }
+      } catch (err) {
+        console.error('プラン一覧の取得に失敗しました:', err);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   // データ取得
   const fetchUsers = useCallback(async (searchParams?: UserSearchFormData) => {
@@ -112,6 +131,9 @@ export default function UsersPage() {
       if (searchParams?.registeredDateStart) searchBody.registeredDateStart = searchParams.registeredDateStart;
       if (searchParams?.registeredDateEnd) searchBody.registeredDateEnd = searchParams.registeredDateEnd;
       if (searchParams?.accountStatus) searchBody.accountStatus = searchParams.accountStatus;
+      if (searchParams?.planNames && searchParams.planNames.length > 0) {
+        searchBody.planNames = JSON.stringify(searchParams.planNames);
+      }
 
       // ページネーションパラメータを追加
       searchBody.page = pagination.page;
@@ -135,6 +157,7 @@ export default function UsersPage() {
           registeredStore?: string;
           registeredAt: string;
           accountStatus?: string;
+          planName?: string;
         }>;
         pagination?: {
           page: number;
@@ -170,6 +193,7 @@ export default function UsersPage() {
           registeredStore: '',
           registeredAt: user.registeredAt || '',
           accountStatus: user.accountStatus || 'active',
+          planName: user.planName || '',
         };
 
         // operatorロールでない場合のみ機密情報を設定
@@ -265,6 +289,7 @@ export default function UsersPage() {
       registeredDateStart: '',
       registeredDateEnd: '',
       accountStatus: '',
+      planNames: [],
     };
     setSearchForm(emptyForm);
     setAppliedSearchForm(emptyForm);
@@ -310,6 +335,9 @@ export default function UsersPage() {
         if (appliedSearchForm.registeredDateStart) searchBody.registeredDateStart = appliedSearchForm.registeredDateStart;
         if (appliedSearchForm.registeredDateEnd) searchBody.registeredDateEnd = appliedSearchForm.registeredDateEnd;
         if (appliedSearchForm.accountStatus) searchBody.accountStatus = appliedSearchForm.accountStatus;
+        if (appliedSearchForm.planNames && appliedSearchForm.planNames.length > 0) {
+          searchBody.planNames = JSON.stringify(appliedSearchForm.planNames);
+        }
 
         searchBody.page = page;
         searchBody.limit = limit;
@@ -330,6 +358,7 @@ export default function UsersPage() {
             registeredStore?: string;
             registeredAt: string;
             accountStatus?: string;
+            planName?: string;
           }>;
           pagination?: {
             totalPages?: number;
@@ -370,6 +399,7 @@ export default function UsersPage() {
                 registeredStore: '',
                 registeredAt: user.registeredAt || '',
                 accountStatus: user.accountStatus || 'active',
+                planName: user.planName || '',
               };
 
               // operatorロールでない場合のみ機密情報を設定
@@ -529,7 +559,9 @@ export default function UsersPage() {
           searchForm={searchForm}
           isSearchExpanded={isSearchExpanded}
           isOperatorRole={isOperatorRole}
+          plans={plans}
           onInputChange={handleInputChange}
+          onPlanNamesChange={(planNames) => setSearchForm(prev => ({ ...prev, planNames }))}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}

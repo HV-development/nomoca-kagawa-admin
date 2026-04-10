@@ -18,13 +18,21 @@ export interface UserSearchFormData {
   registeredDateStart: string;
   registeredDateEnd: string;
   accountStatus: string;
+  planNames: string[];
+}
+
+interface PlanOption {
+  id: string;
+  name: string;
 }
 
 interface UserSearchFormProps {
   searchForm: UserSearchFormData;
   isSearchExpanded: boolean;
   isOperatorRole: boolean;
+  plans: PlanOption[];
   onInputChange: (field: keyof UserSearchFormData, value: string) => void;
+  onPlanNamesChange: (planNames: string[]) => void;
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
@@ -34,7 +42,9 @@ export default function UserSearchForm({
   searchForm,
   isSearchExpanded,
   isOperatorRole,
+  plans,
   onInputChange,
+  onPlanNamesChange,
   onSearch,
   onClear,
   onToggleExpand,
@@ -273,6 +283,33 @@ export default function UserSearchForm({
               </div>
             </div>
           </div>
+
+          {/* プラン名 */}
+          {plans.length > 0 && (
+            <div className="mt-4">
+              <label htmlFor="planNames" className="block text-sm font-medium text-gray-700 mb-2">
+                プラン名（複数選択可）
+              </label>
+              <select
+                id="planNames"
+                multiple
+                value={searchForm.planNames}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, (opt) => opt.value);
+                  onPlanNamesChange(selected);
+                }}
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                size={Math.min(plans.length, 5)}
+              >
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.name}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Ctrlキー（Mac: Cmdキー）を押しながらクリックで複数選択</p>
+            </div>
+          )}
 
           {/* 検索・クリアボタン */}
           <div className="flex justify-end gap-2 mt-6">

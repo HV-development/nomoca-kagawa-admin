@@ -255,56 +255,35 @@ export async function middleware(request: NextRequest) {
   ];
 
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-    const token =
+    const accessToken =
       request.cookies.get(COOKIE_NAMES.ACCESS_TOKEN)?.value ||
       request.cookies.get(COOKIE_NAMES.HOST_ACCESS_TOKEN)?.value;
-    const isCouponsPath = pathname === '/coupons' || pathname.startsWith('/coupons/');
-    if (isCouponsPath) {
-      console.info('[middleware] coupons access check', {
-        hasToken: Boolean(token),
-        method: request.method,
-        url: request.nextUrl.toString(),
-        host,
-        hostname: request.nextUrl.hostname,
-        purpose: request.headers.get('purpose'),
-        secFetchMode: request.headers.get('sec-fetch-mode'),
-        secFetchDest: request.headers.get('sec-fetch-dest'),
-      });
-    }
-    if (!token) {
-      if (isCouponsPath) {
-        console.warn('[middleware] coupons redirect due to missing token', {
-          method: request.method,
-          url: request.nextUrl.toString(),
-          host,
-          hostname: request.nextUrl.hostname,
-          purpose: request.headers.get('purpose'),
-          secFetchMode: request.headers.get('sec-fetch-mode'),
-          secFetchDest: request.headers.get('sec-fetch-dest'),
-          hasAccessCookie: Boolean(request.cookies.get(COOKIE_NAMES.ACCESS_TOKEN)),
-          hasHostAccessCookie: Boolean(request.cookies.get(COOKIE_NAMES.HOST_ACCESS_TOKEN)),
-        });
-      }
+    const hasRefreshToken =
+      request.cookies.get(COOKIE_NAMES.REFRESH_TOKEN)?.value ||
+      request.cookies.get(COOKIE_NAMES.HOST_REFRESH_TOKEN)?.value;
+
+    if (!accessToken && !hasRefreshToken) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('session', 'expired');
-      // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
       const redirectResponse = NextResponse.redirect(url, 307);
-      // リダイレクトレスポンスにもセキュリティヘッダーを設定
       redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
       redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       redirectResponse.headers.set('Pragma', 'no-cache');
       redirectResponse.headers.set('Expires', '0');
       return redirectResponse;
     }
+    // 署名検証・リフレッシュはAPI層（authenticatedFetch）で実施。
+    // ここではいずれかのトークンCookieが存在すれば通過させる。
+
     // 管理者専用パスはJWTのaccountTypeを検証し、adminでなければ/merchantsへリダイレクト
-    if (isAdminOnlyPath(pathname)) {
-      // API（AuthUtils）と同じ秘密鍵を使用。未設定時はAPIのデフォルトと揃える
+    // アクセストークンがある場合のみ検証（リフレッシュトークンのみの場合はAPI層でリフレッシュ後に判定）
+    if (isAdminOnlyPath(pathname) && accessToken) {
       const secret = new TextEncoder().encode(
         process.env.JWT_SECRET || 'default-secret-key'
       );
       try {
-        const { payload } = await jwtVerify(token, secret);
+        const { payload } = await jwtVerify(accessToken, secret);
         const accountType = payload.accountType as string | undefined;
         if (accountType !== 'admin') {
           const url = request.nextUrl.clone();
@@ -318,16 +297,18 @@ export async function middleware(request: NextRequest) {
           return redirectResponse;
         }
       } catch {
-        // トークン不正・期限切れの場合はログインへ
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        url.searchParams.set('session', 'expired');
-        const redirectResponse = NextResponse.redirect(url, 307);
-        redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-        redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        redirectResponse.headers.set('Pragma', 'no-cache');
-        redirectResponse.headers.set('Expires', '0');
-        return redirectResponse;
+        // アクセストークンの検証失敗時、リフレッシュトークンがあればAPI層でリフレッシュするため通過させる
+        if (!hasRefreshToken) {
+          const url = request.nextUrl.clone();
+          url.pathname = '/login';
+          url.searchParams.set('session', 'expired');
+          const redirectResponse = NextResponse.redirect(url, 307);
+          redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+          redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+          redirectResponse.headers.set('Pragma', 'no-cache');
+          redirectResponse.headers.set('Expires', '0');
+          return redirectResponse;
+        }
       }
     }
   }

@@ -371,6 +371,7 @@ export type UserForCSV = {
   gender?: number;
   saitamaAppId?: string;
   accountStatus?: string;
+  planName?: string;
   registeredStore?: string;
   registeredAt: string;
 };
@@ -412,7 +413,7 @@ export function convertUsersToCSV(
   const headers: string[] = [];
 
   if (isOperatorRole) {
-    headers.push('ニックネーム', 'ステータス', '登録日');
+    headers.push('ニックネーム', 'ステータス', 'プラン名', '登録日');
   } else {
     headers.push(
       'ニックネーム',
@@ -423,6 +424,7 @@ export function convertUsersToCSV(
       '性別',
       'さいこいんアプリID',
       'ステータス',
+      'プラン名',
       '登録店舗',
       '登録日'
     );
@@ -437,10 +439,10 @@ export function convertUsersToCSV(
       values.push(
         escapeCSVValue(user.nickname || ''),
         escapeCSVValue(getUserStatusLabel(user.accountStatus || 'active')),
+        escapeCSVValue(user.planName || ''),
         escapeCSVValue(formatDate(user.registeredAt))
       );
     } else {
-      // 住所を結合して1つのカラムにする
       const fullAddress = [user.prefecture, user.city, user.address].filter(Boolean).join('');
       values.push(
         escapeCSVValue(user.nickname || ''),
@@ -451,6 +453,7 @@ export function convertUsersToCSV(
         escapeCSVValue(getGenderLabel(user.gender || 3)),
         escapeCSVValue(user.saitamaAppId || ''),
         escapeCSVValue(getUserStatusLabel(user.accountStatus || 'active')),
+        escapeCSVValue(user.planName || ''),
         escapeCSVValue(user.registeredStore || ''),
         escapeCSVValue(formatDate(user.registeredAt))
       );

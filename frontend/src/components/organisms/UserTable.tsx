@@ -78,6 +78,8 @@ export default function UserTable({
         return '契約中';
       case 'suspended':
         return '退会済み';
+      case 'withdrawing':
+        return '退会予定';
       case 'inactive':
         return '未契約';
       case 'pending':
@@ -93,6 +95,8 @@ export default function UserTable({
         return 'bg-green-100 text-green-800';
       case 'suspended':
         return 'bg-red-100 text-red-800';
+      case 'withdrawing':
+        return 'bg-orange-100 text-orange-800';
       case 'inactive':
         return 'bg-yellow-100 text-yellow-800';
       case 'pending':

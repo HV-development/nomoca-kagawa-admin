@@ -293,6 +293,10 @@ export default function UserDetailPage() {
           return '未契約';
         case 'terminated':
           return '解約済み';
+        case 'suspended':
+          return '退会済み';
+        case 'withdrawing':
+          return '退会予定';
         default:
           return status;
       }
@@ -323,6 +327,10 @@ export default function UserDetailPage() {
           return 'bg-yellow-100 text-yellow-800';
         case 'terminated':
           return 'bg-gray-100 text-gray-800';
+        case 'suspended':
+          return 'bg-red-100 text-red-800';
+        case 'withdrawing':
+          return 'bg-orange-100 text-orange-800';
         default:
           return 'bg-gray-100 text-gray-800';
       }

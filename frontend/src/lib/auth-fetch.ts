@@ -6,6 +6,23 @@ import { setTokenCookies, isSecureRequest } from '@/lib/token-cookie'
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1'
 
+const TRANSIENT_STATUS = 503
+const TRANSIENT_BACKOFFS_MS = [500, 1000, 2000]
+
+/**
+ * 503（DB起動待ち等の一時的エラー）の場合のみ短いバックオフで再試行する。
+ * ログアウト判定（401/403）には影響しない。
+ */
+async function fetchWithTransientRetry(doFetch: () => Promise<Response>): Promise<Response> {
+  let response = await doFetch()
+  for (const delay of TRANSIENT_BACKOFFS_MS) {
+    if (response.status !== TRANSIENT_STATUS) break
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    response = await doFetch()
+  }
+  return response
+}
+
 interface AuthenticatedFetchOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>
 }
@@ -23,10 +40,12 @@ export async function authenticatedFetch(
   url: string,
   options: AuthenticatedFetchOptions = {}
 ): Promise<{ response: import('next/server').NextResponse; refreshed: boolean }> {
-  const firstResponse = await secureFetchWithCommonHeaders(request, url, {
-    ...options,
-    headerOptions: { requireAuth: true },
-  })
+  const firstResponse = await fetchWithTransientRetry(() =>
+    secureFetchWithCommonHeaders(request, url, {
+      ...options,
+      headerOptions: { requireAuth: true },
+    })
+  )
 
   if (firstResponse.ok) {
     const data = await firstResponse.json()
@@ -49,18 +68,22 @@ export async function authenticatedFetch(
     return { response: res, refreshed: false }
   }
 
-  const refreshResponse = await fetch(`${API_BASE_URL}/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-    cache: 'no-store',
-  })
+  const refreshResponse = await fetchWithTransientRetry(() =>
+    fetch(`${API_BASE_URL}/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
+    })
+  )
 
   if (!refreshResponse.ok) {
-    const res = createNoCacheResponse(
-      { error: 'セッションの有効期限が切れました。再度ログインしてください。' },
-      { status: 401 }
-    )
+    const status = refreshResponse.status === 503 ? 503 : 401
+    const error =
+      status === 503
+        ? 'サーバーが混み合っています。しばらくしてから再試行してください。'
+        : 'セッションの有効期限が切れました。再度ログインしてください。'
+    const res = createNoCacheResponse({ error }, { status })
     return { response: res, refreshed: false }
   }
 

@@ -534,6 +534,41 @@ class ApiClient {
     });
   }
 
+  // キャンペーン関連
+  async getCampaigns(queryParams?: string): Promise<unknown> {
+    const endpoint = queryParams ? `/admin/campaigns?${queryParams}` : '/admin/campaigns';
+    return this.request<unknown>(endpoint, { method: 'GET' });
+  }
+
+  async getCampaign(id: string): Promise<unknown> {
+    return this.request<unknown>(`/admin/campaigns/${id}`, { method: 'GET' });
+  }
+
+  async createCampaign(data: unknown): Promise<unknown> {
+    return this.request<unknown>('/admin/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCampaign(id: string, data: unknown): Promise<unknown> {
+    return this.request<unknown>(`/admin/campaigns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCampaignStatus(id: string, data: { status: string; reason?: string }): Promise<unknown> {
+    return this.request<unknown>(`/admin/campaigns/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getEligiblePlans(): Promise<unknown> {
+    return this.request<unknown>('/admin/campaigns/plans', { method: 'GET' });
+  }
+
   async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
 

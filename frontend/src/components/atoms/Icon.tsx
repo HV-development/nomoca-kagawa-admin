@@ -21,6 +21,7 @@ const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: str
   groups: { type: 'material', value: 'groups' },
   person: { type: 'material', value: 'person' },
   history_2: { type: 'material', value: 'history_2' },
+  campaign: { type: 'material', value: 'campaign' },
   chevronLeft: { type: 'material', value: 'chevron_left' },
   chevronRight: { type: 'material', value: 'chevron_right' },
   chevronUp: { type: 'material', value: 'expand_less' },

@@ -23,6 +23,7 @@ const menuItems: MenuItemData[] = [
   { name: '事業者管理', href: '/merchants', iconName: 'domain' },
   { name: '店舗管理', href: '/shops', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
+  { name: 'キャンペーン管理', href: '/campaigns', iconName: 'campaign' },
   { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
   { name: '管理者アカウント', href: '/admins', iconName: 'person' },
   { name: 'クーポン利用履歴', href: '/coupon-history', iconName: 'history_2' },
@@ -53,9 +54,13 @@ export default function Sidebar() {
             item.href === '/coupon-history'
           );
         }
-        // 事業者アカウント: ユーザー管理・管理者アカウントを非表示
+        // 事業者アカウント: ユーザー管理・管理者アカウント・キャンペーン管理を非表示
         if (auth?.user?.accountType === 'merchant') {
-          return item.href !== '/users' && item.href !== '/admins';
+          return (
+            item.href !== '/users' &&
+            item.href !== '/admins' &&
+            item.href !== '/campaigns'
+          );
         }
         return true;
       });

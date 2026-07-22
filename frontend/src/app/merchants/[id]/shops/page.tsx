@@ -618,6 +618,16 @@ export default function MerchantShopsPage() {
           )}
         </div>
 
+        {/* ページネーション */}
+        {pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+            disabled={isLoading}
+          />
+        )}
+
         {/* 店舗一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -795,16 +805,6 @@ export default function MerchantShopsPage() {
             </div>
           )}
         </div>
-
-        {/* ページネーション */}
-        {pagination.pages > 1 && (
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.pages}
-            onPageChange={handlePageChange}
-            disabled={isLoading}
-          />
-        )}
       </div>
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

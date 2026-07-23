@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
+import Pagination from '@/components/molecules/Pagination';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +39,13 @@ export default function MerchantShopsPage() {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
-  
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
+
   // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
     keyword: '',
@@ -78,12 +85,16 @@ export default function MerchantShopsPage() {
       
       // 検索パラメータの構築
       const queryParams = new URLSearchParams();
-      
+
+      // ページネーションパラメータを追加
+      queryParams.append('page', pagination.page.toString());
+      queryParams.append('limit', pagination.limit.toString());
+
       // merchantIdがあれば追加
       if (merchantId) {
         queryParams.append('merchantId', merchantId);
       }
-      
+
       // 検索フォームの各項目を追加（適用済みの検索条件を使用）
       if (appliedSearchForm.keyword) queryParams.append('keyword', appliedSearchForm.keyword);
       if (appliedSearchForm.name) queryParams.append('name', appliedSearchForm.name);
@@ -96,31 +107,47 @@ export default function MerchantShopsPage() {
       if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
         queryParams.append('status', appliedSearchForm.status);
       }
-      
+
       const data = await apiClient.getShops(queryParams.toString());
-      
+
       // APIレスポンスの処理
       let shopsArray: Shop[] = [];
       let merchantInfo = null;
-      
+      let paginationData: { total: number; pages: number } | null = null;
+
       if (Array.isArray(data)) {
         shopsArray = data as Shop[];
       } else if (data && typeof data === 'object') {
         // 新しいAPIレスポンス形式: {success: true, data: {shops: [...], pagination: {...}}}
         if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
           shopsArray = ((data.data as { shops: Shop[] }).shops || []) as Shop[];
+          const p = (data.data as { pagination?: { total: number; totalPages: number } }).pagination;
+          if (p) {
+            paginationData = { total: p.total, pages: p.totalPages };
+          }
         }
         // 古いAPIレスポンス形式: {shops: [...], pagination: {...}}
         else if ('shops' in data) {
           shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
+          const p = (data as { pagination?: { total: number; totalPages: number } }).pagination;
+          if (p) {
+            paginationData = { total: p.total, pages: p.totalPages };
+          }
         }
       }
-      
+
+      // ページネーション情報を更新（pageとlimitは維持、totalとpagesのみ更新で無限ループ防止）
+      setPagination(prev => ({
+        ...prev,
+        total: paginationData?.total ?? prev.total,
+        pages: paginationData?.pages ?? prev.pages,
+      }));
+
       // 最初の店舗からmerchant情報を取得
       if (shopsArray.length > 0 && shopsArray[0].merchant) {
         merchantInfo = shopsArray[0].merchant;
       }
-      
+
       setShops(shopsArray);
       
       // merchantIdがある場合のみmerchant情報を取得
@@ -147,11 +174,12 @@ export default function MerchantShopsPage() {
     }
   };
 
-  // 初回マウント時とmerchantId変更時にデータ取得
+  // 初回マウント時とmerchantId変更時、ページ変更時にデータ取得
   useEffect(() => {
     const key = JSON.stringify({
       merchantId: merchantId ?? 'all',
       search: appliedSearchForm,
+      page: pagination.page,
     });
 
     if (lastFetchKeyRef.current === key) {
@@ -160,7 +188,7 @@ export default function MerchantShopsPage() {
 
     lastFetchKeyRef.current = key;
     fetchShops();
-  }, [merchantId, appliedSearchForm]);
+  }, [merchantId, appliedSearchForm, pagination.page]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -174,6 +202,8 @@ export default function MerchantShopsPage() {
   const handleSearch = () => {
     // 検索条件を適用
     setAppliedSearchForm({ ...searchForm });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
     // キャッシュをリセットして強制的に再フェッチ
     lastFetchKeyRef.current = null;
   };
@@ -193,8 +223,16 @@ export default function MerchantShopsPage() {
     };
     setSearchForm(clearedForm);
     setAppliedSearchForm(clearedForm);
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
     // キャッシュをリセットして強制的に再フェッチ
     lastFetchKeyRef.current = null;
+  };
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    if (isLoading) return;
+    setPagination(prev => ({ ...prev, page }));
   };
 
   const handleIndividualStatusChange = async (shopId: string, newStatus: string) => {
@@ -580,11 +618,21 @@ export default function MerchantShopsPage() {
           )}
         </div>
 
+        {/* ページネーション */}
+        {pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+            disabled={isLoading}
+          />
+        )}
+
         {/* 店舗一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 ({shops.length}件)
+              店舗一覧 ({pagination.total}件)
             </h3>
             <Link
               href={{
@@ -745,10 +793,10 @@ export default function MerchantShopsPage() {
 
           {shops.length === 0 && (
             <div className="text-center py-12">
-              <Image 
-                src="/storefront-icon.svg" 
-                alt="店舗" 
-                width={48} 
+              <Image
+                src="/storefront-icon.svg"
+                alt="店舗"
+                width={48}
                 height={48}
                 className="mx-auto text-gray-400 mb-4"
               />

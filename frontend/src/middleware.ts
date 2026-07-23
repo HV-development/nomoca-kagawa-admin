@@ -252,6 +252,7 @@ export async function middleware(request: NextRequest) {
     '/applications',
     '/users',
     '/coupon-history',
+    '/campaigns',
   ];
 
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -65,6 +65,7 @@ export default function ConfirmCampaignPage() {
 
   const [formData, setFormData] = useState<CampaignFormData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [overlapConfirmOpen, setOverlapConfirmOpen] = useState(false);
   const [overlappingCampaigns, setOverlappingCampaigns] = useState<Campaign[]>([]);
 
@@ -88,6 +89,8 @@ export default function ConfirmCampaignPage() {
 
   const submitCampaign = useCallback(async (acknowledgeOverlap: boolean) => {
     if (!formData) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const payload = {
@@ -131,6 +134,7 @@ export default function ConfirmCampaignPage() {
       }
       showError(message);
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }, [formData, router, showError]);

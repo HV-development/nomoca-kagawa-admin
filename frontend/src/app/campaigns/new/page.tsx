@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -100,6 +100,17 @@ export default function NewCampaignPage() {
 
   const [formData, setFormData] = useState<CampaignFormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<CampaignFormErrors>({});
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('campaignConfirmData');
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as CampaignFormData;
+      setFormData(parsed);
+    } catch {
+      // 破損時は EMPTY_FORM のまま
+    }
+  }, []);
 
   const handleChange = useCallback((field: keyof CampaignFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

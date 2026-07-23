@@ -49,8 +49,11 @@ function formatChangeType(t: string): string {
     case 'created': return '作成';
     case 'name_changed': return 'キャンペーン名の変更';
     case 'description_changed': return '説明の変更';
+    case 'code_changed': return 'キャンペーンコードの変更';
+    case 'free_days_changed': return '無料期間の変更';
+    case 'start_date_changed': return '開始日の変更';
     case 'end_date_changed': return '終了日の変更';
-    case 'status_toggled': return 'ステータス変更';
+    case 'status_changed': return 'ステータス変更';
     case 'force_updated': return '強制変更';
     default: return t;
   }
@@ -66,9 +69,9 @@ function formatFieldLabel(fieldName: string | null): string {
     case 'name': return 'キャンペーン名';
     case 'description': return '管理用メモ';
     case 'code': return 'キャンペーンコード';
-    case 'freeDays': return '無料期間';
-    case 'startAt': return 'キャンペーン実施開始日';
-    case 'endAt': return 'キャンペーン実施終了日';
+    case 'free_days': return '無料期間';
+    case 'start_at': return 'キャンペーン実施開始日';
+    case 'end_at': return 'キャンペーン実施終了日';
     case 'status': return '開催ステータス';
     default: return fieldName ?? '';
   }
@@ -88,14 +91,14 @@ function displayFieldValue(fieldName: string | null, value: string | null): stri
   if (fieldName === 'status') {
     return formatStatusJa(value);
   }
-  if (fieldName === 'endAt' || fieldName === 'startAt') {
+  if (fieldName === 'end_at' || fieldName === 'start_at') {
     try {
       return isoToDateInput(value).replace(/-/g, '/');
     } catch {
       return value;
     }
   }
-  if (fieldName === 'freeDays') {
+  if (fieldName === 'free_days') {
     return `${value}日`;
   }
   if (value.startsWith('{')) {
@@ -130,7 +133,7 @@ export default function EditCampaignPage() {
 
   const isStarted = useMemo(() => {
     if (!campaign) return false;
-    return new Date(campaign.startAt).getTime() <= Date.now() && campaign.status === 'active';
+    return new Date(campaign.startAt).getTime() <= Date.now();
   }, [campaign]);
 
   const loadCampaign = useCallback(async () => {
@@ -139,6 +142,26 @@ export default function EditCampaignPage() {
       const data = (await apiClient.getCampaign(campaignId)) as CampaignDetailResponse;
       setCampaign(data);
       setHistories(data.histories ?? []);
+
+      const stored = sessionStorage.getItem(`campaignEditConfirmData_${campaignId}`);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as CampaignEditFormData;
+          setFormData({
+            name: parsed.name,
+            description: parsed.description ?? '',
+            code: parsed.code,
+            freeDays: String(parsed.freeDays),
+            startAt: parsed.startAt,
+            endAt: parsed.endAt,
+            status: parsed.status === 'archived' ? 'inactive' : parsed.status,
+          });
+          return;
+        } catch {
+          // 破損時はサーバー値へフォールバック
+        }
+      }
+
       setFormData({
         name: data.name,
         description: data.description ?? '',
@@ -189,7 +212,22 @@ export default function EditCampaignPage() {
       else if (!Number.isInteger(freeDaysNum) || freeDaysNum < 1 || freeDaysNum > 180) {
         err.freeDays = '1〜180日の範囲で入力してください';
       }
-      if (!data.startAt) err.startAt = '開始日は必須です';
+      if (!data.startAt) {
+        err.startAt = '開始日は必須です';
+      } else {
+        const startDate = new Date(`${data.startAt}T00:00:00+09:00`).getTime();
+        const todayJst = new Date(
+          new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Tokyo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date()) + 'T00:00:00+09:00'
+        ).getTime();
+        if (startDate < todayJst) {
+          err.startAt = '開始日は本日以降の日付を指定してください';
+        }
+      }
     }
 
     if (data.endAt && data.startAt) {

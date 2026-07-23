@@ -31,7 +31,6 @@ interface CampaignEditFormData {
 type CampaignFormErrors = Partial<Record<keyof CampaignEditFormData, string>>;
 
 const FREE_DAYS_PRESETS = [7, 14, 30, 60, 90, 180];
-const RESERVED_CODES = ['admin', 'test', 'sample', 'debug'];
 
 function isoToDateInput(iso: string | null): string {
   if (!iso) return '';
@@ -204,8 +203,6 @@ export default function EditCampaignPage() {
       if (!data.code.trim()) err.code = 'キャンペーンコードは必須です';
       else if (!/^[a-z0-9]+$/.test(data.code) || data.code.length < 6 || data.code.length > 20) {
         err.code = '6〜20文字の英小文字・半角数字で入力してください';
-      } else if (RESERVED_CODES.includes(data.code)) {
-        err.code = 'このコードは予約語のため使用できません';
       }
       const freeDaysNum = Number(data.freeDays);
       if (!data.freeDays) err.freeDays = '無料期間は必須です';

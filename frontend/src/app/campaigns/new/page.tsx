@@ -33,7 +33,6 @@ const EMPTY_FORM: CampaignFormData = {
 };
 
 const FREE_DAYS_PRESETS = [7, 14, 30, 60, 90, 180];
-const RESERVED_CODES = ['admin', 'test', 'sample', 'debug'];
 
 function validateForm(data: CampaignFormData): CampaignFormErrors {
   const errors: CampaignFormErrors = {};
@@ -54,8 +53,6 @@ function validateForm(data: CampaignFormData): CampaignFormErrors {
     errors.code = '6〜20文字の英小文字・半角数字で入力してください';
   } else if (data.code.length < 6 || data.code.length > 20) {
     errors.code = '6〜20文字の英小文字・半角数字で入力してください';
-  } else if (RESERVED_CODES.includes(data.code)) {
-    errors.code = 'このコードは予約語のため使用できません';
   }
 
   const freeDaysNum = Number(data.freeDays);

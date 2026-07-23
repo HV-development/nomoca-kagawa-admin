@@ -558,17 +558,6 @@ class ApiClient {
     });
   }
 
-  async updateCampaignStatus(id: string, data: { status: string; reason?: string }): Promise<unknown> {
-    return this.request<unknown>(`/admin/campaigns/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getEligiblePlans(): Promise<unknown> {
-    return this.request<unknown>('/admin/campaigns/plans', { method: 'GET' });
-  }
-
   async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
 

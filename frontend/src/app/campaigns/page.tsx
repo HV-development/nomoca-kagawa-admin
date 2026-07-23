@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Icon from '@/components/atoms/Icon';
@@ -26,6 +26,13 @@ const EMPTY_FORM: CampaignSearchFormData = {
   startDateFrom: '',
   startDateTo: '',
   freeDays: '',
+};
+
+const TOAST_MESSAGES: Record<string, string> = {
+  created: 'キャンペーンを作成しました',
+  updated: 'キャンペーンを更新しました',
+  deleted: 'キャンペーンを削除しました',
+  statusChanged: 'キャンペーンのステータスを変更しました',
 };
 
 function CampaignsPageContent() {
@@ -68,6 +75,10 @@ function CampaignsPageContent() {
     if (appliedSearchForm.startDateTo) {
       params.append('startDateTo', new Date(`${appliedSearchForm.startDateTo}T23:59:59+09:00`).toISOString());
     }
+    // 3 種全選択 (= 絞り込み無し) と 0 選択は送信しない。1〜2 選択のみ Backend で絞る。
+    if (appliedStatusFilters.size > 0 && appliedStatusFilters.size < 3) {
+      appliedStatusFilters.forEach((s) => params.append('derivedStatus', s));
+    }
 
     const fetchKey = params.toString();
     if (fetchKey === lastFetchKeyRef.current) return;
@@ -84,41 +95,27 @@ function CampaignsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, appliedSearchForm, showError]);
+  }, [pagination.page, pagination.limit, appliedSearchForm, appliedStatusFilters, showError]);
 
   useEffect(() => {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  // URL の toast クエリを検知して表示（StrictMode の二重発火防止のため useRef で1回だけ実行）
+  // URL クエリの toast は key を許可リストに限定して、細工リンクで任意メッセージを出せないようにする。
   useEffect(() => {
-    const toast = searchParams?.get('toast');
-    if (toast && !toastShownRef.current) {
-      toastShownRef.current = true;
-      showSuccess(toast);
-      const newParams = new URLSearchParams(searchParams?.toString() || '');
-      newParams.delete('toast');
-      const newUrl = newParams.toString() ? `/campaigns?${newParams.toString()}` : '/campaigns';
-      router.replace(newUrl, { scroll: false });
-    }
+    const toastKey = searchParams?.get('toast');
+    if (!toastKey || toastShownRef.current) return;
+    const message = TOAST_MESSAGES[toastKey];
+    if (!message) return;
+    toastShownRef.current = true;
+    showSuccess(message);
+    const newParams = new URLSearchParams(searchParams?.toString() || '');
+    newParams.delete('toast');
+    const newUrl = newParams.toString() ? `/campaigns?${newParams.toString()}` : '/campaigns';
+    router.replace(newUrl, { scroll: false });
   }, [searchParams, showSuccess, router]);
 
-  // フロント側でステータスフィルタを絞り込む（API は単一 status しか受け付けないため）
-  const displayedCampaigns = useMemo(() => {
-    if (appliedStatusFilters.size === 0) return campaigns;
-    const now = Date.now();
-    return campaigns.filter((c) => {
-      const startAt = new Date(c.startAt).getTime();
-      const endAt = c.endAt ? new Date(c.endAt).getTime() : null;
-      const isEnded = c.status !== 'active' || (endAt !== null && now > endAt);
-      const isScheduled = !isEnded && now < startAt;
-      const isOngoing = !isEnded && !isScheduled;
-      if (isEnded && appliedStatusFilters.has('ended')) return true;
-      if (isScheduled && appliedStatusFilters.has('scheduled')) return true;
-      if (isOngoing && appliedStatusFilters.has('ongoing')) return true;
-      return false;
-    });
-  }, [campaigns, appliedStatusFilters]);
+  const displayedCampaigns = campaigns;
 
   const handleInputChange = useCallback((field: keyof CampaignSearchFormData, value: string) => {
     setSearchForm((prev) => ({ ...prev, [field]: value }));

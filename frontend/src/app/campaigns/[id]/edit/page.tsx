@@ -11,7 +11,7 @@ import ToastContainer from '@/components/molecules/toast-container';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
 import type {
-  CampaignChangeHistoryWithAdmin,
+  CampaignChangeHistory,
   CampaignDetailResponse,
   CampaignStatus,
 } from '@hv-development/schemas';
@@ -121,7 +121,7 @@ export default function EditCampaignPage() {
   const [formData, setFormData] = useState<CampaignEditFormData | null>(null);
   const [errors, setErrors] = useState<CampaignFormErrors>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [histories, setHistories] = useState<CampaignChangeHistoryWithAdmin[]>([]);
+  const [histories, setHistories] = useState<CampaignChangeHistory[]>([]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // 変更履歴は「作成」を除外して編集履歴のみ
@@ -496,10 +496,7 @@ export default function EditCampaignPage() {
                           <span className="text-xs text-gray-500">{formatDateTime(h.createdAt)}</span>
                         </div>
                         <div className="text-xs text-gray-600 mb-3">
-                          変更者:{' '}
-                          {h.changedByAdmin?.displayName
-                            ?? `${h.changedByAdmin?.lastName ?? ''} ${h.changedByAdmin?.firstName ?? ''}`.trim()
-                            ?? '（不明）'}
+                          変更者: {h.changedByName || '（不明）'}
                         </div>
                         {h.fieldName && (
                           <div className="space-y-2">

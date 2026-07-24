@@ -9,7 +9,7 @@ export interface CampaignSearchFormData {
   campaignName: string;
   campaignCode: string;
   startDateFrom: string;
-  startDateTo: string;
+  endDateTo: string;
   freeDays: string;
 }
 
@@ -108,8 +108,8 @@ export default function CampaignSearchForm({
                   <span className="block text-xs text-gray-500 mb-1">終了日</span>
                   <input
                     type="date"
-                    value={searchForm.startDateTo}
-                    onChange={(e) => onInputChange('startDateTo', e.target.value)}
+                    value={searchForm.endDateTo}
+                    onChange={(e) => onInputChange('endDateTo', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   />
                 </div>

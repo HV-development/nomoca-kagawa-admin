@@ -496,7 +496,7 @@ export default function EditCampaignPage() {
                           <span className="text-xs text-gray-500">{formatDateTime(h.createdAt)}</span>
                         </div>
                         <div className="text-xs text-gray-600 mb-3">
-                          変更者: {h.changedByName ?? '（不明）'}
+                          変更者: {h.changedByName || '（不明）'}
                         </div>
                         {h.fieldName && (
                           <div className="space-y-2">

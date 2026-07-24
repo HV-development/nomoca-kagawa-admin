@@ -24,7 +24,7 @@ const EMPTY_FORM: CampaignSearchFormData = {
   campaignName: '',
   campaignCode: '',
   startDateFrom: '',
-  startDateTo: '',
+  endDateTo: '',
   freeDays: '',
 };
 
@@ -72,8 +72,8 @@ function CampaignsPageContent() {
     if (appliedSearchForm.startDateFrom) {
       params.append('startDateFrom', new Date(`${appliedSearchForm.startDateFrom}T00:00:00+09:00`).toISOString());
     }
-    if (appliedSearchForm.startDateTo) {
-      params.append('startDateTo', new Date(`${appliedSearchForm.startDateTo}T23:59:59+09:00`).toISOString());
+    if (appliedSearchForm.endDateTo) {
+      params.append('endDateTo', new Date(`${appliedSearchForm.endDateTo}T23:59:59+09:00`).toISOString());
     }
     // 3 種全選択 (= 絞り込み無し) と 0 選択は送信しない。1〜2 選択のみ Backend で絞る。
     if (appliedStatusFilters.size > 0 && appliedStatusFilters.size < 3) {

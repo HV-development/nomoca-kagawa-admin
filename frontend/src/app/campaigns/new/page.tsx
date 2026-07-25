@@ -120,7 +120,9 @@ export default function NewCampaignPage() {
     }
   }, [errors]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -128,7 +130,29 @@ export default function NewCampaignPage() {
       return;
     }
     setErrors({});
-    // sessionStorage に保存して確認画面へ遷移
+
+    setIsChecking(true);
+    try {
+      const res = await fetch(
+        `/api/admin/campaigns/check-code?code=${encodeURIComponent(formData.code.trim())}`,
+        { method: 'GET', cache: 'no-store' }
+      );
+      if (!res.ok) {
+        setErrors({ code: '重複チェックに失敗しました。時間をおいて再度お試しください' });
+        return;
+      }
+      const { exists } = (await res.json()) as { exists: boolean };
+      if (exists) {
+        setErrors({ code: 'このキャンペーンコードは使用済みです' });
+        return;
+      }
+    } catch {
+      setErrors({ code: '重複チェックに失敗しました。時間をおいて再度お試しください' });
+      return;
+    } finally {
+      setIsChecking(false);
+    }
+
     sessionStorage.setItem('campaignConfirmData', JSON.stringify(formData));
     router.push('/campaigns/confirm');
   }, [formData, router]);
@@ -274,8 +298,8 @@ export default function NewCampaignPage() {
                 キャンセル
               </Button>
             </Link>
-            <Button type="submit" variant="primary">
-              登録内容を確認する
+            <Button type="submit" variant="primary" disabled={isChecking}>
+              {isChecking ? 'チェック中...' : '登録内容を確認する'}
             </Button>
           </div>
         </form>

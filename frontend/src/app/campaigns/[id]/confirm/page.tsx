@@ -46,6 +46,7 @@ interface CampaignEditFormData {
   endAt: string;
   status: CampaignStatus;
   isStarted: boolean;
+  isFinished: boolean;
 }
 
 function formatDate(dateInput: string): string {
@@ -112,9 +113,11 @@ export default function EditConfirmCampaignPage() {
         endAt: formData.endAt
           ? new Date(`${formData.endAt}T00:00:00+09:00`).toISOString()
           : null,
-        status: formData.status,
         acknowledgeOverlap,
       };
+      if (!formData.isFinished) {
+        payload.status = formData.status;
+      }
       if (!formData.isStarted) {
         payload.freeDays = Number(formData.freeDays);
         payload.startAt = new Date(`${formData.startAt}T00:00:00+09:00`).toISOString();

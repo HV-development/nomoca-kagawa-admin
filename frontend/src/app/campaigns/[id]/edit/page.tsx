@@ -121,7 +121,6 @@ export default function EditCampaignPage() {
   const [formData, setFormData] = useState<CampaignEditFormData | null>(null);
   const [errors, setErrors] = useState<CampaignFormErrors>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [histories, setHistories] = useState<CampaignChangeHistory[]>([]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
@@ -136,9 +135,17 @@ export default function EditCampaignPage() {
     return new Date(campaign.startAt).getTime() <= Date.now();
   }, [campaign]);
 
+  const isFinished = useMemo(() => {
+    if (!campaign) return false;
+    if (campaign.status === 'archived') return true;
+    if (!campaign.endAt) return false;
+    const endYmd = isoToDateInput(campaign.endAt);
+    const todayYmd = isoToDateInput(new Date().toISOString());
+    return endYmd < todayYmd;
+  }, [campaign]);
+
   const loadCampaign = useCallback(async () => {
     setIsLoading(true);
-    setNotFound(false);
     try {
       const data = (await apiClient.getCampaign(campaignId)) as CampaignDetailResponse;
       setCampaign(data);
@@ -155,7 +162,7 @@ export default function EditCampaignPage() {
             freeDays: String(parsed.freeDays),
             startAt: parsed.startAt,
             endAt: parsed.endAt,
-            status: parsed.status === 'archived' ? 'inactive' : parsed.status,
+            status: parsed.status,
           });
           return;
         } catch {
@@ -170,15 +177,10 @@ export default function EditCampaignPage() {
         freeDays: String(data.freeDays),
         startAt: isoToDateInput(data.startAt),
         endAt: isoToDateInput(data.endAt),
-        status: data.status === 'archived' ? 'inactive' : data.status,
+        status: data.status,
       });
     } catch (error) {
-      const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 404) {
-        setNotFound(true);
-      } else {
-        showError(error instanceof Error ? error.message : 'キャンペーンの取得に失敗しました');
-      }
+      showError(error instanceof Error ? error.message : 'キャンペーンの取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -271,28 +273,10 @@ export default function EditCampaignPage() {
     setErrors({});
     sessionStorage.setItem(
       `campaignEditConfirmData_${campaignId}`,
-      JSON.stringify({ ...formData, isStarted })
+      JSON.stringify({ ...formData, isStarted, isFinished })
     );
     router.push(`/campaigns/${campaignId}/confirm`);
-  }, [formData, campaignId, isStarted, validateForm, router]);
-
-  if (notFound) {
-    return (
-      <AdminLayout>
-        <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">キャンペーンが見つかりません</h1>
-          <p className="text-gray-600">
-            指定されたキャンペーンは存在しないか、アクセス権限がありません。
-          </p>
-          <div className="pt-2">
-            <Link href="/campaigns">
-              <Button variant="primary">キャンペーン一覧へ戻る</Button>
-            </Link>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  }, [formData, campaignId, isStarted, isFinished, validateForm, router]);
 
   if (isLoading || !formData || !campaign) {
     return (
@@ -481,34 +465,35 @@ export default function EditCampaignPage() {
               <ErrorMessage message={errors.description} />
             </div>
 
-            {/* 開催ステータス（ラジオボタン: 有効 / 無効） */}
-            <div>
-              <span className="block text-sm font-medium text-gray-700 mb-2">開催ステータス</span>
-              <div className="flex items-center gap-6">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="active"
-                    checked={formData.status === 'active'}
-                    onChange={(e) => handleChange('status', e.target.value)}
-                    className="text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">有効</span>
-                </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="inactive"
-                    checked={formData.status === 'inactive'}
-                    onChange={(e) => handleChange('status', e.target.value)}
-                    className="text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">無効</span>
-                </label>
+            {!isFinished && (
+              <div>
+                <span className="block text-sm font-medium text-gray-700 mb-2">開催ステータス</span>
+                <div className="flex items-center gap-6">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="status"
+                      value="active"
+                      checked={formData.status === 'active'}
+                      onChange={(e) => handleChange('status', e.target.value)}
+                      className="text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">有効</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="status"
+                      value="inactive"
+                      checked={formData.status === 'inactive'}
+                      onChange={(e) => handleChange('status', e.target.value)}
+                      className="text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">無効</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
           </section>
 
           {/* 変更履歴タイムライン（アコーディオン・デフォルト閉じる） */}

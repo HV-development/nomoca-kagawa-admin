@@ -234,10 +234,10 @@ export default function ConfirmCampaignPage() {
 
       {/* 期間重複警告モーダル */}
       {overlapConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col">
             {/* ヘッダー */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#866e43]">warning</span>
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -256,7 +256,7 @@ export default function ConfirmCampaignPage() {
             </div>
 
             {/* 本文 */}
-            <div className="px-6 py-4 space-y-4">
+            <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
               <p className="text-sm text-gray-700">
                 以下のキャンペーンと期間が重複しています。内容をご確認の上ご登録を
                 <br />
@@ -295,7 +295,7 @@ export default function ConfirmCampaignPage() {
             </div>
 
             {/* ボタン */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-200">
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 flex-shrink-0">
               <Button variant="outline" onClick={() => setOverlapConfirmOpen(false)} disabled={isSubmitting}>
                 キャンセル
               </Button>

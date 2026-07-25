@@ -121,6 +121,7 @@ export default function EditCampaignPage() {
   const [formData, setFormData] = useState<CampaignEditFormData | null>(null);
   const [errors, setErrors] = useState<CampaignFormErrors>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [histories, setHistories] = useState<CampaignChangeHistory[]>([]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
@@ -137,6 +138,7 @@ export default function EditCampaignPage() {
 
   const loadCampaign = useCallback(async () => {
     setIsLoading(true);
+    setNotFound(false);
     try {
       const data = (await apiClient.getCampaign(campaignId)) as CampaignDetailResponse;
       setCampaign(data);
@@ -171,7 +173,12 @@ export default function EditCampaignPage() {
         status: data.status === 'archived' ? 'inactive' : data.status,
       });
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'キャンペーンの取得に失敗しました');
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
+        setNotFound(true);
+      } else {
+        showError(error instanceof Error ? error.message : 'キャンペーンの取得に失敗しました');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -268,6 +275,24 @@ export default function EditCampaignPage() {
     );
     router.push(`/campaigns/${campaignId}/confirm`);
   }, [formData, campaignId, isStarted, validateForm, router]);
+
+  if (notFound) {
+    return (
+      <AdminLayout>
+        <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
+          <h1 className="text-2xl font-bold text-gray-900">キャンペーンが見つかりません</h1>
+          <p className="text-gray-600">
+            指定されたキャンペーンは存在しないか、アクセス権限がありません。
+          </p>
+          <div className="pt-2">
+            <Link href="/campaigns">
+              <Button variant="primary">キャンペーン一覧へ戻る</Button>
+            </Link>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   if (isLoading || !formData || !campaign) {
     return (

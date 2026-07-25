@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -213,16 +213,20 @@ export default function EditCampaignPage() {
         err.startAt = '開始日は必須です';
       } else {
         const startDate = new Date(`${data.startAt}T00:00:00+09:00`).getTime();
-        const todayJst = new Date(
-          new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Asia/Tokyo',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          }).format(new Date()) + 'T00:00:00+09:00'
-        ).getTime();
-        if (startDate < todayJst) {
-          err.startAt = '開始日は本日以降の日付を指定してください';
+        if (Number.isNaN(startDate)) {
+          err.startAt = '有効な日付を指定してください';
+        } else {
+          const todayJst = new Date(
+            new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'Asia/Tokyo',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            }).format(new Date()) + 'T00:00:00+09:00'
+          ).getTime();
+          if (startDate < todayJst) {
+            err.startAt = '開始日は本日以降の日付を指定してください';
+          }
         }
       }
     }
@@ -230,16 +234,29 @@ export default function EditCampaignPage() {
     if (data.endAt && data.startAt) {
       const s = new Date(`${data.startAt}T00:00:00+09:00`).getTime();
       const e = new Date(`${data.endAt}T00:00:00+09:00`).getTime();
-      // 同日は許可（1日だけキャンペーン想定）
-      if (e < s) err.endAt = '終了日は開始日以降の日付を指定してください';
+      if (Number.isNaN(e)) {
+        err.endAt = '有効な日付を指定してください';
+      } else if (e < s) {
+        // 同日は許可（1日だけキャンペーン想定）
+        err.endAt = '終了日は開始日以降の日付を指定してください';
+      }
     }
     return err;
   }, [isStarted]);
+
+  const startAtRef = useRef<HTMLInputElement>(null);
+  const endAtRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
     const validationErrors = validateForm(formData);
+    if (startAtRef.current?.validity.badInput) {
+      validationErrors.startAt = '有効な日付を指定してください';
+    }
+    if (endAtRef.current?.validity.badInput) {
+      validationErrors.endAt = '有効な日付を指定してください';
+    }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -272,7 +289,7 @@ export default function EditCampaignPage() {
           <h1 className="text-2xl font-bold text-gray-900">キャンペーン編集</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {/* キャンペーン情報カード（開始後のみ・Figma に合わせて最上部に配置） */}
           {isStarted && (
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -386,6 +403,7 @@ export default function EditCampaignPage() {
                 <div>
                   <span className="block text-xs text-gray-500 mb-1">終了日</span>
                   <input
+                    ref={endAtRef}
                     type="date"
                     value={formData.endAt}
                     onChange={(e) => handleChange('endAt', e.target.value)}
@@ -398,6 +416,7 @@ export default function EditCampaignPage() {
                   <div>
                     <span className="block text-xs text-gray-500 mb-1">開始日 <span className="text-red-500">*</span></span>
                     <input
+                      ref={startAtRef}
                       type="date"
                       value={formData.startAt}
                       onChange={(e) => handleChange('startAt', e.target.value)}
@@ -408,6 +427,7 @@ export default function EditCampaignPage() {
                   <div>
                     <span className="block text-xs text-gray-500 mb-1">終了日</span>
                     <input
+                      ref={endAtRef}
                       type="date"
                       value={formData.endAt}
                       onChange={(e) => handleChange('endAt', e.target.value)}

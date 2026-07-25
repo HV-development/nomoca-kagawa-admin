@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -66,24 +66,30 @@ function validateForm(data: CampaignFormData): CampaignFormErrors {
     errors.startAt = '開始日は必須です';
   } else {
     const startDate = new Date(`${data.startAt}T00:00:00+09:00`).getTime();
-    const todayJst = new Date(
-      new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Tokyo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date()) + 'T00:00:00+09:00'
-    ).getTime();
-    if (startDate < todayJst) {
-      errors.startAt = '開始日は本日以降の日付を指定してください';
+    if (Number.isNaN(startDate)) {
+      errors.startAt = '有効な日付を指定してください';
+    } else {
+      const todayJst = new Date(
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Tokyo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date()) + 'T00:00:00+09:00'
+      ).getTime();
+      if (startDate < todayJst) {
+        errors.startAt = '開始日は本日以降の日付を指定してください';
+      }
     }
   }
 
   if (data.endAt && data.startAt) {
     const startDate = new Date(`${data.startAt}T00:00:00+09:00`).getTime();
     const endDate = new Date(`${data.endAt}T00:00:00+09:00`).getTime();
-    // 同日は許可（1日だけキャンペーン想定）
-    if (endDate < startDate) {
+    if (Number.isNaN(endDate)) {
+      errors.endAt = '有効な日付を指定してください';
+    } else if (endDate < startDate) {
+      // 同日は許可（1日だけキャンペーン想定）
       errors.endAt = '終了日は開始日以降の日付を指定してください';
     }
   }
@@ -122,9 +128,18 @@ export default function NewCampaignPage() {
 
   const [isChecking, setIsChecking] = useState(false);
 
+  const startAtRef = useRef<HTMLInputElement>(null);
+  const endAtRef = useRef<HTMLInputElement>(null);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validateForm(formData);
+    if (startAtRef.current?.validity.badInput) {
+      validationErrors.startAt = '有効な日付を指定してください';
+    }
+    if (endAtRef.current?.validity.badInput) {
+      validationErrors.endAt = '有効な日付を指定してください';
+    }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -171,7 +186,7 @@ export default function NewCampaignPage() {
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
           {/* キャンペーン名 */}
           <div className="max-w-lg">
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,6 +267,7 @@ export default function NewCampaignPage() {
               <div>
                 <span className="block text-xs text-gray-500 mb-1">開始日 <span className="text-red-500">*</span></span>
                 <input
+                  ref={startAtRef}
                   type="date"
                   value={formData.startAt}
                   onChange={(e) => handleChange('startAt', e.target.value)}
@@ -262,6 +278,7 @@ export default function NewCampaignPage() {
               <div>
                 <span className="block text-xs text-gray-500 mb-1">終了日</span>
                 <input
+                  ref={endAtRef}
                   type="date"
                   value={formData.endAt}
                   onChange={(e) => handleChange('endAt', e.target.value)}

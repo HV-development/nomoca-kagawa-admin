@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.141.0
-    version: 1.141.0
+    specifier: 1.142.0
+    version: 1.142.0
   autoprefixer:
     specifier: 10.4.21
     version: 10.4.21(postcss@8.5.23)
@@ -395,8 +395,8 @@ packages:
     engines: {node: '>=10.0.0'}
     dev: true
 
-  /@emnapi/runtime@1.11.2:
-    resolution: {integrity: sha512-kyOl3X0DuTiT1h2ft8r2fYO8JYtU9a9Xis/zBSiGArNaagCOWx90N1k2wxp18czFDH+OgcWGb5ZP/XMt3dcyPA==}
+  /@emnapi/runtime@1.11.3:
+    resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
     requiresBuild: true
     dependencies:
       tslib: 2.8.1
@@ -974,8 +974,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.141.0:
-    resolution: {integrity: sha512-WnkeITAGPJBOcz7gtHff0AXt8HAyFzpWcaeBWItBHVm/nHxbxxYvmQNVzJK/N+Xw+ISonaD5wpmNGhZ/7DvN8A==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.141.0/1f534cc4d8a1c9b85984dadc878328fbfed088cb}
+  /@hv-development/schemas@1.142.0:
+    resolution: {integrity: sha512-sK1dgt9cGqyKeXqCgKdiXAF+2axvU/vkwkZBgDMleKomO4W9QzHXhrdCjAfE89ogESd5n0T8Zu1fB00snC7Ygg==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.142.0/5d7ed5209ff320bc8303675ce1b860d885b8d9c2}
     engines: {node: 22.x}
     dependencies:
       zod: 3.25.76
@@ -1184,7 +1184,7 @@ packages:
     cpu: [wasm32]
     requiresBuild: true
     dependencies:
-      '@emnapi/runtime': 1.11.2
+      '@emnapi/runtime': 1.11.3
     dev: false
     optional: true
 

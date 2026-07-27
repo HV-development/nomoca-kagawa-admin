@@ -277,7 +277,7 @@ export default function EditCampaignPage() {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData) return;
+    if (!formData || !campaign) return;
     const validationErrors = validateForm(formData);
     if (startAtRef.current?.validity.badInput) {
       validationErrors.startAt = '有効な日付を指定してください';
@@ -290,6 +290,15 @@ export default function EditCampaignPage() {
       return;
     }
     setErrors({});
+
+    const periodChanged =
+      formData.startAt !== isoToDateInput(campaign.startAt) ||
+      formData.endAt !== isoToDateInput(campaign.endAt);
+    const willBecomeActive = formData.status === 'active' && campaign.status !== 'active';
+    if (!periodChanged && !willBecomeActive) {
+      proceedToConfirm([]);
+      return;
+    }
 
     let overlaps: Campaign[] = [];
     setIsChecking(true);
@@ -325,7 +334,7 @@ export default function EditCampaignPage() {
     }
 
     proceedToConfirm([]);
-  }, [formData, campaignId, validateForm, showError, proceedToConfirm]);
+  }, [formData, campaign, campaignId, validateForm, showError, proceedToConfirm]);
 
   if (isLoading || !formData || !campaign) {
     return (

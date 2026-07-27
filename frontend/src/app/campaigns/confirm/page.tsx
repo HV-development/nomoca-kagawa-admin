@@ -45,7 +45,7 @@ export default function ConfirmCampaignPage() {
   const isSubmittingRef = useRef(false);
   const [overlapConfirmOpen, setOverlapConfirmOpen] = useState(false);
   const [overlappingCampaigns, setOverlappingCampaigns] = useState<Campaign[]>([]);
-  const [overlapAcknowledged, setOverlapAcknowledged] = useState(false);
+  const [acknowledgedOverlapIds, setAcknowledgedOverlapIds] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -55,7 +55,15 @@ export default function ConfirmCampaignPage() {
         return;
       }
       setFormData(JSON.parse(stored) as CampaignFormData);
-      setOverlapAcknowledged(sessionStorage.getItem('campaignOverlapAcknowledged') === 'true');
+      const storedIds = sessionStorage.getItem('campaignAcknowledgedOverlapIds');
+      if (storedIds) {
+        try {
+          const parsed = JSON.parse(storedIds) as unknown;
+          setAcknowledgedOverlapIds(Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []);
+        } catch {
+          setAcknowledgedOverlapIds([]);
+        }
+      }
     } catch (error) {
       console.error('データ復元失敗:', error);
       router.replace('/campaigns/new');
@@ -66,7 +74,7 @@ export default function ConfirmCampaignPage() {
     router.back();
   }, [router]);
 
-  const submitCampaign = useCallback(async (acknowledgeOverlap: boolean) => {
+  const submitCampaign = useCallback(async (acknowledgedIds: string[]) => {
     if (!formData) return;
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
@@ -81,12 +89,12 @@ export default function ConfirmCampaignPage() {
         endAt: formData.endAt
           ? new Date(`${formData.endAt}T00:00:00+09:00`).toISOString()
           : null,
-        acknowledgeOverlap,
+        acknowledgedOverlapIds: acknowledgedIds,
       };
 
       const result = (await apiClient.createCampaign(payload)) as CampaignCreateResponse;
       sessionStorage.removeItem('campaignConfirmData');
-      sessionStorage.removeItem('campaignOverlapAcknowledged');
+      sessionStorage.removeItem('campaignAcknowledgedOverlapIds');
       const message = result.warn === 'OVERLAP'
         ? 'キャンペーンを登録しました（期間重複あり）'
         : 'キャンペーンを登録しました';
@@ -120,13 +128,18 @@ export default function ConfirmCampaignPage() {
   }, [formData, router, showError]);
 
   const handleRegister = useCallback(() => {
-    submitCampaign(overlapAcknowledged);
-  }, [submitCampaign, overlapAcknowledged]);
+    submitCampaign(acknowledgedOverlapIds);
+  }, [submitCampaign, acknowledgedOverlapIds]);
 
   const handleConfirmOverlap = useCallback(() => {
     setOverlapConfirmOpen(false);
-    submitCampaign(true);
-  }, [submitCampaign]);
+    const merged = Array.from(new Set([
+      ...acknowledgedOverlapIds,
+      ...overlappingCampaigns.map((c) => c.id),
+    ]));
+    setAcknowledgedOverlapIds(merged);
+    submitCampaign(merged);
+  }, [acknowledgedOverlapIds, overlappingCampaigns, submitCampaign]);
 
   if (!formData) {
     return (

@@ -59,7 +59,7 @@ export default function EditConfirmCampaignPage() {
   const isSubmittingRef = useRef(false);
   const [overlapConfirmOpen, setOverlapConfirmOpen] = useState(false);
   const [overlappingCampaigns, setOverlappingCampaigns] = useState<Campaign[]>([]);
-  const [overlapAcknowledged, setOverlapAcknowledged] = useState(false);
+  const [acknowledgedOverlapIds, setAcknowledgedOverlapIds] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -69,9 +69,15 @@ export default function EditConfirmCampaignPage() {
         return;
       }
       setFormData(JSON.parse(stored) as CampaignEditFormData);
-      setOverlapAcknowledged(
-        sessionStorage.getItem(`campaignEditOverlapAcknowledged_${campaignId}`) === 'true'
-      );
+      const storedIds = sessionStorage.getItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`);
+      if (storedIds) {
+        try {
+          const parsed = JSON.parse(storedIds) as unknown;
+          setAcknowledgedOverlapIds(Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []);
+        } catch {
+          setAcknowledgedOverlapIds([]);
+        }
+      }
     } catch (error) {
       console.error('データ復元失敗:', error);
       router.replace(`/campaigns/${campaignId}/edit`);
@@ -82,7 +88,7 @@ export default function EditConfirmCampaignPage() {
     router.back();
   }, [router]);
 
-  const submitUpdate = useCallback(async (acknowledgeOverlap: boolean) => {
+  const submitUpdate = useCallback(async (acknowledgedIds: string[]) => {
     if (!formData) return;
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
@@ -94,7 +100,7 @@ export default function EditConfirmCampaignPage() {
         endAt: formData.endAt
           ? new Date(`${formData.endAt}T00:00:00+09:00`).toISOString()
           : null,
-        acknowledgeOverlap,
+        acknowledgedOverlapIds: acknowledgedIds,
       };
       if (!formData.isFinished) {
         payload.status = formData.status;
@@ -107,7 +113,7 @@ export default function EditConfirmCampaignPage() {
 
       await apiClient.updateCampaign(campaignId, payload) as CampaignUpdateResponse;
       sessionStorage.removeItem(`campaignEditConfirmData_${campaignId}`);
-      sessionStorage.removeItem(`campaignEditOverlapAcknowledged_${campaignId}`);
+      sessionStorage.removeItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`);
       router.push(`/campaigns?toast=${encodeURIComponent('キャンペーンを更新しました')}`);
     } catch (error) {
       const err = error as {
@@ -141,13 +147,18 @@ export default function EditConfirmCampaignPage() {
   }, [formData, campaignId, router, showError]);
 
   const handleUpdate = useCallback(() => {
-    submitUpdate(overlapAcknowledged);
-  }, [submitUpdate, overlapAcknowledged]);
+    submitUpdate(acknowledgedOverlapIds);
+  }, [submitUpdate, acknowledgedOverlapIds]);
 
   const handleConfirmOverlap = useCallback(() => {
     setOverlapConfirmOpen(false);
-    submitUpdate(true);
-  }, [submitUpdate]);
+    const merged = Array.from(new Set([
+      ...acknowledgedOverlapIds,
+      ...overlappingCampaigns.map((c) => c.id),
+    ]));
+    setAcknowledgedOverlapIds(merged);
+    submitUpdate(merged);
+  }, [acknowledgedOverlapIds, overlappingCampaigns, submitUpdate]);
 
   if (!formData) {
     return (

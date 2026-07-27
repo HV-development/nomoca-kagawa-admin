@@ -8,7 +8,9 @@ import Button from '@/components/atoms/Button';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
 import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/toast-container';
+import CampaignOverlapModal from '@/components/molecules/campaign-overlap-modal';
 import { useToast } from '@/hooks/use-toast';
+import type { Campaign } from '@hv-development/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,10 +101,12 @@ function validateForm(data: CampaignFormData): CampaignFormErrors {
 
 export default function NewCampaignPage() {
   const router = useRouter();
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast, showError } = useToast();
 
   const [formData, setFormData] = useState<CampaignFormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<CampaignFormErrors>({});
+  const [overlapConfirmOpen, setOverlapConfirmOpen] = useState(false);
+  const [overlappingCampaigns, setOverlappingCampaigns] = useState<Campaign[]>([]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('campaignConfirmData');
@@ -130,6 +134,16 @@ export default function NewCampaignPage() {
 
   const startAtRef = useRef<HTMLInputElement>(null);
   const endAtRef = useRef<HTMLInputElement>(null);
+
+  const proceedToConfirm = useCallback((acknowledgedOverlap: boolean) => {
+    if (acknowledgedOverlap) {
+      sessionStorage.setItem('campaignOverlapAcknowledged', 'true');
+    } else {
+      sessionStorage.removeItem('campaignOverlapAcknowledged');
+    }
+    sessionStorage.setItem('campaignConfirmData', JSON.stringify(formData));
+    router.push('/campaigns/confirm');
+  }, [formData, router]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,9 +182,40 @@ export default function NewCampaignPage() {
       setIsChecking(false);
     }
 
-    sessionStorage.setItem('campaignConfirmData', JSON.stringify(formData));
-    router.push('/campaigns/confirm');
-  }, [formData, router]);
+    let overlaps: Campaign[] = [];
+    setIsChecking(true);
+    try {
+      const params = new URLSearchParams({
+        startAt: new Date(`${formData.startAt}T00:00:00+09:00`).toISOString(),
+      });
+      if (formData.endAt) {
+        params.set('endAt', new Date(`${formData.endAt}T00:00:00+09:00`).toISOString());
+      }
+      const overlapRes = await fetch(`/api/admin/campaigns/check-overlap?${params.toString()}`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!overlapRes.ok) {
+        showError('期間重複チェックに失敗しました。時間をおいて再度お試しください');
+        return;
+      }
+      const overlapData = (await overlapRes.json()) as { overlappingCampaigns?: Campaign[] };
+      overlaps = overlapData.overlappingCampaigns ?? [];
+    } catch {
+      showError('期間重複チェックに失敗しました。時間をおいて再度お試しください');
+      return;
+    } finally {
+      setIsChecking(false);
+    }
+
+    if (overlaps.length > 0) {
+      setOverlappingCampaigns(overlaps);
+      setOverlapConfirmOpen(true);
+      return;
+    }
+
+    proceedToConfirm(false);
+  }, [formData, showError, proceedToConfirm]);
 
   return (
     <AdminLayout>
@@ -319,6 +364,18 @@ export default function NewCampaignPage() {
           </div>
         </form>
       </div>
+
+      <CampaignOverlapModal
+        open={overlapConfirmOpen}
+        campaigns={overlappingCampaigns}
+        message={'以下のキャンペーンと期間が重複しています。内容をご確認の上お進みください。'}
+        confirmLabel="確認画面へ進む"
+        onCancel={() => setOverlapConfirmOpen(false)}
+        onConfirm={() => {
+          setOverlapConfirmOpen(false);
+          proceedToConfirm(true);
+        }}
+      />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>

@@ -104,18 +104,14 @@ export async function authenticatedFetch(
 
   const newAuthHeader = tokens.accessToken ? `Bearer ${tokens.accessToken}` : getAuthHeader(request)
 
-  const retryHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  }
-  if (newAuthHeader) {
-    retryHeaders['Authorization'] = newAuthHeader
-  }
-
-  const retryResponse = await fetch(url, {
+  // 再送も共通ヘッダー生成を通す。X-App-Domain が無いとAPI側でapplicationIdを解決できない
+  const retryResponse = await secureFetchWithCommonHeaders(request, url, {
     ...options,
-    headers: retryHeaders,
-    cache: 'no-store',
+    headers: {
+      ...(options.headers || {}),
+      ...(newAuthHeader ? { Authorization: newAuthHeader } : {}),
+    },
+    headerOptions: { requireAuth: true },
   })
 
   const retryData = await retryResponse.json().catch(() => ({}))

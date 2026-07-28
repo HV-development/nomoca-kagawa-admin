@@ -8,9 +8,11 @@ import Button from '@/components/atoms/Button';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
 import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/toast-container';
+import CampaignOverlapModal from '@/components/molecules/campaign-overlap-modal';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
 import type {
+  Campaign,
   CampaignChangeHistory,
   CampaignDetailResponse,
   CampaignStatus,
@@ -123,6 +125,9 @@ export default function EditCampaignPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [histories, setHistories] = useState<CampaignChangeHistory[]>([]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [overlapConfirmOpen, setOverlapConfirmOpen] = useState(false);
+  const [overlappingCampaigns, setOverlappingCampaigns] = useState<Campaign[]>([]);
 
   // 変更履歴は「作成」を除外して編集履歴のみ
   const visibleHistories = useMemo(
@@ -256,9 +261,23 @@ export default function EditCampaignPage() {
   const startAtRef = useRef<HTMLInputElement>(null);
   const endAtRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const proceedToConfirm = useCallback((acknowledgedOverlapIds: string[]) => {
     if (!formData) return;
+    if (acknowledgedOverlapIds.length > 0) {
+      sessionStorage.setItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`, JSON.stringify(acknowledgedOverlapIds));
+    } else {
+      sessionStorage.removeItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`);
+    }
+    sessionStorage.setItem(
+      `campaignEditConfirmData_${campaignId}`,
+      JSON.stringify({ ...formData, isStarted, isFinished })
+    );
+    router.push(`/campaigns/${campaignId}/confirm`);
+  }, [formData, campaignId, isStarted, isFinished, router]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData || !campaign) return;
     const validationErrors = validateForm(formData);
     if (startAtRef.current?.validity.badInput) {
       validationErrors.startAt = '有効な日付を指定してください';
@@ -271,12 +290,51 @@ export default function EditCampaignPage() {
       return;
     }
     setErrors({});
-    sessionStorage.setItem(
-      `campaignEditConfirmData_${campaignId}`,
-      JSON.stringify({ ...formData, isStarted, isFinished })
-    );
-    router.push(`/campaigns/${campaignId}/confirm`);
-  }, [formData, campaignId, isStarted, isFinished, validateForm, router]);
+
+    const periodChanged =
+      formData.startAt !== isoToDateInput(campaign.startAt) ||
+      formData.endAt !== isoToDateInput(campaign.endAt);
+    const willBecomeActive = formData.status === 'active' && campaign.status !== 'active';
+    if (!periodChanged && !willBecomeActive) {
+      proceedToConfirm([]);
+      return;
+    }
+
+    let overlaps: Campaign[] = [];
+    setIsChecking(true);
+    try {
+      const params = new URLSearchParams({
+        startAt: new Date(`${formData.startAt}T00:00:00+09:00`).toISOString(),
+        excludeId: campaignId,
+      });
+      if (formData.endAt) {
+        params.set('endAt', new Date(`${formData.endAt}T00:00:00+09:00`).toISOString());
+      }
+      const res = await fetch(`/api/admin/campaigns/check-overlap?${params.toString()}`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        showError('期間重複チェックに失敗しました。時間をおいて再度お試しください');
+        return;
+      }
+      const data = (await res.json()) as { overlappingCampaigns?: Campaign[] };
+      overlaps = data.overlappingCampaigns ?? [];
+    } catch {
+      showError('期間重複チェックに失敗しました。時間をおいて再度お試しください');
+      return;
+    } finally {
+      setIsChecking(false);
+    }
+
+    if (overlaps.length > 0) {
+      setOverlappingCampaigns(overlaps);
+      setOverlapConfirmOpen(true);
+      return;
+    }
+
+    proceedToConfirm([]);
+  }, [formData, campaign, campaignId, validateForm, showError, proceedToConfirm]);
 
   if (isLoading || !formData || !campaign) {
     return (
@@ -560,12 +618,25 @@ export default function EditCampaignPage() {
                 キャンセル
               </Button>
             </Link>
-            <Button type="submit" variant="primary">
-              更新内容を確認する
+            <Button type="submit" variant="primary" disabled={isChecking}>
+              {isChecking ? 'チェック中...' : '更新内容を確認する'}
             </Button>
           </div>
         </form>
       </div>
+
+      <CampaignOverlapModal
+        open={overlapConfirmOpen}
+        campaigns={overlappingCampaigns}
+        message={'以下のキャンペーンと期間が重複しています。内容をご確認の上お進みください。'}
+        confirmLabel="確認画面へ進む"
+        onCancel={() => setOverlapConfirmOpen(false)}
+        onConfirm={() => {
+          setOverlapConfirmOpen(false);
+          proceedToConfirm(overlappingCampaigns.map((c) => c.id));
+        }}
+      />
+
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );

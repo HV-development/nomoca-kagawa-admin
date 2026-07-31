@@ -215,8 +215,8 @@ export default function EditCampaignPage() {
 
     if (!isStarted) {
       if (!data.code.trim()) err.code = 'キャンペーンコードは必須です';
-      else if (!/^[a-z0-9]+$/.test(data.code) || data.code.length < 6 || data.code.length > 20) {
-        err.code = '6〜20文字の英小文字・半角数字で入力してください';
+      else if (!/^[a-z0-9]+$/.test(data.code) || data.code.length < 4 || data.code.length > 20) {
+        err.code = '4〜20文字の英小文字・半角数字で入力してください';
       }
       const freeDaysNum = Number(data.freeDays);
       if (!data.freeDays) err.freeDays = '無料期間は必須です';
@@ -419,7 +419,7 @@ export default function EditCampaignPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  ※ 6～20文字の英小文字・半角数字のみ（例: spring2026）
+                  ※ 4～20文字の英小文字・半角数字のみ（例: spring2026）
                 </p>
                 <ErrorMessage message={errors.code} />
               </div>

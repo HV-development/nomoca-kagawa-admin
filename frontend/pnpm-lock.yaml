@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.143.0
-    version: 1.143.0
+    specifier: 1.144.0
+    version: 1.144.0
   autoprefixer:
     specifier: 10.4.21
-    version: 10.4.21(postcss@8.5.23)
+    version: 10.4.21(postcss@8.5.25)
   jose:
     specifier: ^6.1.0
     version: 6.1.0
@@ -974,8 +974,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.143.0:
-    resolution: {integrity: sha512-0Zzj8IrX3A10mCP/kquAxLylp4hNlf8KBhUxwjhBYevl0+6i3QJUXJBOFxlixZ3WdMq3wY36Maf4mfvNcViI0Q==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.143.0/bf6023b0c311558ad5b4dc8d7a8adc8affc69088}
+  /@hv-development/schemas@1.144.0:
+    resolution: {integrity: sha512-fI2X07s4GhtPmyGxuqMuMMWlwi/qR7P/vzbJ1GJNFa9qLCjdkv3q/GSMXcV0XGIFfFJI80zzvIIkYf0RsUAZPg==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.144.0/605d77d844ac0fe929676f58e378a1dbed529e98}
     engines: {node: 22.x}
     dependencies:
       zod: 3.25.76
@@ -2255,7 +2255,7 @@ packages:
       '@typescript-eslint/types': 8.65.0
       '@typescript-eslint/visitor-keys': 8.65.0
       debug: 4.4.3
-      minimatch: 10.2.5
+      minimatch: 10.2.6
       semver: 7.8.5
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
@@ -2546,7 +2546,7 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /autoprefixer@10.4.21(postcss@8.5.23):
+  /autoprefixer@10.4.21(postcss@8.5.25):
     resolution: {integrity: sha512-O+A6LWV5LDHSJD3LjHYoNi4VLsj/Whi7k6zG12xTYaU4cQ8oxQGckXNX8cRHK5yOZ/ppVHe0ZBXGzSV9jXdVbQ==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
@@ -2558,7 +2558,7 @@ packages:
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.1
-      postcss: 8.5.23
+      postcss: 8.5.25
       postcss-value-parser: 4.2.0
     dev: false
 
@@ -2611,8 +2611,8 @@ packages:
       balanced-match: 1.0.2
     dev: true
 
-  /brace-expansion@5.0.8:
-    resolution: {integrity: sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==}
+  /brace-expansion@5.0.9:
+    resolution: {integrity: sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==}
     engines: {node: 20 || >=22}
     dependencies:
       balanced-match: 4.0.4
@@ -4298,11 +4298,11 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /minimatch@10.2.5:
-    resolution: {integrity: sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==}
+  /minimatch@10.2.6:
+    resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
     engines: {node: 18 || 20 || >=22}
     dependencies:
-      brace-expansion: 5.0.8
+      brace-expansion: 5.0.9
     dev: true
 
   /minimatch@3.1.2:
@@ -4587,8 +4587,8 @@ packages:
       source-map-js: 1.2.1
     dev: false
 
-  /postcss@8.5.23:
-    resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
+  /postcss@8.5.25:
+    resolution: {integrity: sha512-DTPx3RWSSnWyzLxQnlH0rJP+EW5ekl16ZU4/psbIhA0e53kJfdgaN5vKM+xP7yJtXVu+nfdVFmlgFDEKAe4Pyw==}
     engines: {node: ^10 || ^12 || >=14}
     dependencies:
       nanoid: 3.3.16
@@ -5514,7 +5514,7 @@ packages:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.5)
       picomatch: 4.0.5
-      postcss: 8.5.23
+      postcss: 8.5.25
       rollup: 4.62.3
       tinyglobby: 0.2.17
       tsx: 4.20.6

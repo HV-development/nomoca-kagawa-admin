@@ -30,6 +30,7 @@ interface ShopTableProps {
   onStatusChange: (shopId: string, status: string) => void;
   onDownloadAllCSV: () => void;
   getStatusColor: (status: string) => string;
+  referralCounts: Record<string, number> | null;
 }
 
 function ShopTable({
@@ -49,6 +50,7 @@ function ShopTable({
   onStatusChange,
   onDownloadAllCSV,
   getStatusColor,
+  referralCounts,
 }: ShopTableProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
@@ -113,6 +115,11 @@ function ShopTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                 店舗名
               </th>
+              {!isShopAccount && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] whitespace-nowrap">
+                  今月の登録人数
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
                 住所
               </th>
@@ -204,6 +211,13 @@ function ShopTable({
                     <div className="text-sm text-gray-500">{shop.nameKana}</div>
                   )}
                 </td>
+                {!isShopAccount && (
+                  <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                    <div className="text-sm text-gray-900 text-right">
+                      {referralCounts?.[shop.id] ?? '-'}
+                    </div>
+                  </td>
+                )}
                 <td className="px-6 py-4 min-w-[250px]">
                   <div className="text-sm text-gray-900">
                     {shop.postalCode ? `〒${shop.postalCode}` : '-'}

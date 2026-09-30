@@ -37,6 +37,8 @@ function ShopsPageContent() {
   const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [shops, setShops] = useState<Shop[]>([]);
+  const [referralCounts, setReferralCounts] = useState<Record<string, number> | null>(null);
+  const referralCountsRequestIdRef = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
@@ -291,6 +293,17 @@ function ShopsPageContent() {
       }
       
       setShops(shopsArray);
+      setReferralCounts(null);
+      const referralCountsRequestId = ++referralCountsRequestIdRef.current;
+      if (shopsArray.length > 0) {
+        apiClient
+          .getShopReferralCounts(shopsArray.map((s) => s.id))
+          .then((res) => {
+            if (referralCountsRequestId !== referralCountsRequestIdRef.current) return;
+            setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
+          })
+          .catch((error) => console.error('店舗別登録人数の取得に失敗しました', error));
+      }
       
       // merchantIdがある場合のみmerchant情報を取得
       if (merchantId) {
@@ -915,6 +928,7 @@ function ShopsPageContent() {
             onStatusChange={handleIndividualStatusChange}
             onDownloadAllCSV={handleDownloadAllCSV}
             getStatusColor={getStatusColor}
+            referralCounts={referralCounts}
           />
         )}
       </div>

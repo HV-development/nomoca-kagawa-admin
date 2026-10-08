@@ -219,6 +219,8 @@ export type ShopForCSV = {
   status: string;
   createdAt: string;
   updatedAt: string;
+  monthlyReferralCount?: number;
+  qrCodeUrl?: string;
 };
 
 /**
@@ -243,8 +245,10 @@ function getShopStatusLabel(status: string): string {
  */
 export function convertShopsToCSV(
   shops: ShopForCSV[],
-  includeMerchantName: boolean = false
+  includeMerchantName: boolean = false,
+  referralMonthLabel?: string
 ): string {
+  const includeReferralColumns = referralMonthLabel !== undefined;
   const headers: string[] = [];
 
   if (includeMerchantName) {
@@ -257,9 +261,11 @@ export function convertShopsToCSV(
     '住所',
     'メールアドレス',
     '電話番号',
+    ...(includeReferralColumns ? [`${referralMonthLabel}登録ユーザー数`] : []),
     '承認ステータス',
     '登録日時',
-    '更新日時'
+    '更新日時',
+    ...(includeReferralColumns ? ['店舗QRコードURL'] : [])
   );
 
   const headerRow = headers.map(escapeCSVValue).join(',');
@@ -277,9 +283,11 @@ export function convertShopsToCSV(
       escapeCSVValue(shop.address || ''),
       escapeCSVValue(shop.accountEmail || ''),
       escapeCSVValue(shop.phone || ''),
+      ...(includeReferralColumns ? [escapeCSVValue(String(shop.monthlyReferralCount ?? ''))] : []),
       escapeCSVValue(getShopStatusLabel(shop.status)),
       escapeCSVValue(formatDate(shop.createdAt)),
-      escapeCSVValue(formatDate(shop.updatedAt))
+      escapeCSVValue(formatDate(shop.updatedAt)),
+      ...(includeReferralColumns ? [escapeCSVValue(shop.qrCodeUrl || '')] : [])
     );
 
     return values.join(',');
@@ -545,3 +553,17 @@ export function convertCouponUsagesToCSV(
   return BOM + csvContent;
 }
 
+export function convertReferralUsersToCSV(
+  shopName: string,
+  users: { customerId: string; registeredAt: string; planName: string }[]
+): string {
+  const header = ['店舗名', '顧客ID', '登録日', '登録プラン'];
+  const rows = users.map((u) => [shopName, u.customerId, u.registeredAt.replace(/-/g, '/'), u.planName]);
+  const BOM = '\uFEFF';
+  return BOM + [header, ...rows].map((row) => row.map(escapeCSVValue).join(',')).join('\n');
+}
+
+export function formatReferralMonthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-');
+  return `${year}年${Number(monthNumber)}月`;
+}

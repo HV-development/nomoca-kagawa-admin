@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
+import Icon from '@/components/atoms/Icon';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 
@@ -30,6 +31,7 @@ interface ShopTableProps {
   onStatusChange: (shopId: string, status: string) => void;
   onDownloadAllCSV: () => void;
   getStatusColor: (status: string) => string;
+  referralCounts: Record<string, number> | null;
 }
 
 function ShopTable({
@@ -49,6 +51,7 @@ function ShopTable({
   onStatusChange,
   onDownloadAllCSV,
   getStatusColor,
+  referralCounts,
 }: ShopTableProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
@@ -122,6 +125,11 @@ function ShopTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                 電話番号
               </th>
+              {!isShopAccount && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] whitespace-nowrap">
+                  今月の登録ユーザー数
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                 承認ステータス
               </th>
@@ -218,6 +226,31 @@ function ShopTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{shop.phone}</div>
                 </td>
+                {!isShopAccount && (
+                  <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                    <div className="flex items-center justify-end gap-3">
+                      <span className="text-sm text-gray-900">{referralCounts?.[shop.id] ?? '-'}</span>
+                      {!isMerchantAccount && (
+                        <Link
+                          href={{
+                            pathname: `/shops/${shop.id}/referral-users`,
+                            query: { returnTo: encodedReturnTo },
+                          }}
+                          prefetch={false}
+                        >
+                          <button
+                            type="button"
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                            title="登録ユーザー一覧"
+                            aria-label="登録ユーザー一覧"
+                          >
+                            <Icon name="groups" size="lg" />
+                          </button>
+                        </Link>
+                      )}
+                    </div>
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                   {isMerchantAccount ? (
                     <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>

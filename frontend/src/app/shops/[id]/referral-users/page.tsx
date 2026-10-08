@@ -11,24 +11,10 @@ import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient, type ShopReferralUser } from '@/lib/api';
 import { convertReferralUsersToCSV, downloadCSV, generateFilename } from '@/utils/csvExport';
+import { toSafeBackHref } from '@/utils/safeReturnTo';
 
 const PAGE_SIZE = 50;
 const CSV_PAGE_SIZE = 1000;
-const DEFAULT_BACK_HREF = '/shops';
-
-function toSafeBackHref(raw: string | null | undefined): string {
-  if (!raw) return DEFAULT_BACK_HREF;
-  try {
-    const decoded = decodeURIComponent(raw);
-    if (!decoded.startsWith('/') || decoded.includes('\\')) return DEFAULT_BACK_HREF;
-    const base = 'http://same-origin.invalid';
-    const url = new URL(decoded, base);
-    if (url.origin !== base) return DEFAULT_BACK_HREF;
-    return `${url.pathname}${url.search}`;
-  } catch {
-    return DEFAULT_BACK_HREF;
-  }
-}
 
 function ShopReferralUsersContent() {
   const params = useParams();
@@ -50,6 +36,10 @@ function ShopReferralUsersContent() {
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
   const requestIdRef = useRef(0);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+
+  useEffect(() => {
+    setPage(1);
+  }, [shopId]);
 
   useEffect(() => {
     if (auth?.isLoading) return;

@@ -562,3 +562,8 @@ export function convertReferralUsersToCSV(
   const BOM = '\uFEFF';
   return BOM + [header, ...rows].map((row) => row.map(escapeCSVValue).join(',')).join('\n');
 }
+
+export function formatReferralMonthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-');
+  return `${year}年${Number(monthNumber)}月`;
+}

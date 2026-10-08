@@ -465,9 +465,9 @@ class ApiClient {
     });
   }
 
-  async getShopReferralCounts(shopIds: string[]): Promise<{ counts: ShopReferralCount[] }> {
+  async getShopReferralCounts(shopIds: string[]): Promise<{ month: string; counts: ShopReferralCount[] }> {
     const query = new URLSearchParams({ shopIds: shopIds.join(',') }).toString();
-    return this.request<{ counts: ShopReferralCount[] }>(`/shops/referral-counts?${query}`, {
+    return this.request<{ month: string; counts: ShopReferralCount[] }>(`/shops/referral-counts?${query}`, {
       method: 'GET',
     });
   }

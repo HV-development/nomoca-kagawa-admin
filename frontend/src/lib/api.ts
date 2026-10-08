@@ -35,6 +35,25 @@ type RegisterRequest = RegisterInput;
 type RegisterResponse = AuthResponse;
 type RefreshRequest = RefreshTokenInput;
 
+export type ShopReferralCount = {
+  shopId: string;
+  monthlyReferralCount: number;
+  qrCodeUrl: string;
+};
+
+export type ShopReferralUser = {
+  userId: string;
+  customerId: string;
+  registeredAt: string;
+  planName: string;
+};
+
+export type ShopReferralUserList = {
+  shopName: string;
+  total: number;
+  users: ShopReferralUser[];
+};
+
 class ApiClient {
   private baseUrl: string;
 
@@ -446,9 +465,16 @@ class ApiClient {
     });
   }
 
-  async getShopReferralCounts(shopIds: string[]): Promise<{ counts: { shopId: string; monthlyReferralCount: number }[] }> {
+  async getShopReferralCounts(shopIds: string[]): Promise<{ counts: ShopReferralCount[] }> {
     const query = new URLSearchParams({ shopIds: shopIds.join(',') }).toString();
-    return this.request<{ counts: { shopId: string; monthlyReferralCount: number }[] }>(`/shops/referral-counts?${query}`, {
+    return this.request<{ counts: ShopReferralCount[] }>(`/shops/referral-counts?${query}`, {
+      method: 'GET',
+    });
+  }
+
+  async getShopReferralUsers(shopId: string, page: number, limit: number): Promise<ShopReferralUserList> {
+    const query = new URLSearchParams({ page: String(page), limit: String(limit) }).toString();
+    return this.request<ShopReferralUserList>(`/shops/${encodeURIComponent(shopId)}/referral-users?${query}`, {
       method: 'GET',
     });
   }

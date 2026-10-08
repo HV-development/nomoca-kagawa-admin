@@ -95,7 +95,7 @@ function ShopReferralUsersContent() {
         next.users.forEach((u) => usersById.set(u.userId, u));
       }
       const allUsers = [...usersById.values()];
-      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('shop_referral_users'));
+      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
       if (allUsers.length !== first.total) {
         showError(`取得中に登録ユーザーが増減したため、件数が一致しません（CSV ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
       } else {

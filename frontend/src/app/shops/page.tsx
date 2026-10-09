@@ -42,6 +42,27 @@ function ShopsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+
+  const loadReferralCounts = useCallback(
+    (shopIds: string[]) => {
+      setReferralCounts(null);
+      const requestId = ++referralCountsRequestIdRef.current;
+      if (shopIds.length === 0) return;
+      apiClient
+        .getShopReferralCounts(shopIds)
+        .then((res) => {
+          if (requestId !== referralCountsRequestIdRef.current) return;
+          setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
+        })
+        .catch((error) => {
+          console.error('店舗別登録人数の取得に失敗しました', error);
+          if (requestId === referralCountsRequestIdRef.current) {
+            showError('今月の登録ユーザー数の取得に失敗しました。再読み込みしてください');
+          }
+        });
+    },
+    [showError]
+  );
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -193,6 +214,7 @@ function ShopsPageContent() {
           setIsLoading(true);
           const shopData = await apiClient.getMyShop() as Shop;
           setShops([shopData]);
+          loadReferralCounts([shopData.id]);
           setIsLoading(false);
         } catch (error) {
           console.error('店舗情報の取得に失敗しました:', error);
@@ -203,7 +225,7 @@ function ShopsPageContent() {
     };
 
     fetchMyShop();
-  }, [isShopAccount, auth?.isLoading]);
+  }, [isShopAccount, auth?.isLoading, loadReferralCounts]);
 
   // データ取得（検索条件を含む）
   const fetchShops = useCallback(async () => {
@@ -293,22 +315,7 @@ function ShopsPageContent() {
       }
       
       setShops(shopsArray);
-      setReferralCounts(null);
-      const referralCountsRequestId = ++referralCountsRequestIdRef.current;
-      if (shopsArray.length > 0) {
-        apiClient
-          .getShopReferralCounts(shopsArray.map((s) => s.id))
-          .then((res) => {
-            if (referralCountsRequestId !== referralCountsRequestIdRef.current) return;
-            setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
-          })
-          .catch((error) => {
-            console.error('店舗別登録人数の取得に失敗しました', error);
-            if (referralCountsRequestId === referralCountsRequestIdRef.current) {
-              showError('今月の登録ユーザー数の取得に失敗しました。再読み込みしてください');
-            }
-          });
-      }
+      loadReferralCounts(shopsArray.map((s) => s.id));
       
       // merchantIdがある場合のみmerchant情報を取得
       if (merchantId) {
@@ -332,7 +339,7 @@ function ShopsPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit]);
+  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit, loadReferralCounts]);
 
   // 初回マウント時とmerchantId変更時にデータ取得
   // 事業者アカウントの場合はmerchantIdが設定されるまで待機
@@ -946,6 +953,7 @@ function ShopsPageContent() {
             merchantId={merchantId}
             encodedReturnTo={encodedReturnTo}
             getStatusColor={getStatusColor}
+            referralCount={referralCounts?.[shops[0].id] ?? null}
           />
         ) : null}
 

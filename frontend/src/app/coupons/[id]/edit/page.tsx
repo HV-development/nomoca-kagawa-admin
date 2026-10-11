@@ -193,6 +193,15 @@ function CouponEditPageContent() {
         }
         break;
 
+      case 'couponConditions':
+        const couponConditionsError = validateRequired(value, '利用条件') || validateMaxLength(value, 500, '利用条件');
+        if (couponConditionsError) {
+          newErrors.couponConditions = couponConditionsError;
+        } else {
+          delete newErrors.couponConditions;
+        }
+        break;
+
     }
 
     setErrors(newErrors);
@@ -264,7 +273,21 @@ function CouponEditPageContent() {
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
 
+    const couponConditionsError = validateRequired(formData.couponConditions, '利用条件') || validateMaxLength(formData.couponConditions, 500, '利用条件');
+    if (couponConditionsError) newErrors.couponConditions = couponConditionsError;
+
+    if (!formData.imagePreview && !formData.imageUrl) newErrors.couponImage = 'クーポン画像は必須です';
+
     setErrors(newErrors);
+
+    const firstErrorField = (['couponName', 'couponContent', 'couponConditions', 'couponImage'] as const).find((field) => newErrors[field]);
+    if (firstErrorField) {
+      setTimeout(() => {
+        const element = document.querySelector(`[data-field="${firstErrorField}"]`) ?? document.getElementById(firstErrorField);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -511,7 +534,7 @@ function CouponEditPageContent() {
             {/* 利用条件 */}
             <div>
               <label htmlFor="couponConditions" className="block text-sm font-medium text-gray-700 mb-2">
-                利用条件
+                利用条件 <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="couponConditions"
@@ -564,7 +587,7 @@ function CouponEditPageContent() {
             </div>
 
             {/* クーポン画像 */}
-            <div>
+            <div data-field="couponImage">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 クーポン画像 <span className="text-red-500">*</span>
               </label>
@@ -582,8 +605,7 @@ function CouponEditPageContent() {
                         // 画像が存在しない場合はプレビューを非表示にする
                         setFormData(prev => ({
                           ...prev,
-                          imagePreview: '',
-                          imageUrl: ''
+                          imagePreview: ''
                         }));
                       }}
                       unoptimized

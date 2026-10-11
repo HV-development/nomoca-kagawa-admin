@@ -285,6 +285,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     restoreFromDataUrls,
   } = useImageUpload({ maxImages: 3 });
 
+  const totalImageCount = existingImages.length + imagePreviews.length;
+  useEffect(() => {
+    if (totalImageCount === 0) return;
+    setValidationErrors((prev) => {
+      if (!prev.images) return prev;
+      const newErrors = { ...prev };
+      delete newErrors.images;
+      return newErrors;
+    });
+  }, [totalImageCount]);
+
   // 定休日チェックボックス用
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
   // 定休日「その他」のフリーワード入力用
@@ -1141,13 +1152,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       }
 
       // 説明文
-      if (formData.description && formData.description.length > 500) {
+      if (!formData.description || formData.description.trim().length === 0) {
+        customErrors.description = '店舗紹介説明は必須です';
+      } else if (formData.description.length > 500) {
         customErrors.description = '店舗紹介説明は500文字以内で入力してください';
       }
 
       // 詳細情報
-      if (formData.details && formData.details.length > 1000) {
+      if (!formData.details || formData.details.trim().length === 0) {
+        customErrors.details = '詳細情報は必須です';
+      } else if (formData.details.length > 1000) {
         customErrors.details = '詳細情報は1000文字以内で入力してください';
+      }
+
+      if (existingImages.length + imagePreviews.length === 0) {
+        customErrors.images = '店舗画像を1枚以上登録してください';
       }
 
       // クレジットカード「その他」のテキストボックス必須チェック
@@ -1964,12 +1983,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* 店舗紹介説明 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                店舗紹介説明
+                店舗紹介説明 <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="description"
                 value={formData.description ?? ''}
                 onChange={(e) => handleInputChange('description', e.target.value)}
+                onBlur={(e) => handleFieldBlur('description', e.target.value)}
                 rows={4}
                 maxLength={500}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
@@ -1988,12 +2008,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* 詳細情報 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                詳細情報
+                詳細情報 <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="details"
                 value={formData.details ?? ''}
                 onChange={(e) => handleInputChange('details', e.target.value)}
+                onBlur={(e) => handleFieldBlur('details', e.target.value)}
                 rows={6}
                 maxLength={1000}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
@@ -2273,6 +2294,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           onImageSelect={handleImageSelect}
           onRemoveImage={handleRemoveImage}
           onRemoveExistingImage={handleRemoveExistingImage}
+          error={validationErrors.images}
         />
 
         {/* QRコード表示（編集モードのみ） */}

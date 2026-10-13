@@ -112,7 +112,7 @@ function ShopReferralUsersContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">登録ユーザー一覧</h1>
-              <p className="text-gray-600">店舗QRコードから登録したユーザーを表示します（登録月を問わず、有料プラン有効または今月課金ありのユーザー）</p>
+              <p className="text-gray-600">店舗QRコードから登録したユーザーを表示します</p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -120,6 +120,7 @@ function ShopReferralUsersContent() {
               </div>
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">※ 登録月を問わず、プラン利用中のユーザーを表示しています</p>
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="flex items-center">

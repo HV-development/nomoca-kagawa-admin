@@ -1165,10 +1165,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.details = '詳細情報は1000文字以内で入力してください';
       }
 
-      if (existingImages.length + imagePreviews.length === 0) {
-        customErrors.images = '店舗画像を1枚以上登録してください';
-      }
-
       // クレジットカード「その他」のテキストボックス必須チェック
       if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
         customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
@@ -1195,6 +1191,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.customHolidayText = 'その他の定休日の内容を入力してください';
       } else if (isHolidayOtherSelected && customHolidayText && customHolidayText.length > 100) {
         customErrors.customHolidayText = 'その他の定休日は100文字以内で入力してください';
+      }
+
+      if (existingImages.length + imagePreviews.length === 0) {
+        customErrors.images = '店舗画像を1枚以上登録してください';
       }
 
       // カスタムエラーがある場合は表示して終了

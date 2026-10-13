@@ -13,7 +13,8 @@ import type { CouponCreateRequest, CouponStatus, Shop, Coupon } from '@hv-develo
 import { 
   validateRequired, 
   validateMaxLength, 
-  validateFileSize
+  validateFileSize,
+  validateCouponConditions
 } from '@/utils/validation';
 import { useAuth } from '@/components/contexts/auth-context';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
@@ -228,7 +229,7 @@ function CouponNewPageContent() {
         break;
 
       case 'couponConditions':
-        const couponConditionsError = validateRequired(value, '利用条件') || validateMaxLength(value, 500, '利用条件');
+        const couponConditionsError = validateCouponConditions(value);
         if (couponConditionsError) {
           newErrors.couponConditions = couponConditionsError;
         } else {
@@ -350,7 +351,7 @@ function CouponNewPageContent() {
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
 
-    const couponConditionsError = validateRequired(formData.couponConditions, '利用条件') || validateMaxLength(formData.couponConditions, 500, '利用条件');
+    const couponConditionsError = validateCouponConditions(formData.couponConditions);
     if (couponConditionsError) newErrors.couponConditions = couponConditionsError;
 
     if (!formData.imagePreview && !formData.imageUrl) newErrors.couponImage = 'クーポン画像は必須です';

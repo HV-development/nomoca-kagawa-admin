@@ -49,7 +49,7 @@ function ShopsPageContent() {
       const requestId = ++referralCountsRequestIdRef.current;
       if (shopIds.length === 0) return;
       apiClient
-        .getShopReferralCounts(shopIds)
+        .getShopReferralCounts(shopIds, { skipAuthRedirect: true })
         .then((res) => {
           if (requestId !== referralCountsRequestIdRef.current) return;
           setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));

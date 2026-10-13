@@ -228,7 +228,7 @@ function ShopTable({
                 </td>
                 {!isShopAccount && (
                   <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-900">{referralCounts?.[shop.id] ?? '-'}</span>
                       {!isMerchantAccount && (
                         <Link

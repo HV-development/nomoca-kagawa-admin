@@ -719,7 +719,7 @@ function ShopsPageContent() {
     }
     const [month] = [...months];
     if (!month) {
-      throw new Error('集計月を取得できませんでした');
+      throw new Error(shopIds.length === 0 ? 'ダウンロード対象の店舗がありません' : '集計月を取得できませんでした');
     }
     return { monthLabel: formatReferralMonthLabel(month), referralInfo };
   };

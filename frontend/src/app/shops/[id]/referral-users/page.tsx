@@ -85,12 +85,12 @@ function ShopReferralUsersContent() {
         next.users.forEach((u) => usersById.set(u.userId, u));
       }
       const allUsers = [...usersById.values()];
-      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
       if (allUsers.length !== first.total) {
-        showError(`取得中に登録ユーザーが増減したため、件数が一致しません（CSV ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
-      } else {
-        showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
+        showError(`取得中に登録ユーザーが増減したため、件数が一致しません（取得 ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
+        return;
       }
+      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
+      showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
     } catch (err: unknown) {
       console.error('CSVダウンロードに失敗しました:', err);
       showError('CSVダウンロードに失敗しました');
@@ -120,6 +120,7 @@ function ShopReferralUsersContent() {
               </div>
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">※ 登録月を問わず、プラン利用中のユーザーを表示しています</p>
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="flex items-center">

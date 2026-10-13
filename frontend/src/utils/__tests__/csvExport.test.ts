@@ -17,7 +17,7 @@ const shop: ShopForCSV = {
 };
 
 function rows(csv: string): string[][] {
-  return csv.replace(/^﻿/, '').split('\n').map((line) => line.split(','));
+  return csv.replace(/^\uFEFF/, '').split('\n').map((line) => line.split(','));
 }
 
 describe('convertShopsToCSV', () => {

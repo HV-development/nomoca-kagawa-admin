@@ -120,7 +120,7 @@ function ShopReferralUsersContent() {
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">※ 登録月を問わず、プラン利用中のユーザーを表示しています</p>
+          <p className="text-xs text-gray-500 mt-1">※ 登録月を問わず、課金済みでプラン利用中のユーザーを表示しています（退会予定・退会済みのユーザーは、今月課金がある場合のみ）</p>
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="flex items-center">

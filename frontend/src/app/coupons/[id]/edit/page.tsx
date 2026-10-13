@@ -501,6 +501,7 @@ function CouponEditPageContent() {
                 placeholder="クーポン名を入力（最大25文字）"
                 value={formData.couponName}
                 onChange={(e) => handleInputChange('couponName', e.target.value)}
+                onBlur={(e) => validateField('couponName', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponName ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -521,6 +522,7 @@ function CouponEditPageContent() {
                 placeholder="クーポン内容を入力（最大100文字）"
                 value={formData.couponContent}
                 onChange={(e) => handleInputChange('couponContent', e.target.value)}
+                onBlur={(e) => validateField('couponContent', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponContent ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -542,6 +544,7 @@ function CouponEditPageContent() {
                 placeholder="利用条件を入力（最大500文字）"
                 value={formData.couponConditions}
                 onChange={(e) => handleInputChange('couponConditions', e.target.value)}
+                onBlur={(e) => validateField('couponConditions', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponConditions ? 'border-red-500' : 'border-gray-300'
                 }`}

@@ -85,12 +85,12 @@ function ShopReferralUsersContent() {
         next.users.forEach((u) => usersById.set(u.userId, u));
       }
       const allUsers = [...usersById.values()];
-      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
       if (allUsers.length !== first.total) {
-        showError(`取得中に登録ユーザーが増減したため、件数が一致しません（CSV ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
-      } else {
-        showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
+        showError(`取得中に登録ユーザーが増減したため、件数が一致しません（取得 ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
+        return;
       }
+      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
+      showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
     } catch (err: unknown) {
       console.error('CSVダウンロードに失敗しました:', err);
       showError('CSVダウンロードに失敗しました');
@@ -112,7 +112,7 @@ function ShopReferralUsersContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">登録ユーザー一覧</h1>
-              <p className="text-gray-600">店舗QRコードから登録したユーザーを表示します</p>
+              <p className="text-gray-600">店舗QRコードから登録したユーザーを表示します（登録月を問わず、有料プラン有効または今月課金ありのユーザー）</p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">

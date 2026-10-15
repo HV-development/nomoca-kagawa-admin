@@ -11,6 +11,7 @@ interface ShopDetailViewProps {
   merchantId?: string;
   encodedReturnTo: string;
   getStatusColor: (status: string) => string;
+  referralCount: number | null;
 }
 
 function ShopDetailView({
@@ -18,6 +19,7 @@ function ShopDetailView({
   merchantId,
   encodedReturnTo,
   getStatusColor,
+  referralCount,
 }: ShopDetailViewProps) {
   return (
     <div className="bg-white rounded-lg shadow">
@@ -63,6 +65,19 @@ function ShopDetailView({
               <tr className="border-b border-gray-300">
                 <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">住所</td>
                 <td className="py-3 px-4 text-gray-900">{shop.address || '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* 登録ユーザー情報 */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">登録ユーザー情報</h3>
+          <table className="w-full border-collapse border border-gray-300">
+            <tbody>
+              <tr className="border-b border-gray-300">
+                <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">今月の登録ユーザー数</td>
+                <td className="py-3 px-4 text-gray-900">{referralCount ?? '-'}</td>
               </tr>
             </tbody>
           </table>

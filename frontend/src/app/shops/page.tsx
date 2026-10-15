@@ -7,12 +7,12 @@ import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
 import ToastContainer from '@/components/molecules/toast-container';
 import Pagination from '@/components/molecules/Pagination';
-import { apiClient } from '@/lib/api';
+import { apiClient, type ShopReferralCount } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
-import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+import { convertShopsToCSV, downloadCSV, formatReferralMonthLabel, generateFilename, type ShopForCSV } from '@/utils/csvExport';
 // 分割されたコンポーネント
 import ShopSearchForm from '@/components/organisms/ShopSearchForm';
 import ShopDetailView from '@/components/organisms/ShopDetailView';
@@ -37,9 +37,32 @@ function ShopsPageContent() {
   const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [shops, setShops] = useState<Shop[]>([]);
+  const [referralCounts, setReferralCounts] = useState<Record<string, number> | null>(null);
+  const referralCountsRequestIdRef = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+
+  const loadReferralCounts = useCallback(
+    (shopIds: string[]) => {
+      setReferralCounts(null);
+      const requestId = ++referralCountsRequestIdRef.current;
+      if (shopIds.length === 0) return;
+      apiClient
+        .getShopReferralCounts(shopIds, { skipAuthRedirect: true })
+        .then((res) => {
+          if (requestId !== referralCountsRequestIdRef.current) return;
+          setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
+        })
+        .catch((error) => {
+          console.error('店舗別登録人数の取得に失敗しました', error);
+          if (requestId === referralCountsRequestIdRef.current) {
+            showError('今月の登録ユーザー数の取得に失敗しました。再読み込みしてください');
+          }
+        });
+    },
+    [showError]
+  );
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -191,6 +214,7 @@ function ShopsPageContent() {
           setIsLoading(true);
           const shopData = await apiClient.getMyShop() as Shop;
           setShops([shopData]);
+          loadReferralCounts([shopData.id]);
           setIsLoading(false);
         } catch (error) {
           console.error('店舗情報の取得に失敗しました:', error);
@@ -201,7 +225,7 @@ function ShopsPageContent() {
     };
 
     fetchMyShop();
-  }, [isShopAccount, auth?.isLoading]);
+  }, [isShopAccount, auth?.isLoading, loadReferralCounts]);
 
   // データ取得（検索条件を含む）
   const fetchShops = useCallback(async () => {
@@ -291,6 +315,7 @@ function ShopsPageContent() {
       }
       
       setShops(shopsArray);
+      loadReferralCounts(shopsArray.map((s) => s.id));
       
       // merchantIdがある場合のみmerchant情報を取得
       if (merchantId) {
@@ -314,7 +339,7 @@ function ShopsPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit]);
+  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit, loadReferralCounts]);
 
   // 初回マウント時とmerchantId変更時にデータ取得
   // 事業者アカウントの場合はmerchantIdが設定されるまで待機
@@ -674,6 +699,31 @@ function ShopsPageContent() {
     return allShops;
   };
 
+  const fetchReferralInfoForCSV = async (
+    shopIds: string[]
+  ): Promise<{ monthLabel: string; referralInfo: Record<string, ShopReferralCount> }> => {
+    const referralInfo: Record<string, ShopReferralCount> = {};
+    const months = new Set<string>();
+    for (let i = 0; i < shopIds.length; i += 100) {
+      const res = await apiClient.getShopReferralCounts(shopIds.slice(i, i + 100));
+      months.add(res.month);
+      res.counts.forEach((c) => {
+        referralInfo[c.shopId] = c;
+      });
+    }
+    if (months.size > 1) {
+      throw new Error('集計中に月が変わりました。もう一度ダウンロードしてください');
+    }
+    if (shopIds.some((id) => !referralInfo[id]?.qrCodeUrl)) {
+      throw new Error('登録ユーザー数・店舗QRコードURLを取得できない店舗があります');
+    }
+    const [month] = [...months];
+    if (!month) {
+      throw new Error(shopIds.length === 0 ? 'ダウンロード対象の店舗がありません' : '集計月を取得できませんでした');
+    }
+    return { monthLabel: formatReferralMonthLabel(month), referralInfo };
+  };
+
   // 全データをCSVダウンロード
   const handleDownloadAllCSV = async () => {
     try {
@@ -681,6 +731,7 @@ function ShopsPageContent() {
       
       // 全データを取得
       const allShops = await fetchAllShops();
+      const { monthLabel, referralInfo } = await fetchReferralInfoForCSV(allShops.map((shop) => shop.id));
       
       // Shop型をShopForCSV型に変換
       const shopsForCSV: ShopForCSV[] = allShops.map((shop) => ({
@@ -694,13 +745,15 @@ function ShopsPageContent() {
         status: shop.status,
         createdAt: shop.createdAt,
         updatedAt: shop.updatedAt,
+        monthlyReferralCount: referralInfo[shop.id]?.monthlyReferralCount,
+        qrCodeUrl: referralInfo[shop.id]?.qrCodeUrl ?? '',
       }));
 
       // CSVを生成（事業者名を表示するかどうかはmerchantIdがない場合のみ）
-      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount);
+      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount, monthLabel);
       
       // ファイル名を生成
-      const filename = generateFilename('shops');
+      const filename = generateFilename('店舗一覧');
       
       // CSVをダウンロード
       downloadCSV(csvContent, filename);
@@ -716,17 +769,20 @@ function ShopsPageContent() {
   };
 
   // 選択レコードをCSVダウンロード
-  const handleDownloadSelectedCSV = () => {
+  const handleDownloadSelectedCSV = async () => {
+    if (isDownloadingCSV) return;
     try {
       if (selectedShops.size === 0) {
         showError('選択されている店舗がありません');
         return;
       }
+      setIsDownloadingCSV(true);
 
       // 選択されたレコードを取得
       const selectedShopsData = shops.filter((shop) =>
         selectedShops.has(shop.id)
       );
+      const { monthLabel, referralInfo } = await fetchReferralInfoForCSV(selectedShopsData.map((shop) => shop.id));
 
       // Shop型をShopForCSV型に変換
       const shopsForCSV: ShopForCSV[] = selectedShopsData.map((shop) => ({
@@ -740,13 +796,15 @@ function ShopsPageContent() {
         status: shop.status,
         createdAt: shop.createdAt,
         updatedAt: shop.updatedAt,
+        monthlyReferralCount: referralInfo[shop.id]?.monthlyReferralCount,
+        qrCodeUrl: referralInfo[shop.id]?.qrCodeUrl ?? '',
       }));
 
       // CSVを生成（事業者名を表示するかどうかはmerchantIdがない場合のみ）
-      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount);
+      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount, monthLabel);
       
       // ファイル名を生成
-      const filename = generateFilename('shops_selected');
+      const filename = generateFilename('店舗一覧_選択');
       
       // CSVをダウンロード
       downloadCSV(csvContent, filename);
@@ -756,6 +814,8 @@ function ShopsPageContent() {
       console.error('CSVダウンロードに失敗しました:', error);
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsDownloadingCSV(false);
     }
   };
 
@@ -893,6 +953,7 @@ function ShopsPageContent() {
             merchantId={merchantId}
             encodedReturnTo={encodedReturnTo}
             getStatusColor={getStatusColor}
+            referralCount={referralCounts?.[shops[0].id] ?? null}
           />
         ) : null}
 
@@ -915,6 +976,7 @@ function ShopsPageContent() {
             onStatusChange={handleIndividualStatusChange}
             onDownloadAllCSV={handleDownloadAllCSV}
             getStatusColor={getStatusColor}
+            referralCounts={referralCounts}
           />
         )}
       </div>
@@ -924,6 +986,7 @@ function ShopsPageContent() {
           selectedCount={selectedShops.size}
           onBulkUpdateStatus={handleBulkUpdateStatus}
           onDownloadCSV={handleDownloadSelectedCSV}
+          isDownloadingCSV={isDownloadingCSV}
         />
       )}
       

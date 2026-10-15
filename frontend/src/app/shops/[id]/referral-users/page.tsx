@@ -23,6 +23,7 @@ function ShopReferralUsersContent() {
   const auth = useAuth();
   const shopId = params.id as string;
   const isAdminAccount = auth?.user?.accountType === 'admin';
+  const isOperatorRole = isAdminAccount && auth?.user?.role === 'operator';
   const displayName = auth?.user?.name ?? '—';
 
   const backHref = useMemo(() => toSafeBackHref(searchParams?.get('returnTo')), [searchParams]);
@@ -89,7 +90,10 @@ function ShopReferralUsersContent() {
         showError(`取得中に登録ユーザーが増減したため、件数が一致しません（取得 ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
         return;
       }
-      downloadCSV(convertReferralUsersToCSV(first.shopName, allUsers), generateFilename('店舗登録ユーザー一覧'));
+      downloadCSV(
+        convertReferralUsersToCSV(first.shopName, allUsers, { includeAppId: !isOperatorRole }),
+        generateFilename('店舗登録ユーザー一覧')
+      );
       showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
     } catch (err: unknown) {
       console.error('CSVダウンロードに失敗しました:', err);
@@ -97,7 +101,7 @@ function ShopReferralUsersContent() {
     } finally {
       setIsDownloadingCSV(false);
     }
-  }, [shopId, showSuccess, showError]);
+  }, [shopId, isOperatorRole, showSuccess, showError]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -168,7 +172,7 @@ function ShopReferralUsersContent() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">顧客ID</th>
+                    {!isOperatorRole && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">マイデジアプリID</th>}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">登録日</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">登録プラン</th>
                   </tr>
@@ -176,7 +180,7 @@ function ShopReferralUsersContent() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{user.customerId || '-'}</td>
+                      {!isOperatorRole && <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{user.mydigiAppId || '-'}</td>}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.registeredAt.replace(/-/g, '/')}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.planName || '-'}</td>
                     </tr>

@@ -47,16 +47,26 @@ describe('convertShopsToCSV', () => {
 });
 
 describe('convertReferralUsersToCSV', () => {
-  it('店舗名・顧客ID・登録日（YYYY/MM/DD）・登録プランを出す', () => {
+  it('店舗名・マイデジアプリID（未連携は -）・登録日（YYYY/MM/DD）・登録プランを出す', () => {
     const csv = convertReferralUsersToCSV('店舗A', [
-      { customerId: 'cust-1', registeredAt: '2026-10-01', planName: '月額プラン' },
-      { customerId: '', registeredAt: '2026-09-16', planName: '' },
+      { mydigiAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' },
+      { mydigiAppId: '', registeredAt: '2026-09-16', planName: '' },
     ]);
     expect(csv.startsWith('﻿')).toBe(true);
     expect(rows(csv)).toEqual([
-      ['店舗名', '顧客ID', '登録日', '登録プラン'],
-      ['店舗A', 'cust-1', '2026/10/01', '月額プラン'],
-      ['店舗A', '', '2026/09/16', ''],
+      ['店舗名', 'マイデジアプリID', '登録日', '登録プラン'],
+      ['店舗A', 'app-1', '2026/10/01', '月額プラン'],
+      ['店舗A', '-', '2026/09/16', ''],
+    ]);
+  });
+
+  it('includeAppId が false ならマイデジアプリIDの列を出さない', () => {
+    const csv = convertReferralUsersToCSV('店舗A', [{ mydigiAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' }], {
+      includeAppId: false,
+    });
+    expect(rows(csv)).toEqual([
+      ['店舗名', '登録日', '登録プラン'],
+      ['店舗A', '2026/10/01', '月額プラン'],
     ]);
   });
 });

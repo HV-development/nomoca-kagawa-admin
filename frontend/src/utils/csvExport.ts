@@ -555,10 +555,16 @@ export function convertCouponUsagesToCSV(
 
 export function convertReferralUsersToCSV(
   shopName: string,
-  users: { customerId: string; registeredAt: string; planName: string }[]
+  users: { mydigiAppId: string; registeredAt: string; planName: string }[],
+  options: { includeAppId: boolean } = { includeAppId: true }
 ): string {
-  const header = ['店舗名', '顧客ID', '登録日', '登録プラン'];
-  const rows = users.map((u) => [shopName, u.customerId, u.registeredAt.replace(/-/g, '/'), u.planName]);
+  const header = ['店舗名', ...(options.includeAppId ? ['マイデジアプリID'] : []), '登録日', '登録プラン'];
+  const rows = users.map((u) => [
+    shopName,
+    ...(options.includeAppId ? [u.mydigiAppId || '-'] : []),
+    u.registeredAt.replace(/-/g, '/'),
+    u.planName,
+  ]);
   const BOM = '\uFEFF';
   return BOM + [header, ...rows].map((row) => row.map(escapeCSVValue).join(',')).join('\n');
 }

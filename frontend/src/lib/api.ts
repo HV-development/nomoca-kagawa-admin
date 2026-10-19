@@ -37,7 +37,7 @@ type RefreshRequest = RefreshTokenInput;
 
 export type ShopReferralCount = {
   shopId: string;
-  monthlyReferralCount: number;
+  cumulativeReferralCount: number;
   qrCodeUrl: string;
 };
 
@@ -471,10 +471,14 @@ class ApiClient {
     options: { skipAuthRedirect?: boolean } = {}
   ): Promise<{ month: string; counts: ShopReferralCount[] }> {
     const query = new URLSearchParams({ shopIds: shopIds.join(',') }).toString();
-    return this.request<{ month: string; counts: ShopReferralCount[] }>(`/shops/referral-counts?${query}`, {
+    const result = await this.request<{ month: string; counts: ShopReferralCount[] }>(`/shops/referral-counts?${query}`, {
       method: 'GET',
       skipAuthRedirect: options.skipAuthRedirect,
     });
+    if (result.counts.some((count) => !Number.isInteger(count.cumulativeReferralCount) || count.cumulativeReferralCount < 0)) {
+      throw new Error('登録ユーザー数を取得できませんでした。しばらくしてから再読み込みしてください');
+    }
+    return result;
   }
 
   async getShopReferralUsers(shopId: string, page: number, limit: number): Promise<ShopReferralUserList> {

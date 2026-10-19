@@ -219,7 +219,7 @@ export type ShopForCSV = {
   status: string;
   createdAt: string;
   updatedAt: string;
-  monthlyReferralCount?: number;
+  cumulativeReferralCount?: number;
   qrCodeUrl?: string;
 };
 
@@ -261,7 +261,7 @@ export function convertShopsToCSV(
     '住所',
     'メールアドレス',
     '電話番号',
-    ...(includeReferralColumns ? [`${referralMonthLabel}登録ユーザー数`] : []),
+    ...(includeReferralColumns ? ['登録ユーザー数'] : []),
     '承認ステータス',
     '登録日時',
     '更新日時',
@@ -283,7 +283,7 @@ export function convertShopsToCSV(
       escapeCSVValue(shop.address || ''),
       escapeCSVValue(shop.accountEmail || ''),
       escapeCSVValue(shop.phone || ''),
-      ...(includeReferralColumns ? [escapeCSVValue(String(shop.monthlyReferralCount ?? ''))] : []),
+      ...(includeReferralColumns ? [escapeCSVValue(String(shop.cumulativeReferralCount ?? ''))] : []),
       escapeCSVValue(getShopStatusLabel(shop.status)),
       escapeCSVValue(formatDate(shop.createdAt)),
       escapeCSVValue(formatDate(shop.updatedAt)),

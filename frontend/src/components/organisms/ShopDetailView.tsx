@@ -76,7 +76,7 @@ function ShopDetailView({
           <table className="w-full border-collapse border border-gray-300">
             <tbody>
               <tr className="border-b border-gray-300">
-                <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">今月の登録ユーザー数</td>
+                <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">登録ユーザー数</td>
                 <td className="py-3 px-4 text-gray-900">{referralCount ?? '-'}</td>
               </tr>
             </tbody>

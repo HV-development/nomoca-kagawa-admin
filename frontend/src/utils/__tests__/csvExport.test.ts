@@ -12,7 +12,7 @@ const shop: ShopForCSV = {
   status: 'operating',
   createdAt: '2026-10-01T00:00:00Z',
   updatedAt: '2026-10-02T00:00:00Z',
-  monthlyReferralCount: 3,
+  cumulativeReferralCount: 3,
   qrCodeUrl: 'https://example.jp/email-registration?shop_id=s1',
 };
 
@@ -25,10 +25,10 @@ describe('convertShopsToCSV', () => {
     const [header, row] = rows(convertShopsToCSV([shop], true, '2026年10月'));
     expect(header).toEqual([
       '事業者名', '店舗名', '店舗名（カナ）', '郵便番号', '住所', 'メールアドレス', '電話番号',
-      '2026年10月登録ユーザー数', '承認ステータス', '登録日時', '更新日時', '店舗QRコードURL',
+      '登録ユーザー数', '承認ステータス', '登録日時', '更新日時', '店舗QRコードURL',
     ]);
     expect(row[header.indexOf('電話番号')]).toBe('0480000000');
-    expect(row[header.indexOf('2026年10月登録ユーザー数')]).toBe('3');
+    expect(row[header.indexOf('登録ユーザー数')]).toBe('3');
     expect(row[header.indexOf('店舗QRコードURL')]).toBe('https://example.jp/email-registration?shop_id=s1');
     expect(row).toHaveLength(header.length);
   });
@@ -41,8 +41,8 @@ describe('convertShopsToCSV', () => {
   });
 
   it('人数が 0 のときは 0 を出す', () => {
-    const [header, row] = rows(convertShopsToCSV([{ ...shop, monthlyReferralCount: 0 }], false, '2026年10月'));
-    expect(row[header.indexOf('2026年10月登録ユーザー数')]).toBe('0');
+    const [header, row] = rows(convertShopsToCSV([{ ...shop, cumulativeReferralCount: 0 }], false, '2026年10月'));
+    expect(row[header.indexOf('登録ユーザー数')]).toBe('0');
   });
 });
 

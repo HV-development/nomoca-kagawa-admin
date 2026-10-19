@@ -52,12 +52,12 @@ function ShopsPageContent() {
         .getShopReferralCounts(shopIds, { skipAuthRedirect: true })
         .then((res) => {
           if (requestId !== referralCountsRequestIdRef.current) return;
-          setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
+          setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.cumulativeReferralCount])));
         })
         .catch((error) => {
           console.error('店舗別登録人数の取得に失敗しました', error);
           if (requestId === referralCountsRequestIdRef.current) {
-            showError('今月の登録ユーザー数の取得に失敗しました。再読み込みしてください');
+            showError('登録ユーザー数の取得に失敗しました。再読み込みしてください');
           }
         });
     },
@@ -745,7 +745,7 @@ function ShopsPageContent() {
         status: shop.status,
         createdAt: shop.createdAt,
         updatedAt: shop.updatedAt,
-        monthlyReferralCount: referralInfo[shop.id]?.monthlyReferralCount,
+        cumulativeReferralCount: referralInfo[shop.id]?.cumulativeReferralCount,
         qrCodeUrl: referralInfo[shop.id]?.qrCodeUrl ?? '',
       }));
 
@@ -796,7 +796,7 @@ function ShopsPageContent() {
         status: shop.status,
         createdAt: shop.createdAt,
         updatedAt: shop.updatedAt,
-        monthlyReferralCount: referralInfo[shop.id]?.monthlyReferralCount,
+        cumulativeReferralCount: referralInfo[shop.id]?.cumulativeReferralCount,
         qrCodeUrl: referralInfo[shop.id]?.qrCodeUrl ?? '',
       }));
 

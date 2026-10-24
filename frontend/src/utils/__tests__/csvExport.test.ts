@@ -21,28 +21,28 @@ function rows(csv: string): string[][] {
 }
 
 describe('convertShopsToCSV', () => {
-  it('年月を渡すと、電話番号の後ろに登録ユーザー数、最終列に店舗QRコードURLを出す', () => {
+  it('年月を渡すと、電話番号の後ろにキャッシュバック対象者数、最終列に店舗QRコードURLを出す', () => {
     const [header, row] = rows(convertShopsToCSV([shop], true, '2026年10月'));
     expect(header).toEqual([
       '事業者名', '店舗名', '店舗名（カナ）', '郵便番号', '住所', 'メールアドレス', '電話番号',
-      '2026年10月登録ユーザー数', '承認ステータス', '登録日時', '更新日時', '店舗QRコードURL',
+      '2026年10月キャッシュバック対象者数', '承認ステータス', '登録日時', '更新日時', '店舗QRコードURL',
     ]);
     expect(row[header.indexOf('電話番号')]).toBe('0480000000');
-    expect(row[header.indexOf('2026年10月登録ユーザー数')]).toBe('3');
+    expect(row[header.indexOf('2026年10月キャッシュバック対象者数')]).toBe('3');
     expect(row[header.indexOf('店舗QRコードURL')]).toBe('https://example.jp/email-registration?shop_id=s1');
     expect(row).toHaveLength(header.length);
   });
 
-  it('年月を渡さなければ登録ユーザー数・QRコードURLの列を出さない（事業者管理配下の店舗一覧）', () => {
+  it('年月を渡さなければキャッシュバック対象者数・QRコードURLの列を出さない（事業者管理配下の店舗一覧）', () => {
     const [header, row] = rows(convertShopsToCSV([shop], false));
     expect(header).not.toContain('店舗QRコードURL');
-    expect(header.some((h) => h.endsWith('登録ユーザー数'))).toBe(false);
+    expect(header.some((h) => h.endsWith('キャッシュバック対象者数'))).toBe(false);
     expect(row).toHaveLength(header.length);
   });
 
   it('人数が 0 のときは 0 を出す', () => {
     const [header, row] = rows(convertShopsToCSV([{ ...shop, monthlyReferralCount: 0 }], false, '2026年10月'));
-    expect(row[header.indexOf('2026年10月登録ユーザー数')]).toBe('0');
+    expect(row[header.indexOf('2026年10月キャッシュバック対象者数')]).toBe('0');
   });
 });
 

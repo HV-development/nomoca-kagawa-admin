@@ -10,7 +10,7 @@ import ToastContainer from '@/components/molecules/toast-container';
 import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient, type ShopReferralUser } from '@/lib/api';
-import { convertReferralUsersToCSV, downloadCSV, generateFilename } from '@/utils/csvExport';
+import { convertReferralUsersToCSV, downloadCSV, formatReferralMonthLabel, generateFilename } from '@/utils/csvExport';
 import { toSafeBackHref } from '@/utils/safeReturnTo';
 
 const PAGE_SIZE = 50;
@@ -29,6 +29,7 @@ function ShopReferralUsersContent() {
   const backHref = useMemo(() => toSafeBackHref(searchParams?.get('returnTo')), [searchParams]);
 
   const [shopName, setShopName] = useState('');
+  const [month, setMonth] = useState('');
   const [users, setUsers] = useState<ShopReferralUser[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -57,12 +58,13 @@ function ShopReferralUsersContent() {
       const data = await apiClient.getShopReferralUsers(shopId, page, PAGE_SIZE);
       if (requestId !== requestIdRef.current) return;
       setShopName(data.shopName);
+      setMonth(data.month);
       setUsers(data.users);
       setTotal(data.total);
     } catch (err: unknown) {
       if (requestId !== requestIdRef.current) return;
-      console.error('登録ユーザー一覧の取得に失敗しました:', err);
-      setError('登録ユーザー一覧の取得に失敗しました');
+      console.error('キャッシュバック対象者一覧の取得に失敗しました:', err);
+      setError('キャッシュバック対象者一覧の取得に失敗しました');
     } finally {
       if (requestId === requestIdRef.current) {
         setIsLoading(false);
@@ -83,18 +85,22 @@ function ShopReferralUsersContent() {
       const pages = Math.ceil(first.total / CSV_PAGE_SIZE);
       for (let p = 2; p <= pages; p++) {
         const next = await apiClient.getShopReferralUsers(shopId, p, CSV_PAGE_SIZE);
+        if (next.month !== first.month) {
+          showError('集計中に月が変わりました。もう一度ダウンロードしてください');
+          return;
+        }
         next.users.forEach((u) => usersById.set(u.userId, u));
       }
       const allUsers = [...usersById.values()];
       if (allUsers.length !== first.total) {
-        showError(`取得中に登録ユーザーが増減したため、件数が一致しません（取得 ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
+        showError(`取得中にキャッシュバック対象者が増減したため、件数が一致しません（取得 ${allUsers.length}件 / 取得開始時 ${first.total}件）。もう一度ダウンロードしてください`);
         return;
       }
       downloadCSV(
         convertReferralUsersToCSV(first.shopName, allUsers, { includeAppId: !isOperatorRole }),
-        generateFilename('店舗登録ユーザー一覧')
+        generateFilename(`キャッシュバック対象者一覧_${formatReferralMonthLabel(first.month)}`)
       );
-      showSuccess(`${allUsers.length}件の登録ユーザーをCSVでダウンロードしました`);
+      showSuccess(`${allUsers.length}件のキャッシュバック対象者をCSVでダウンロードしました`);
     } catch (err: unknown) {
       console.error('CSVダウンロードに失敗しました:', err);
       showError('CSVダウンロードに失敗しました');
@@ -115,8 +121,8 @@ function ShopReferralUsersContent() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">登録ユーザー一覧</h1>
-              <p className="text-gray-600">店舗QRコードから登録したユーザーを表示します</p>
+              <h1 className="text-2xl font-bold text-gray-900">キャッシュバック対象者一覧</h1>
+              <p className="text-gray-600">店舗QRコードから登録したユーザーのうち、キャッシュバックの対象者を表示します</p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -124,7 +130,11 @@ function ShopReferralUsersContent() {
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">※ 登録月を問わず、課金済みでプラン利用中のユーザーを表示しています（退会予定・退会済みのユーザーは、今月課金がある場合のみ）</p>
+          {month && (
+            <p className="text-xs text-gray-500 mt-1">
+              ※ {formatReferralMonthLabel(month)}（1日〜末日）に課金が完了したユーザーを表示しています（登録時期・退会状況は問いません）
+            </p>
+          )}
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="flex items-center">
@@ -149,7 +159,7 @@ function ShopReferralUsersContent() {
           )}
 
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">登録ユーザー ({total}件)</h3>
+            <h3 className="text-lg font-medium text-gray-900">キャッシュバック対象者 ({total}件)</h3>
             <Button
               variant="outline"
               onClick={handleDownloadCSV}
@@ -188,7 +198,7 @@ function ShopReferralUsersContent() {
                 </tbody>
               </table>
               {!isLoading && users.length === 0 && (
-                <p className="text-center py-12 text-gray-500">この店舗の店舗QRコードから登録したユーザーはいません。</p>
+                <p className="text-center py-12 text-gray-500">この店舗の店舗QRコードから登録したユーザーに、キャッシュバックの対象者はいません。</p>
               )}
             </div>
           )}

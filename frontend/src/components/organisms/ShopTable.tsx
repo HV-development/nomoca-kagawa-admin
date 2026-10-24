@@ -127,7 +127,7 @@ function ShopTable({
               </th>
               {!isShopAccount && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] whitespace-nowrap">
-                  今月の登録ユーザー数
+                  キャッシュバック対象者数
                 </th>
               )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
@@ -241,8 +241,8 @@ function ShopTable({
                           <button
                             type="button"
                             className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                            title="登録ユーザー一覧"
-                            aria-label="登録ユーザー一覧"
+                            title="キャッシュバック対象者一覧"
+                            aria-label="キャッシュバック対象者一覧"
                           >
                             <Icon name="groups" size="lg" />
                           </button>

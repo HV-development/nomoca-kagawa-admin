@@ -55,9 +55,9 @@ function ShopsPageContent() {
           setReferralCounts(Object.fromEntries(res.counts.map((c) => [c.shopId, c.monthlyReferralCount])));
         })
         .catch((error) => {
-          console.error('店舗別登録人数の取得に失敗しました', error);
+          console.error('店舗別キャッシュバック対象者数の取得に失敗しました', error);
           if (requestId === referralCountsRequestIdRef.current) {
-            showError('今月の登録ユーザー数の取得に失敗しました。再読み込みしてください');
+            showError('キャッシュバック対象者数の取得に失敗しました。再読み込みしてください');
           }
         });
     },
@@ -715,7 +715,7 @@ function ShopsPageContent() {
       throw new Error('集計中に月が変わりました。もう一度ダウンロードしてください');
     }
     if (shopIds.some((id) => !referralInfo[id]?.qrCodeUrl)) {
-      throw new Error('登録ユーザー数・店舗QRコードURLを取得できない店舗があります');
+      throw new Error('キャッシュバック対象者数・店舗QRコードURLを取得できない店舗があります');
     }
     const [month] = [...months];
     if (!month) {

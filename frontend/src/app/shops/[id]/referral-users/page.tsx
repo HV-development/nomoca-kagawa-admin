@@ -132,7 +132,7 @@ function ShopReferralUsersContent() {
           </div>
           {month && (
             <p className="text-xs text-gray-500 mt-1">
-              ※ {formatReferralMonthLabel(month)}（1日〜末日）に課金が完了したユーザーを表示しています（登録時期・退会状況は問いません）
+              ※ {formatReferralMonthLabel(month)}（1日〜末日）に課金が完了したユーザーを表示しています
             </p>
           )}
 

@@ -51,6 +51,7 @@ export type ShopReferralUser = {
 
 export type ShopReferralUserList = {
   shopName: string;
+  month: string;
   total: number;
   users: ShopReferralUser[];
 };

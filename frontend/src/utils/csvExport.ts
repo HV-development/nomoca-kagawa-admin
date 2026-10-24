@@ -261,7 +261,7 @@ export function convertShopsToCSV(
     '住所',
     'メールアドレス',
     '電話番号',
-    ...(includeReferralColumns ? [`${referralMonthLabel}登録ユーザー数`] : []),
+    ...(includeReferralColumns ? [`${referralMonthLabel}キャッシュバック対象者数`] : []),
     '承認ステータス',
     '登録日時',
     '更新日時',

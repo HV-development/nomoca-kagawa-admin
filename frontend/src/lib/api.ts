@@ -43,6 +43,7 @@ export type ShopReferralCount = {
 
 export type ShopReferralUser = {
   userId: string;
+  email: string;
   saitamaAppId: string;
   mydigiAppId: string;
   registeredAt: string;

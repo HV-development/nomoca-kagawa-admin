@@ -27,6 +27,10 @@ function ShopReferralUsersContent() {
   const displayName = auth?.user?.name ?? '—';
 
   const backHref = useMemo(() => toSafeBackHref(searchParams?.get('returnTo')), [searchParams]);
+  const encodedSelfHref = useMemo(() => {
+    const query = searchParams?.toString();
+    return encodeURIComponent(`/shops/${encodeURIComponent(shopId)}/referral-users${query ? `?${query}` : ''}`);
+  }, [shopId, searchParams]);
 
   const [shopName, setShopName] = useState('');
   const [month, setMonth] = useState('');
@@ -97,7 +101,7 @@ function ShopReferralUsersContent() {
         return;
       }
       downloadCSV(
-        convertReferralUsersToCSV(first.shopName, allUsers, { includeAppId: !isOperatorRole }),
+        convertReferralUsersToCSV(first.shopName, allUsers, { includeSensitiveInfo: !isOperatorRole }),
         generateFilename(`キャッシュバック対象者一覧_${formatReferralMonthLabel(first.month)}`)
       );
       showSuccess(`${allUsers.length}件のキャッシュバック対象者をCSVでダウンロードしました`);
@@ -182,6 +186,7 @@ function ShopReferralUsersContent() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    {!isOperatorRole && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">メールアドレス</th>}
                     {!isOperatorRole && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">マイデジアプリID</th>}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">登録日</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">登録プラン</th>
@@ -190,6 +195,19 @@ function ShopReferralUsersContent() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
+                      {!isOperatorRole && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {user.email ? (
+                            <Link
+                              href={{ pathname: `/users/${encodeURIComponent(user.userId)}`, query: { returnTo: encodedSelfHref } }}
+                              className="text-green-600 hover:text-green-800 underline">
+                              {user.email}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-900">-</span>
+                          )}
+                        </td>
+                      )}
                       {!isOperatorRole && <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{user.mydigiAppId || '-'}</td>}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.registeredAt.replace(/-/g, '/')}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.planName || '-'}</td>

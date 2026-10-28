@@ -17,4 +17,10 @@ describe('toSafeBackHref', () => {
   ])('%s は /shops に戻す', (_, raw) => {
     expect(toSafeBackHref(raw)).toBe('/shops');
   });
+
+  it('戻り先が使えないときは、指定した既定の戻り先にする', () => {
+    expect(toSafeBackHref(null, '/users')).toBe('/users');
+    expect(toSafeBackHref(encodeURIComponent('https://evil.example'), '/users')).toBe('/users');
+    expect(toSafeBackHref(encodeURIComponent('/shops/s1/referral-users'), '/users')).toBe('/shops/s1/referral-users');
+  });
 });

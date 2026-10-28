@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { useAuth } from '@/components/contexts/auth-context';
 import { apiClient } from '@/lib/api';
+import { toSafeBackHref } from '@/utils/safeReturnTo';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -172,6 +173,9 @@ const toUserDetailView = (data: ApiUser, isOperatorRole: boolean): UserDetailVie
 export default function UserDetailPage() {
   const params = useParams<{ id?: string }>();
   const userId = params?.id ?? '';
+  const searchParams = useSearchParams();
+  const backHref = toSafeBackHref(searchParams?.get('returnTo'), '/users');
+  const backLabel = backHref === '/users' ? 'ユーザー一覧に戻る' : '戻る';
   const auth = useAuth();
   const displayName = auth?.user?.name ?? '—';
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
@@ -374,8 +378,8 @@ export default function UserDetailPage() {
         <div className="text-center py-12">
           <h3 className="text-lg font-medium text-gray-900 mb-2">ユーザーが見つかりません</h3>
           <p className="text-gray-500 mb-4">指定されたユーザーは存在しません。</p>
-          <Link href="/users">
-            <Button variant="primary">ユーザー一覧に戻る</Button>
+          <Link href={backHref}>
+            <Button variant="primary">{backLabel}</Button>
           </Link>
         </div>
       </AdminLayout>
@@ -483,9 +487,9 @@ export default function UserDetailPage() {
         </div>
 
         <div className="flex justify-center gap-4">
-          <Link href="/users">
+          <Link href={backHref}>
             <Button variant="outline" className="px-6 py-3 border-2 border-green-600 text-green-600 bg-white hover:bg-green-50 transition-colors font-medium">
-              ユーザー一覧に戻る
+              {backLabel}
             </Button>
           </Link>
           <Link href={`/users/${user.id}/coupon-history`}>

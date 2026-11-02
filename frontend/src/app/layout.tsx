@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "../components/contexts/auth-context";
 import ConsoleFilter from "../components/clients/console-filter";
+import ForbiddenNotifier from "../components/clients/forbidden-notifier";
+import PermissionGuard from "../components/clients/permission-guard";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -65,8 +67,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ConsoleFilter />
+          <ForbiddenNotifier />
           <div className="min-h-screen bg-gray-50">
-            {children}
+            <PermissionGuard>{children}</PermissionGuard>
           </div>
         </AuthProvider>
       </body>

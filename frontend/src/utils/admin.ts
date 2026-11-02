@@ -4,7 +4,7 @@
 
 /**
  * 権限値を日本語ラベルに変換
- * @param role - 権限値 ('sysadmin' | 'operator')
+ * @param role - 権限値 ('sysadmin' | 'operator' | 'viewer')
  * @returns 日本語ラベル
  */
 export function getRoleLabel(role: string): string {
@@ -13,6 +13,8 @@ export function getRoleLabel(role: string): string {
       return '管理者';
     case 'operator':
       return '一般';
+    case 'viewer':
+      return '閲覧のみ';
     default:
       return '';
   }

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type ShopManagementProps = {
   merchantId?: string;
@@ -17,6 +18,7 @@ type ShopManagementProps = {
 
 export default function ShopManagement({ merchantId }: ShopManagementProps) {
   const auth = useAuth();
+  const { canWrite, canCreateShop } = usePermissions();
   const displayName = auth?.user?.name ?? '—';
   const lastFetchKeyRef = useRef<string | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
@@ -439,12 +441,14 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({shops.length}件)
             </h3>
-            <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                <span className="mr-2">+</span>
-                新規登録
-              </Button>
-            </Link>
+            {canCreateShop && (
+              <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                  <span className="mr-2">+</span>
+                  新規登録
+                </Button>
+              </Link>
+            )}
           </div>
           
           <div className="overflow-x-auto">
@@ -481,20 +485,22 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                   <tr key={shop.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex justify-center gap-2">
-                        <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
-                          <button 
-                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="編集"
-                          >
-                            <Image 
-                              src="/edit.svg" 
-                              alt="編集" 
-                              width={32}
-                              height={32}
-                              className="w-8 h-8"
-                            />
-                          </button>
-                        </Link>
+                        {canWrite && (
+                          <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
+                            <button 
+                              className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              title="編集"
+                            >
+                              <Image 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                              />
+                            </button>
+                          </Link>
+                        )}
                         <Link href={`/shops/${shop.id}/coupons`}>
                           <button 
                             className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
@@ -539,17 +545,23 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
-                      <select
-                        value={shop.status}
-                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
-                      >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      {canWrite ? (
+                        <select
+                          value={shop.status}
+                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>
+                          {statusLabels[shop.status] || shop.status}
+                        </div>
+                      )}
                     </td>
                   </tr>
               ))}

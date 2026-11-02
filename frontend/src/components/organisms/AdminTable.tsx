@@ -6,6 +6,8 @@ import Image from 'next/image';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { type Admin } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface AdminTableProps {
   admins: Admin[];
@@ -25,12 +27,17 @@ export default function AdminTable({
   pagination,
   onDelete,
 }: AdminTableProps) {
+  const auth = useAuth();
+  const { canManageAdmins } = usePermissions();
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'sysadmin':
         return '管理者';
       case 'operator':
         return '一般';
+      case 'viewer':
+        return '閲覧のみ';
       default:
         return '一般';
     }
@@ -52,12 +59,14 @@ export default function AdminTable({
         <h3 className="text-lg font-medium text-gray-900">
           アカウント一覧 ({pagination.total}件)
         </h3>
-        <Link href="/admins/new">
-          <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-            <span className="mr-2">+</span>
-            新規登録
-          </Button>
-        </Link>
+        {canManageAdmins && (
+          <Link href="/admins/new">
+            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <span className="mr-2">+</span>
+              新規登録
+            </Button>
+          </Link>
+        )}
       </div>
       
       <div className="overflow-x-auto">
@@ -83,33 +92,37 @@ export default function AdminTable({
                 <tr key={admin.id || index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap w-48">
                     <div className="flex items-center gap-2">
-                      <Link href={`/admins/${admin.id}/edit`}>
+                      {(canManageAdmins || admin.email === auth?.user?.email) && (
+                        <Link href={`/admins/${admin.id}/edit`}>
+                          <button 
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="編集"
+                          >
+                            <Image 
+                              src="/edit.svg" 
+                              alt="編集" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </Link>
+                      )}
+                      {canManageAdmins && (
                         <button 
-                          className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                          title="編集"
+                          onClick={() => onDelete(admin.id, admin.email)}
+                          className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
+                          title="削除"
                         >
                           <Image 
-                            src="/edit.svg" 
-                            alt="編集" 
+                            src="/dustbox.png" 
+                            alt="削除" 
                             width={24}
                             height={24}
-                            className="w-6 h-6 flex-shrink-0"
+                            className="w-6 h-6 flex-shrink-0 object-contain"
                           />
                         </button>
-                      </Link>
-                      <button 
-                        onClick={() => onDelete(admin.id, admin.email)}
-                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
-                        title="削除"
-                      >
-                        <Image 
-                          src="/dustbox.png" 
-                          alt="削除" 
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 flex-shrink-0 object-contain"
-                        />
-                      </button>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

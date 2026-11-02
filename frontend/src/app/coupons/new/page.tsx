@@ -13,7 +13,8 @@ import type { CouponCreateRequest, CouponStatus, Shop, Coupon } from '@hv-develo
 import { 
   validateRequired, 
   validateMaxLength, 
-  validateFileSize
+  validateFileSize,
+  validateCouponConditions
 } from '@/utils/validation';
 import { useAuth } from '@/components/contexts/auth-context';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
@@ -227,6 +228,15 @@ function CouponNewPageContent() {
         }
         break;
 
+      case 'couponConditions':
+        const couponConditionsError = validateCouponConditions(value);
+        if (couponConditionsError) {
+          newErrors.couponConditions = couponConditionsError;
+        } else {
+          delete newErrors.couponConditions;
+        }
+        break;
+
     }
 
     setErrors(newErrors);
@@ -291,7 +301,7 @@ function CouponNewPageContent() {
 
   const scrollToFirstError = (errorKeys: string[]) => {
     // エラーの優先順位に従ってスクロール
-    const fieldOrder = ['shopId', 'couponName', 'couponContent', 'drinkType'];
+    const fieldOrder = ['shopId', 'couponName', 'couponContent', 'couponConditions', 'drinkType', 'couponImage'];
     
     for (const field of fieldOrder) {
       if (errorKeys.includes(field)) {
@@ -308,9 +318,15 @@ function CouponNewPageContent() {
           case 'couponContent':
             element = document.getElementById('couponContent');
             break;
+          case 'couponConditions':
+            element = document.getElementById('couponConditions');
+            break;
           case 'drinkType':
             // ドリンク種別の場合、ドリンク種別セクションにスクロール
             element = document.querySelector('[data-field="drinkType"]') as HTMLElement;
+            break;
+          case 'couponImage':
+            element = document.querySelector('[data-field="couponImage"]') as HTMLElement;
             break;
         }
         
@@ -334,6 +350,11 @@ function CouponNewPageContent() {
 
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
+
+    const couponConditionsError = validateCouponConditions(formData.couponConditions);
+    if (couponConditionsError) newErrors.couponConditions = couponConditionsError;
+
+    if (!formData.imagePreview && !formData.imageUrl) newErrors.couponImage = 'クーポン画像は必須です';
 
     const drinkTypeError = validateRequired(formData.drinkType, 'ドリンク種別');
     if (drinkTypeError) newErrors.drinkType = drinkTypeError;
@@ -681,6 +702,7 @@ function CouponNewPageContent() {
                 placeholder="クーポン名を入力（最大25文字）"
                 value={formData.couponName}
                 onChange={(e) => handleInputChange('couponName', e.target.value)}
+                onBlur={(e) => validateField('couponName', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponName ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -699,6 +721,7 @@ function CouponNewPageContent() {
                 placeholder="クーポン内容を入力（最大100文字）"
                 value={formData.couponContent}
                 onChange={(e) => handleInputChange('couponContent', e.target.value)}
+                onBlur={(e) => validateField('couponContent', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponContent ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -711,13 +734,14 @@ function CouponNewPageContent() {
             {/* 利用条件 */}
             <div>
               <label htmlFor="couponConditions" className="block text-sm font-medium text-gray-700 mb-2">
-                利用条件
+                利用条件 <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="couponConditions"
                 placeholder="利用条件を入力（最大500文字）"
                 value={formData.couponConditions}
                 onChange={(e) => handleInputChange('couponConditions', e.target.value)}
+                onBlur={(e) => validateField('couponConditions', e.target.value)}
                 className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponConditions ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -760,9 +784,9 @@ function CouponNewPageContent() {
             </div>
 
             {/* クーポン画像 */}
-            <div>
+            <div data-field="couponImage">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン画像
+                クーポン画像 <span className="text-red-500">*</span>
               </label>
               <div className="space-y-4">
                 {/* 画像プレビュー */}

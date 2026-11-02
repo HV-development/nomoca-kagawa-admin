@@ -284,6 +284,8 @@ function CouponEditConfirmPageContent() {
                       unoptimized={couponData.imagePreview.startsWith('blob:') || couponData.imagePreview.startsWith('data:')}
                     />
                   </div>
+                ) : couponData.imageUrl ? (
+                  <p className="text-gray-500">登録済みの画像を使用します（プレビューを表示できません）</p>
                 ) : (
                   <p className="text-gray-500">画像がアップロードされていません</p>
                 )}

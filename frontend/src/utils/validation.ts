@@ -13,6 +13,9 @@ export const validateMaxLength = (value: string, maxLength: number, fieldName: s
   return null;
 };
 
+export const validateCouponConditions = (value: string): string | null =>
+  validateRequired(value, '利用条件') || validateMaxLength(value, 500, '利用条件');
+
 export const validateMinLength = (value: string, minLength: number, fieldName: string): string | null => {
   if (value.length < minLength) {
     return `${fieldName}は${minLength}文字以上で入力してください`;

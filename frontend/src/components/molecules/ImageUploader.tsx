@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Image from 'next/image';
+import ErrorMessage from '@/components/atoms/ErrorMessage';
 
 interface ImagePreview {
   file: File;
@@ -15,6 +16,7 @@ interface ImageUploaderProps {
   onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
   onRemoveExistingImage: (index: number) => void;
+  error?: string;
 }
 
 function ImageUploader({
@@ -24,6 +26,7 @@ function ImageUploader({
   onImageSelect,
   onRemoveImage,
   onRemoveExistingImage,
+  error,
 }: ImageUploaderProps) {
   const totalImages = useMemo(
     () => imagePreviews.length + existingImages.length,
@@ -31,8 +34,8 @@ function ImageUploader({
   );
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗画像（最大{maxImages}枚）</h2>
+    <div className="bg-white rounded-lg shadow p-6" data-field="images">
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗画像（最大{maxImages}枚） <span className="text-red-500">*</span></h2>
       
       <div className="space-y-4">
         {/* 既存の画像 */}
@@ -116,6 +119,7 @@ function ImageUploader({
             </p>
           </div>
         )}
+        <ErrorMessage message={error} />
       </div>
     </div>
   );

@@ -28,6 +28,8 @@ const REQUIRED_FIELD_LABELS: Partial<Record<keyof ExtendedShopCreateRequest, str
   city: '市区町村',
   address1: '番地以降',
   smokingType: '喫煙タイプ',
+  description: '店舗紹介説明',
+  details: '詳細情報',
 };
 
 const COUPON_USAGE_PAIR_ERROR = 'クーポン利用時間は開始・終了をセットで入力してください';

@@ -8,13 +8,15 @@ interface FloatingFooterProps {
   onBulkUpdateStatus?: (status: string) => void;
   isUpdating?: boolean;
   onDownloadCSV?: () => void;
+  isDownloadingCSV?: boolean;
 }
 
 export default function FloatingFooter({
   selectedCount,
   onBulkUpdateStatus,
   isUpdating = false,
-  onDownloadCSV
+  onDownloadCSV,
+  isDownloadingCSV = false
 }: FloatingFooterProps) {
   const [pendingStatus, setPendingStatus] = React.useState('');
 
@@ -63,9 +65,10 @@ export default function FloatingFooter({
           {onDownloadCSV && (
             <Button
               onClick={onDownloadCSV}
+              disabled={isDownloadingCSV}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
             >
-              CSVダウンロード
+              {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
             </Button>
           )}
 

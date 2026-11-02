@@ -127,14 +127,37 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('バックエンドが403を返した場合（無効なトークン）', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
+    it('APIの「無効なトークンです」は401に揃える（リフレッシュの対象にする）', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ message: '無効なトークンです' }), {
         status: 403,
-        json: async () => ({
-          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
-        }),
+        headers: { 'Content-Type': 'application/json' },
+      }));
+
+      const request = createRequest('expired-token');
+      const response = await GET(request);
+
+      expect(response.status).toBe(401);
     });
+
+    it('権限不足の403はそのまま返す', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ message: 'この事業者へのアクセス権限がありません' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+
+      const request = createRequest('valid-token');
+      const response = await GET(request);
+
+      expect(response.status).toBe(403);
+    });
+
+    it('バックエンドが403を返した場合（無効なトークン）', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({
+          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+        }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }));
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -193,13 +216,12 @@ describe('/api/me endpoint - プロキシパターン', () => {
     it('偽造されたJWTはバックエンドで検出される', async () => {
       // フロントエンドは単純にトークンを転送するだけ
       // バックエンドが403を返すことを確認
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-        json: async () => ({
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({
           error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
-        }),
-    });
+        }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }));
 
       const forgedToken = 'eyJhbGciOiJIUzI1NiJ9.fake.payload';
       const request = createRequest(forgedToken);
@@ -219,13 +241,12 @@ describe('/api/me endpoint - プロキシパターン', () => {
     });
 
     it('改竄されたペイロードはバックエンドで拒否される', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-        json: async () => ({
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({
           error: { message: 'Invalid or expired token' }
-        }),
-    });
+        }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }));
 
       const tamperedToken = 'header.tamperedPayload.signature';
       const request = createRequest(tamperedToken);

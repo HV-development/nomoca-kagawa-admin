@@ -15,6 +15,7 @@ interface FloatingFooterMerchantProps {
   isIssuingAccount?: boolean;
   alreadyIssuedCount: number;
   onDownloadCSV?: () => void;
+  canIssueAccount?: boolean;
 }
 
 export default function FloatingFooterMerchant({
@@ -22,7 +23,8 @@ export default function FloatingFooterMerchant({
   onConfirmIssue,
   isIssuingAccount = false,
   alreadyIssuedCount,
-  onDownloadCSV
+  onDownloadCSV,
+  canIssueAccount = true
 }: FloatingFooterMerchantProps) {
   const [showModal, setShowModal] = useState(false);
 
@@ -61,13 +63,15 @@ export default function FloatingFooterMerchant({
               </Button>
             )}
 
-            <Button
-              onClick={handleOpenModal}
-              disabled={isIssuingAccount}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
-            >
-              {isIssuingAccount ? '発行中...' : 'アカウント発行'}
-            </Button>
+            {canIssueAccount && (
+              <Button
+                onClick={handleOpenModal}
+                disabled={isIssuingAccount}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
+              >
+                {isIssuingAccount ? '発行中...' : 'アカウント発行'}
+              </Button>
+            )}
           </div>
         </div>
       </div>

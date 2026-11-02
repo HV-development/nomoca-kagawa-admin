@@ -17,6 +17,7 @@ import { convertShopsToCSV, downloadCSV, formatReferralMonthLabel, generateFilen
 import ShopSearchForm from '@/components/organisms/ShopSearchForm';
 import ShopDetailView from '@/components/organisms/ShopDetailView';
 import ShopTable from '@/components/organisms/ShopTable';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
@@ -31,6 +32,7 @@ function ShopsPageContent() {
   const searchParams = useSearchParams();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isShopAccount = auth?.user?.accountType === 'shop';
+  const { canWrite } = usePermissions();
   const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
   const searchParamsString = searchParams?.toString() ?? '';
   const baseReturnTo = useMemo(() => (searchParamsString ? `/shops?${searchParamsString}` : '/shops'), [searchParamsString]);
@@ -984,7 +986,7 @@ function ShopsPageContent() {
       {!isMerchantAccount && !isShopAccount && (
         <FloatingFooter
           selectedCount={selectedShops.size}
-          onBulkUpdateStatus={handleBulkUpdateStatus}
+          onBulkUpdateStatus={canWrite ? handleBulkUpdateStatus : undefined}
           onDownloadCSV={handleDownloadSelectedCSV}
           isDownloadingCSV={isDownloadingCSV}
         />

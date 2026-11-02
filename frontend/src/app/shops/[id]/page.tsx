@@ -9,12 +9,14 @@ import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { ShopDetailResponse } from '@hv-development/schemas';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function ShopDetailPage() {
   const params = useParams();
   const router = useRouter();
   const shopId = params.id as string;
-  
+  const { canWrite } = usePermissions();
+
   const [shop, setShop] = useState<ShopDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,21 +165,23 @@ export default function ShopDetailPage() {
               <p className="text-gray-600">{shop.nameKana}</p>
             )}
           </div>
-          <div className="flex space-x-3">
-            <Link href={`/shops/${shop.id}/edit`}>
-              <Button variant="primary">
-                編集
+          {canWrite && (
+            <div className="flex space-x-3">
+              <Link href={`/shops/${shop.id}/edit`}>
+                <Button variant="primary">
+                  編集
+                </Button>
+              </Link>
+              <Link href={`/shops/${shop.id}/confirm`}>
+                <Button variant="secondary">
+                  確認
+                </Button>
+              </Link>
+              <Button variant="secondary" onClick={handleDeleteShop}>
+                削除
               </Button>
-            </Link>
-            <Link href={`/shops/${shop.id}/confirm`}>
-              <Button variant="secondary">
-                確認
-              </Button>
-            </Link>
-            <Button variant="secondary" onClick={handleDeleteShop}>
-              削除
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 基本情報 */}
@@ -230,15 +234,17 @@ export default function ShopDetailPage() {
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(shop.status)}`}>
                   {getStatusLabel(shop.status)}
                 </span>
-                <select
-                  value={shop.status}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="active">営業中</option>
-                  <option value="inactive">休業中</option>
-                  <option value="suspended">停止中</option>
-                </select>
+                {canWrite && (
+                  <select
+                    value={shop.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">営業中</option>
+                    <option value="inactive">休業中</option>
+                    <option value="suspended">停止中</option>
+                  </select>
+                )}
               </div>
             </div>
           </div>

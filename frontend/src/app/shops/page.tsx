@@ -13,6 +13,7 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertShopsToCSV, downloadCSV, formatReferralMonthLabel, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+import { appendShopDateRangeParams } from '@/utils/shopSearchQuery';
 // 分割されたコンポーネント
 import ShopSearchForm from '@/components/organisms/ShopSearchForm';
 import ShopDetailView from '@/components/organisms/ShopDetailView';
@@ -259,10 +260,7 @@ function ShopsPageContent() {
       if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
         queryParams.append('status', appliedSearchForm.status);
       }
-      if (appliedSearchForm.createdAtFrom) queryParams.append('createdAtFrom', appliedSearchForm.createdAtFrom);
-      if (appliedSearchForm.createdAtTo) queryParams.append('createdAtTo', appliedSearchForm.createdAtTo);
-      if (appliedSearchForm.updatedAtFrom) queryParams.append('updatedAtFrom', appliedSearchForm.updatedAtFrom);
-      if (appliedSearchForm.updatedAtTo) queryParams.append('updatedAtTo', appliedSearchForm.updatedAtTo);
+      appendShopDateRangeParams(queryParams, appliedSearchForm);
       
       const data = await apiClient.getShops(queryParams.toString());
       
@@ -655,10 +653,7 @@ function ShopsPageContent() {
         if (searchForm.status && searchForm.status !== 'all') {
           queryParams.append('status', searchForm.status);
         }
-        if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
-        if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
-        if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
-        if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+        appendShopDateRangeParams(queryParams, searchForm);
 
         const data = await apiClient.getShops(queryParams.toString());
         

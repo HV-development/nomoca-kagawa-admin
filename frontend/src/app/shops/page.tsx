@@ -13,7 +13,7 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertShopsToCSV, downloadCSV, formatReferralMonthLabel, generateFilename, type ShopForCSV } from '@/utils/csvExport';
-import { appendShopDateRangeParams } from '@/utils/shopSearchQuery';
+import { appendShopAddressParam, appendShopDateRangeParams } from '@/utils/shopSearchQuery';
 // 分割されたコンポーネント
 import ShopSearchForm from '@/components/organisms/ShopSearchForm';
 import ShopDetailView from '@/components/organisms/ShopDetailView';
@@ -258,7 +258,7 @@ function ShopsPageContent() {
       if (appliedSearchForm.accountEmail) queryParams.append('accountEmail', appliedSearchForm.accountEmail);
       if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
       if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
-      if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
+      appendShopAddressParam(queryParams, appliedSearchForm);
       if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
         queryParams.append('status', appliedSearchForm.status);
       }
@@ -651,7 +651,7 @@ function ShopsPageContent() {
         if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
         if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
         if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-        if (searchForm.address) queryParams.append('address', searchForm.address);
+        appendShopAddressParam(queryParams, searchForm);
         if (searchForm.status && searchForm.status !== 'all') {
           queryParams.append('status', searchForm.status);
         }

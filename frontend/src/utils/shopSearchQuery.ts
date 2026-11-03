@@ -9,3 +9,8 @@ export function appendShopDateRangeParams(queryParams: URLSearchParams, form: Sh
   if (form.updatedAtFrom) queryParams.append('updatedFrom', form.updatedAtFrom);
   if (form.updatedAtTo) queryParams.append('updatedTo', form.updatedAtTo);
 }
+
+// 住所も同じく、API は fulladdress（都道府県から番地までの部分一致）で読む
+export function appendShopAddressParam(queryParams: URLSearchParams, form: Pick<ShopSearchFormData, 'address'>): void {
+  if (form.address) queryParams.append('fulladdress', form.address);
+}

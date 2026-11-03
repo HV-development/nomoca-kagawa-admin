@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { appendShopDateRangeParams } from '../shopSearchQuery';
+import { appendShopAddressParam, appendShopDateRangeParams } from '../shopSearchQuery';
 
 const emptyRange = { createdAtFrom: '', createdAtTo: '', updatedAtFrom: '', updatedAtTo: '' };
 
@@ -30,6 +30,23 @@ describe('appendShopDateRangeParams', () => {
   it('すべて未入力なら何も加えない', () => {
     const queryParams = new URLSearchParams();
     appendShopDateRangeParams(queryParams, emptyRange);
+
+    expect(queryParams.toString()).toBe('');
+  });
+});
+
+describe('appendShopAddressParam', () => {
+  it('住所を、店舗一覧 API が読む fulladdress で加える', () => {
+    const queryParams = new URLSearchParams({ page: '1', limit: '10' });
+    appendShopAddressParam(queryParams, { address: '丸亀市' });
+
+    expect(queryParams.toString()).toBe(`page=1&limit=10&fulladdress=${encodeURIComponent('丸亀市')}`);
+    expect(queryParams.has('address')).toBe(false);
+  });
+
+  it('未入力なら何も加えない', () => {
+    const queryParams = new URLSearchParams();
+    appendShopAddressParam(queryParams, { address: '' });
 
     expect(queryParams.toString()).toBe('');
   });

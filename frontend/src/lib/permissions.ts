@@ -15,13 +15,15 @@ export interface Permissions {
   canWrite: boolean;
   /** 店舗の新規作成（店舗アカウントは不可） */
   canCreateShop: boolean;
+  /** ユーザーの編集（sysadminのみ。API の PUT /users/:id が sysadmin 限定） */
+  canEditUsers: boolean;
 }
 
 const ADMIN_WRITE_ROLES = ['sysadmin', 'operator'];
 
 export function getPermissions(user: PermissionUser | null | undefined): Permissions {
   if (!user) {
-    return { canManageAdmins: false, canWrite: false, canCreateShop: false };
+    return { canManageAdmins: false, canWrite: false, canCreateShop: false, canEditUsers: false };
   }
 
   const isAdmin = user.accountType === 'admin';
@@ -31,12 +33,14 @@ export function getPermissions(user: PermissionUser | null | undefined): Permiss
     canManageAdmins: isAdmin && user.role === 'sysadmin',
     canWrite,
     canCreateShop: canWrite && user.accountType !== 'shop',
+    canEditUsers: isAdmin && user.role === 'sysadmin',
   };
 }
 
 const WRITE_PATH = /^\/(merchants|shops|coupons|users|campaigns)(?:\/.*)?\/(?:new|edit|confirm)$/;
 const SHOP_CREATE_PATH = /^\/(?:shops\/new|shops\/confirm|merchants\/[^/]+\/shops\/new)$/;
 const ADMIN_CREATE_PATH = '/admins/new';
+const USER_EDIT_PATH = /^\/users\/[^/]+\/(?:edit|confirm)$/;
 
 /** 権限によっては開けない画面か（直リンク対策） */
 export function isRestrictedPath(pathname: string): boolean {
@@ -50,6 +54,9 @@ export function isRestrictedPath(pathname: string): boolean {
 export function getDeniedRedirect(pathname: string, permissions: Permissions): string | null {
   if (pathname === ADMIN_CREATE_PATH) {
     return permissions.canManageAdmins ? null : '/admins';
+  }
+  if (USER_EDIT_PATH.test(pathname)) {
+    return permissions.canEditUsers ? null : '/users';
   }
 
   const section = WRITE_PATH.exec(pathname)?.[1];

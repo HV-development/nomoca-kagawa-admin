@@ -9,11 +9,11 @@ const shop = { accountType: 'shop' };
 
 describe('getPermissions', () => {
   it.each([
-    ['sysadmin', sysadmin, { canManageAdmins: true, canWrite: true, canCreateShop: true }],
-    ['operator', operator, { canManageAdmins: false, canWrite: true, canCreateShop: true }],
-    ['viewer', viewer, { canManageAdmins: false, canWrite: false, canCreateShop: false }],
-    ['事業者', merchant, { canManageAdmins: false, canWrite: true, canCreateShop: true }],
-    ['店舗', shop, { canManageAdmins: false, canWrite: true, canCreateShop: false }],
+    ['sysadmin', sysadmin, { canManageAdmins: true, canWrite: true, canCreateShop: true, canEditUsers: true }],
+    ['operator', operator, { canManageAdmins: false, canWrite: true, canCreateShop: true, canEditUsers: false }],
+    ['viewer', viewer, { canManageAdmins: false, canWrite: false, canCreateShop: false, canEditUsers: false }],
+    ['事業者', merchant, { canManageAdmins: false, canWrite: true, canCreateShop: true, canEditUsers: false }],
+    ['店舗', shop, { canManageAdmins: false, canWrite: true, canCreateShop: false, canEditUsers: false }],
   ])('%s の権限', (_name, user, expected) => {
     expect(getPermissions(user)).toEqual(expected);
   });
@@ -23,7 +23,12 @@ describe('getPermissions', () => {
   });
 
   it('未ログインはすべて不可', () => {
-    expect(getPermissions(null)).toEqual({ canManageAdmins: false, canWrite: false, canCreateShop: false });
+    expect(getPermissions(null)).toEqual({
+      canManageAdmins: false,
+      canWrite: false,
+      canCreateShop: false,
+      canEditUsers: false,
+    });
   });
 });
 
@@ -52,8 +57,6 @@ describe('getDeniedRedirect', () => {
     ['/coupons/confirm', '/coupons'],
     ['/coupons/c1/edit', '/coupons'],
     ['/coupons/c1/confirm', '/coupons'],
-    ['/users/u1/edit', '/users'],
-    ['/users/u1/confirm', '/users'],
     ['/campaigns/new', '/campaigns'],
     ['/campaigns/confirm', '/campaigns'],
     ['/campaigns/c1/edit', '/campaigns'],
@@ -63,6 +66,16 @@ describe('getDeniedRedirect', () => {
     expect(redirect(pathname, operator)).toBeNull();
     expect(isRestrictedPath(pathname)).toBe(true);
   });
+
+  it.each(['/users/u1/edit', '/users/u1/confirm'])(
+    'ユーザーの編集 %s は sysadmin だけが開ける（API の PUT /users/:id が sysadmin のみ）',
+    (pathname) => {
+      expect(redirect(pathname, sysadmin)).toBeNull();
+      expect(redirect(pathname, operator)).toBe('/users');
+      expect(redirect(pathname, viewer)).toBe('/users');
+      expect(isRestrictedPath(pathname)).toBe(true);
+    }
+  );
 
   it.each([
     '/merchants',

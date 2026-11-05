@@ -29,6 +29,25 @@ type RefreshResponse = {
 
 const API_BASE_URL = '/api';
 
+/** 403（権限不足）を受けたときに発火するイベント。表示は ForbiddenNotifier が行う */
+export const API_FORBIDDEN_EVENT = 'api:forbidden';
+
+function notifyForbidden(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(API_FORBIDDEN_EVENT));
+  }
+}
+
+/** トークン更新後の再送でも権限不足だった場合のエラー。ログイン画面へのリダイレクトと区別する */
+class ForbiddenRetryError extends Error {
+  response: { status: number; data: unknown };
+
+  constructor(message: string, data: unknown) {
+    super(message);
+    this.response = { status: 403, data };
+  }
+}
+
 type LoginRequest = AdminLoginInput;
 type LoginResponse = AuthResponse;
 type RegisterRequest = RegisterInput;
@@ -134,8 +153,15 @@ class ApiClient {
           };
         }
 
-        // 401/403エラー（認証エラー）の場合の処理
-        if ((response.status === 401 || response.status === 403) && !skipAuthRedirect) {
+        // 401エラー（認証エラー）の場合の処理。403は権限不足なので、リフレッシュもリダイレクトもしない
+        if (response.status === 401 && !skipAuthRedirect) {
+          const throwIfForbidden = async (res: Response) => {
+            if (res.status !== 403) return;
+            const data = await res.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
+            notifyForbidden();
+            throw new ForbiddenRetryError(data.message || data.error?.message || 'Forbidden', data);
+          };
+
           // リフレッシュトークンで自動更新を試行
           try {
             // ログイン直後の場合、Cookieが設定されるまで少し待機
@@ -155,8 +181,10 @@ class ApiClient {
             });
 
             if (!retryResponse.ok) {
+              await throwIfForbidden(retryResponse);
+
               // リトライが失敗した場合、もう一度待機して再試行
-              if (retryResponse.status === 401 || retryResponse.status === 403) {
+              if (retryResponse.status === 401) {
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 const secondRetryResponse = await fetch(url, {
@@ -167,6 +195,7 @@ class ApiClient {
                 });
 
                 if (!secondRetryResponse.ok) {
+                  await throwIfForbidden(secondRetryResponse);
                   throw new Error(`Retry failed with status: ${secondRetryResponse.status}`);
                 }
 
@@ -177,7 +206,11 @@ class ApiClient {
             }
 
             return await retryResponse.json();
-          } catch (_refreshError) {
+          } catch (refreshError) {
+            if (refreshError instanceof ForbiddenRetryError) {
+              throw refreshError;
+            }
+
             // リフレッシュに失敗した場合はログイン画面へリダイレクト
             if (typeof window !== 'undefined') {
               window.location.href = '/login?session=expired';
@@ -185,6 +218,10 @@ class ApiClient {
             // ここで握りつぶすと呼び出し元が永遠に待つため、明示的に失敗させる
             throw new Error('Unauthorized');
           }
+        }
+
+        if (response.status === 403 && !skipAuthRedirect) {
+          notifyForbidden();
         }
 
         // エラーオブジェクトを作成して投げる

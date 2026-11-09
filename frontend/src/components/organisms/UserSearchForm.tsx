@@ -272,6 +272,17 @@ export default function UserSearchForm({
                     <input
                       type="radio"
                       name="accountStatus"
+                      value="free_period"
+                      checked={searchForm.accountStatus === 'free_period'}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">無料期間中</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
                       value="withdrawing"
                       checked={searchForm.accountStatus === 'withdrawing'}
                       onChange={(e) => onInputChange('accountStatus', e.target.value)}

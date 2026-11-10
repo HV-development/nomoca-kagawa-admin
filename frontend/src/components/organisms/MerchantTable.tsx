@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Button from '@/components/atoms/Button';
 import IconButton from '@/components/atoms/IconButton';
 import Checkbox from '@/components/atoms/Checkbox';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // Merchant型定義
 interface Merchant {
@@ -70,6 +71,8 @@ export default function MerchantTable({
   onDownloadAllCSV,
   onResendRegistration,
 }: MerchantTableProps) {
+  const { canWrite } = usePermissions();
+
   const getAccountStatusLabel = (status: string) => {
     switch (status) {
       case 'active': return '発行済み';
@@ -133,12 +136,14 @@ export default function MerchantTable({
           >
             {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
           </Button>
-          <Link href="/merchants/new">
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-              <span className="mr-2">+</span>
-              新規登録
-            </Button>
-          </Link>
+          {canWrite && (
+            <Link href="/merchants/new">
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                <span className="mr-2">+</span>
+                新規登録
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       
@@ -201,17 +206,19 @@ export default function MerchantTable({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap w-48">
                   <div className="flex items-center justify-center gap-2">
-                    <Link href={`/merchants/${merchant.id}/edit`}>
-                      <IconButton color="green" title="編集">
-                        <Image 
-                          src="/edit.svg" 
-                          alt="編集" 
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 flex-shrink-0"
-                        />
-                      </IconButton>
-                    </Link>
+                    {canWrite && (
+                      <Link href={`/merchants/${merchant.id}/edit`}>
+                        <IconButton color="green" title="編集">
+                          <Image 
+                            src="/edit.svg" 
+                            alt="編集" 
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 flex-shrink-0"
+                          />
+                        </IconButton>
+                      </Link>
+                    )}
                     <Link href={`/merchants/${merchant.id}/shops`}>
                       <IconButton color="blue" title="店舗一覧">
                         <Image 
@@ -258,7 +265,7 @@ export default function MerchantTable({
                     <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>
                       {getAccountStatusLabel(merchant.account?.status || 'inactive')}
                     </div>
-                    {(merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
+                    {canWrite && (merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
                       <IconButton
                         color="orange"
                         onClick={() => onResendRegistration(merchant.id)}

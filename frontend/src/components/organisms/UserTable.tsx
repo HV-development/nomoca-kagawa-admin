@@ -79,6 +79,8 @@ export default function UserTable({
     switch (status) {
       case 'active':
         return '契約中';
+      case 'free_period':
+        return '無料期間中';
       case 'suspended':
         return '退会済み';
       case 'withdrawing':
@@ -96,6 +98,8 @@ export default function UserTable({
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
+      case 'free_period':
+        return 'bg-purple-100 text-purple-800';
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'withdrawing':

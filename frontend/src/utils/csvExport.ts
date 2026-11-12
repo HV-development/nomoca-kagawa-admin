@@ -402,6 +402,8 @@ function getGenderLabel(gender: number): string {
 function getUserStatusLabel(status: string): string {
   switch (status) {
     case 'active': return '契約中';
+    case 'free_period': return '無料期間中';
+    case 'withdrawing': return '退会予定';
     case 'suspended': return '退会済み';
     case 'inactive': return '未契約';
     case 'pending': return '保留中';

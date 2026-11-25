@@ -358,7 +358,24 @@ class ApiClient {
   }
 
   // 事業者関連
-  async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string; accountStatuses?: string[] }): Promise<unknown> {
+  async getMerchants(params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    status?: string;
+    accountStatuses?: string[];
+    name?: string;
+    nameKana?: string;
+    representativeName?: string;
+    representativeNameKana?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    postalCode?: string;
+    prefecture?: string;
+    createdFrom?: string;
+    createdTo?: string;
+  }): Promise<unknown> {
     const queryParams = new URLSearchParams();
     if (params?.search) queryParams.append('search', params.search);
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -367,6 +384,18 @@ class ApiClient {
     if (params?.accountStatuses && params.accountStatuses.length > 0) {
       queryParams.append('accountStatuses', params.accountStatuses.join(','));
     }
+    // 詳細検索項目
+    if (params?.name) queryParams.append('name', params.name);
+    if (params?.nameKana) queryParams.append('nameKana', params.nameKana);
+    if (params?.representativeName) queryParams.append('representativeName', params.representativeName);
+    if (params?.representativeNameKana) queryParams.append('representativeNameKana', params.representativeNameKana);
+    if (params?.phone) queryParams.append('phone', params.phone);
+    if (params?.email) queryParams.append('email', params.email);
+    if (params?.address) queryParams.append('address', params.address);
+    if (params?.postalCode) queryParams.append('postalCode', params.postalCode);
+    if (params?.prefecture) queryParams.append('prefecture', params.prefecture);
+    if (params?.createdFrom) queryParams.append('createdFrom', params.createdFrom);
+    if (params?.createdTo) queryParams.append('createdTo', params.createdTo);
 
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';

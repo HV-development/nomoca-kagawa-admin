@@ -153,7 +153,24 @@ export default function MerchantsPage() {
       }
       
       // 検索条件をAPIパラメータに変換
-      const params: { page: number; limit: number; search?: string; status?: string; accountStatuses?: string[] } = {
+      const params: {
+        page: number;
+        limit: number;
+        search?: string;
+        status?: string;
+        accountStatuses?: string[];
+        name?: string;
+        nameKana?: string;
+        representativeName?: string;
+        representativeNameKana?: string;
+        phone?: string;
+        email?: string;
+        address?: string;
+        postalCode?: string;
+        prefecture?: string;
+        createdFrom?: string;
+        createdTo?: string;
+      } = {
         page: pagination.page,
         limit: pagination.limit,
       };
@@ -171,6 +188,41 @@ export default function MerchantsPage() {
       // アカウントステータスを追加
       if (appliedSearchForm.accountStatuses.length > 0) {
         params.accountStatuses = appliedSearchForm.accountStatuses;
+      }
+
+      // 詳細検索項目を追加
+      if (appliedSearchForm.merchantName) {
+        params.name = appliedSearchForm.merchantName;
+      }
+      if (appliedSearchForm.merchantNameKana) {
+        params.nameKana = appliedSearchForm.merchantNameKana;
+      }
+      if (appliedSearchForm.representativeName) {
+        params.representativeName = appliedSearchForm.representativeName;
+      }
+      if (appliedSearchForm.representativeNameKana) {
+        params.representativeNameKana = appliedSearchForm.representativeNameKana;
+      }
+      if (appliedSearchForm.phone) {
+        params.phone = appliedSearchForm.phone;
+      }
+      if (appliedSearchForm.email) {
+        params.email = appliedSearchForm.email;
+      }
+      if (appliedSearchForm.address) {
+        params.address = appliedSearchForm.address;
+      }
+      if (appliedSearchForm.postalCode) {
+        params.postalCode = appliedSearchForm.postalCode;
+      }
+      if (appliedSearchForm.prefecture) {
+        params.prefecture = appliedSearchForm.prefecture;
+      }
+      if (appliedSearchForm.createdAtFrom) {
+        params.createdFrom = appliedSearchForm.createdAtFrom;
+      }
+      if (appliedSearchForm.createdAtTo) {
+        params.createdTo = appliedSearchForm.createdAtTo;
       }
       
       const data = await apiClient.getMerchants(params);

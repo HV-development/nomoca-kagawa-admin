@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooterMerchant = dynamic(() => import('@/components/molecules/floating-footer-merchant'), {
@@ -80,6 +81,7 @@ export default function MerchantsPage() {
   
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const { canWrite } = usePermissions();
   
   // operatorロールかどうかを判定
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
@@ -151,7 +153,24 @@ export default function MerchantsPage() {
       }
       
       // 検索条件をAPIパラメータに変換
-      const params: { page: number; limit: number; search?: string; status?: string; accountStatuses?: string[] } = {
+      const params: {
+        page: number;
+        limit: number;
+        search?: string;
+        status?: string;
+        accountStatuses?: string[];
+        name?: string;
+        nameKana?: string;
+        representativeName?: string;
+        representativeNameKana?: string;
+        phone?: string;
+        email?: string;
+        address?: string;
+        postalCode?: string;
+        prefecture?: string;
+        createdFrom?: string;
+        createdTo?: string;
+      } = {
         page: pagination.page,
         limit: pagination.limit,
       };
@@ -169,6 +188,41 @@ export default function MerchantsPage() {
       // アカウントステータスを追加
       if (appliedSearchForm.accountStatuses.length > 0) {
         params.accountStatuses = appliedSearchForm.accountStatuses;
+      }
+
+      // 詳細検索項目を追加
+      if (appliedSearchForm.merchantName) {
+        params.name = appliedSearchForm.merchantName;
+      }
+      if (appliedSearchForm.merchantNameKana) {
+        params.nameKana = appliedSearchForm.merchantNameKana;
+      }
+      if (appliedSearchForm.representativeName) {
+        params.representativeName = appliedSearchForm.representativeName;
+      }
+      if (appliedSearchForm.representativeNameKana) {
+        params.representativeNameKana = appliedSearchForm.representativeNameKana;
+      }
+      if (appliedSearchForm.phone) {
+        params.phone = appliedSearchForm.phone;
+      }
+      if (appliedSearchForm.email) {
+        params.email = appliedSearchForm.email;
+      }
+      if (appliedSearchForm.address) {
+        params.address = appliedSearchForm.address;
+      }
+      if (appliedSearchForm.postalCode) {
+        params.postalCode = appliedSearchForm.postalCode;
+      }
+      if (appliedSearchForm.prefecture) {
+        params.prefecture = appliedSearchForm.prefecture;
+      }
+      if (appliedSearchForm.createdAtFrom) {
+        params.createdFrom = appliedSearchForm.createdAtFrom;
+      }
+      if (appliedSearchForm.createdAtTo) {
+        params.createdTo = appliedSearchForm.createdAtTo;
       }
       
       const data = await apiClient.getMerchants(params);
@@ -795,6 +849,7 @@ export default function MerchantsPage() {
           return merchant && merchant.account && merchant.account.passwordHash;
         }).length}
         onDownloadCSV={handleDownloadSelectedCSV}
+        canIssueAccount={canWrite}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

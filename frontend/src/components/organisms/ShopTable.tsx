@@ -8,6 +8,7 @@ import Checkbox from '@/components/atoms/Checkbox';
 import Icon from '@/components/atoms/Icon';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface ShopTableProps {
   shops: Shop[];
@@ -53,6 +54,8 @@ function ShopTable({
   getStatusColor,
   referralCounts,
 }: ShopTableProps) {
+  const { canWrite, canCreateShop } = usePermissions();
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
       {/* ローディングオーバーレイ */}
@@ -78,17 +81,19 @@ function ShopTable({
           >
             {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
           </Button>
-          <Link
-            href={{
-              pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
-              query: { returnTo: encodedReturnTo },
-            }}
-          >
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-              <span className="mr-2">+</span>
-              新規登録
-            </Button>
-          </Link>
+          {canCreateShop && (
+            <Link
+              href={{
+                pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
+                query: { returnTo: encodedReturnTo },
+              }}
+            >
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                <span className="mr-2">+</span>
+                新規登録
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       
@@ -154,25 +159,27 @@ function ShopTable({
                 )}
                 <td className="px-6 py-4 whitespace-nowrap w-32">
                   <div className="flex items-center justify-center gap-2">
-                    <Link
-                      href={{
-                        pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
-                        query: { returnTo: encodedReturnTo },
-                      }}
-                    >
-                       <button
-                        className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                        title="編集"
+                    {canWrite && (
+                      <Link
+                        href={{
+                          pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
+                          query: { returnTo: encodedReturnTo },
+                        }}
                       >
-                        <Image
-                          src="/edit.svg"
-                          alt="編集"
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 flex-shrink-0"
-                        />
-                      </button>
-                    </Link>
+                         <button
+                          className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                          title="編集"
+                        >
+                          <Image
+                            src="/edit.svg"
+                            alt="編集"
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 flex-shrink-0"
+                          />
+                        </button>
+                      </Link>
+                    )}
                     <Link
                       href={{
                         pathname: '/coupons',
@@ -252,7 +259,7 @@ function ShopTable({
                   </td>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                  {isMerchantAccount ? (
+                  {isMerchantAccount || !canWrite ? (
                     <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>
                       {statusLabels[shop.status] || shop.status}
                     </div>

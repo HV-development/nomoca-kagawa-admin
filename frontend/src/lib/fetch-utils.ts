@@ -7,6 +7,28 @@ import { NextRequest } from 'next/server'
 import { buildCommonHeaders, type HeaderOptions } from './header-utils'
 
 /**
+ * APIが署名・期限の無効なトークンに返す403のメッセージ。
+ * 権限不足の403と区別するために使う。
+ */
+const INVALID_TOKEN_MESSAGE = '無効なトークンです'
+
+/**
+ * 無効なトークンの403を401に揃える。
+ * これにより、以降の処理は401をトークンの失効、403を権限不足として扱える。
+ */
+async function normalizeInvalidTokenResponse(response: Response): Promise<Response> {
+  if (response.status !== 403) return response
+
+  const body = (await response.clone().json().catch(() => null)) as { message?: unknown } | null
+  if (body?.message !== INVALID_TOKEN_MESSAGE) return response
+
+  return new Response(JSON.stringify(body), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+/**
  * セキュアなfetch呼び出しのデフォルトオプション
  * - cache: 'no-store' - ブラウザのHTTPキャッシュを無効化
  * - credentials: 'include' - Cookieを含める（必要に応じて）
@@ -90,10 +112,12 @@ export async function secureFetchWithCommonHeaders(
     ...(fetchOptions.headers as Record<string, string> | undefined),
   }
 
-  return secureFetch(url, {
+  const response = await secureFetch(url, {
     ...fetchOptions,
     headers,
   });
+
+  return normalizeInvalidTokenResponse(response);
 }
 
 

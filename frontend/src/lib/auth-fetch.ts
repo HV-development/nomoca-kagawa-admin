@@ -18,7 +18,7 @@ function isIdempotentMethod(method?: string): boolean {
 /**
  * 503（DB起動待ち等の一時的エラー）の場合のみ短いバックオフで再試行する。
  * - retry=false（非冪等なPOST等）の場合は再送せず、副作用の二重実行を防ぐ。
- * - ログアウト判定（401/403）には影響しない。
+ * - ログアウト判定（401）には影響しない。
  */
 async function fetchWithTransientRetry(
   doFetch: () => Promise<Response>,
@@ -42,9 +42,11 @@ interface AuthenticatedFetchOptions extends Omit<RequestInit, 'headers'> {
  * 認証付きfetch + 自動リフレッシュ
  *
  * 1. アクセストークンで元のリクエストを送信
- * 2. 401/403 → リフレッシュトークンで新トークンを取得
+ * 2. 401 → リフレッシュトークンで新トークンを取得
  * 3. 新トークンで再リクエスト
  * 4. レスポンスに新トークンのSet-Cookieを付与
+ *
+ * 403は権限不足なので、リフレッシュせずそのまま返す。
  */
 export async function authenticatedFetch(
   request: NextRequest,
@@ -66,7 +68,7 @@ export async function authenticatedFetch(
     return { response: res, refreshed: false }
   }
 
-  if (firstResponse.status !== 401 && firstResponse.status !== 403) {
+  if (firstResponse.status !== 401) {
     const data = await firstResponse.json().catch(() => ({}))
     const res = createNoCacheResponse(data, { status: firstResponse.status })
     return { response: res, refreshed: false }

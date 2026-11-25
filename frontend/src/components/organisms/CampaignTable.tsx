@@ -7,6 +7,7 @@ import Button from '@/components/atoms/Button';
 import IconButton from '@/components/atoms/IconButton';
 import Checkbox from '@/components/atoms/Checkbox';
 import type { Campaign } from '@hv-development/schemas';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface CampaignTableProps {
   campaigns: Campaign[];
@@ -97,6 +98,8 @@ export default function CampaignTable({
   onToggleAll,
   onToggleCampaign,
 }: CampaignTableProps) {
+  const { canWrite } = usePermissions();
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative">
       {isLoading && (
@@ -112,12 +115,14 @@ export default function CampaignTable({
         <h3 className="text-lg font-medium text-gray-900">
           キャンペーン一覧 ({pagination.total}件)
         </h3>
-        <Link href="/campaigns/new">
-          <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-            <span className="mr-2">+</span>
-            新規作成
-          </Button>
-        </Link>
+        {canWrite && (
+          <Link href="/campaigns/new">
+            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <span className="mr-2">+</span>
+              新規作成
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -131,9 +136,11 @@ export default function CampaignTable({
                   onChange={onToggleAll}
                 />
               </th>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                アクション
-              </th>
+              {canWrite && (
+                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  アクション
+                </th>
+              )}
               <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 キャンペーン名
               </th>
@@ -168,13 +175,15 @@ export default function CampaignTable({
                       onChange={(checked) => onToggleCampaign(campaign.id, checked)}
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link href={`/campaigns/${campaign.id}/edit`}>
-                      <IconButton color="green" title="編集">
-                        <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
-                      </IconButton>
-                    </Link>
-                  </td>
+                  {canWrite && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link href={`/campaigns/${campaign.id}/edit`}>
+                        <IconButton color="green" title="編集">
+                          <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
+                        </IconButton>
+                      </Link>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {campaign.name}
                   </td>

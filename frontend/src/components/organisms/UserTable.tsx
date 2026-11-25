@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface User {
   id: string;
@@ -59,6 +60,8 @@ export default function UserTable({
   pagination,
   onDownloadAllCSV,
 }: UserTableProps) {
+  const { canWrite } = usePermissions();
+
   const getGenderLabel = (gender: number) => {
     switch (gender) {
       case 1:
@@ -204,7 +207,7 @@ export default function UserTable({
                         />
                       </button>
                     </Link>
-                    {!isOperatorRole && (
+                    {!isOperatorRole && canWrite && (
                       <Link href={`/users/${user.id}/edit`}>
                         <button
                           className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"

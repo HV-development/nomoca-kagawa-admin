@@ -84,7 +84,6 @@ export default function UserEditConfirmPage() {
         address: userData.address,
         birthDate: userData.birthDate,
         gender: userData.gender,
-        phone: '', // phoneフィールドが存在する場合は追加
       };
 
       const result = await apiClient.updateUser(userId, updateData) as {

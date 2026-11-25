@@ -13,10 +13,12 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertShopsToCSV, downloadCSV, formatReferralMonthLabel, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+import { appendShopAddressParam, appendShopDateRangeParams } from '@/utils/shopSearchQuery';
 // 分割されたコンポーネント
 import ShopSearchForm from '@/components/organisms/ShopSearchForm';
 import ShopDetailView from '@/components/organisms/ShopDetailView';
 import ShopTable from '@/components/organisms/ShopTable';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
@@ -31,6 +33,7 @@ function ShopsPageContent() {
   const searchParams = useSearchParams();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isShopAccount = auth?.user?.accountType === 'shop';
+  const { canWrite } = usePermissions();
   const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
   const searchParamsString = searchParams?.toString() ?? '';
   const baseReturnTo = useMemo(() => (searchParamsString ? `/shops?${searchParamsString}` : '/shops'), [searchParamsString]);
@@ -255,14 +258,11 @@ function ShopsPageContent() {
       if (appliedSearchForm.accountEmail) queryParams.append('accountEmail', appliedSearchForm.accountEmail);
       if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
       if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
-      if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
+      appendShopAddressParam(queryParams, appliedSearchForm);
       if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
         queryParams.append('status', appliedSearchForm.status);
       }
-      if (appliedSearchForm.createdAtFrom) queryParams.append('createdAtFrom', appliedSearchForm.createdAtFrom);
-      if (appliedSearchForm.createdAtTo) queryParams.append('createdAtTo', appliedSearchForm.createdAtTo);
-      if (appliedSearchForm.updatedAtFrom) queryParams.append('updatedAtFrom', appliedSearchForm.updatedAtFrom);
-      if (appliedSearchForm.updatedAtTo) queryParams.append('updatedAtTo', appliedSearchForm.updatedAtTo);
+      appendShopDateRangeParams(queryParams, appliedSearchForm);
       
       const data = await apiClient.getShops(queryParams.toString());
       
@@ -651,14 +651,11 @@ function ShopsPageContent() {
         if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
         if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
         if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-        if (searchForm.address) queryParams.append('address', searchForm.address);
+        appendShopAddressParam(queryParams, searchForm);
         if (searchForm.status && searchForm.status !== 'all') {
           queryParams.append('status', searchForm.status);
         }
-        if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
-        if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
-        if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
-        if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+        appendShopDateRangeParams(queryParams, searchForm);
 
         const data = await apiClient.getShops(queryParams.toString());
         
@@ -984,7 +981,7 @@ function ShopsPageContent() {
       {!isMerchantAccount && !isShopAccount && (
         <FloatingFooter
           selectedCount={selectedShops.size}
-          onBulkUpdateStatus={handleBulkUpdateStatus}
+          onBulkUpdateStatus={canWrite ? handleBulkUpdateStatus : undefined}
           onDownloadCSV={handleDownloadSelectedCSV}
           isDownloadingCSV={isDownloadingCSV}
         />

@@ -8,6 +8,7 @@ import IconButton from '@/components/atoms/IconButton';
 import Icon from '@/components/atoms/Icon';
 import Checkbox from '@/components/atoms/Checkbox';
 import type { CouponWithShop } from '@hv-development/schemas';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface CouponTableProps {
   coupons: CouponWithShop[];
@@ -47,6 +48,8 @@ export default function CouponTable({
   onStatusChange,
   onPublicStatusChange,
 }: CouponTableProps) {
+  const { canWrite } = usePermissions();
+
   const getStatusSelectColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -93,12 +96,14 @@ export default function CouponTable({
           >
             {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
           </Button>
-          <Link href={shopId ? `/coupons/new?shopId=${shopId}` : '/coupons/new'}>
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-              <span className="mr-2">+</span>
-              新規作成
-            </Button>
-          </Link>
+          {canWrite && (
+            <Link href={shopId ? `/coupons/new?shopId=${shopId}` : '/coupons/new'}>
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+                <span className="mr-2">+</span>
+                新規作成
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -150,11 +155,13 @@ export default function CouponTable({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
                   <div className="flex items-center justify-center gap-2">
-                    <Link href={`/coupons/${coupon.id}/edit`}>
-                      <IconButton color="green" title="編集">
-                        <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
-                      </IconButton>
-                    </Link>
+                    {canWrite && (
+                      <Link href={`/coupons/${coupon.id}/edit`}>
+                        <IconButton color="green" title="編集">
+                          <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
+                        </IconButton>
+                      </Link>
+                    )}
                     <Link href={`/coupons/${coupon.id}/history`}>
                       <IconButton color="orange" title="利用履歴">
                         <Image src="/history.png" alt="利用履歴" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
@@ -172,7 +179,7 @@ export default function CouponTable({
                   <div className="text-sm text-gray-900">{coupon.title}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                  {isAdminAccount ? (
+                  {isAdminAccount && canWrite ? (
                     <select
                       value={coupon.status}
                       onChange={(e) => onStatusChange(coupon.id, e.target.value)}
@@ -189,15 +196,21 @@ export default function CouponTable({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                  <select
-                    value={coupon.isPublic ? 'true' : 'false'}
-                    onChange={(e) => onPublicStatusChange(coupon.id, e.target.value === 'true')}
-                    disabled={coupon.status !== 'approved'}
-                    className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${getPublicStatusSelectColor(coupon.isPublic)} ${coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="true">公開中</option>
-                    <option value="false">非公開</option>
-                  </select>
+                  {canWrite ? (
+                    <select
+                      value={coupon.isPublic ? 'true' : 'false'}
+                      onChange={(e) => onPublicStatusChange(coupon.id, e.target.value === 'true')}
+                      disabled={coupon.status !== 'approved'}
+                      className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${getPublicStatusSelectColor(coupon.isPublic)} ${coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="true">公開中</option>
+                      <option value="false">非公開</option>
+                    </select>
+                  ) : (
+                    <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${getPublicStatusSelectColor(coupon.isPublic)}`}>
+                      {coupon.isPublic ? '公開中' : '非公開'}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                   <div className="text-sm text-gray-900">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</div>

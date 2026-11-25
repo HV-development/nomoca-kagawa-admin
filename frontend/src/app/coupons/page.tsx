@@ -14,6 +14,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { convertCouponsToCSV, downloadCSV, generateFilename, type CouponForCSV } from '@/utils/csvExport';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const CouponBulkUpdateFooter = dynamicImport(() => import('@/components/molecules/coupon-bulk-update-footer'), {
@@ -41,6 +42,7 @@ function CouponsPageContent() {
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isAdminAccount = auth?.user?.accountType === 'admin';
+  const { canWrite } = usePermissions();
   const searchParams = useSearchParams();
   const shopIdFromQuery = searchParams?.get('shopId') ?? undefined;
   const merchantIdFromQuery = searchParams?.get('merchantId') ?? undefined;
@@ -767,7 +769,7 @@ function CouponsPageContent() {
       </div>
       <CouponBulkUpdateFooter
         selectedCount={selectedCoupons.size}
-        isAdminAccount={isAdminAccount}
+        isAdminAccount={isAdminAccount && canWrite}
         isMerchantAccount={isMerchantAccount}
         isShopAccount={isShopAccount}
         onBulkUpdateStatus={handleBulkUpdateStatus}

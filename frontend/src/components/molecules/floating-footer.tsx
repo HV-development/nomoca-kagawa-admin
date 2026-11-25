@@ -72,31 +72,33 @@ export default function FloatingFooter({
             </Button>
           )}
 
-          <div className="flex items-center space-x-2">
-            <select
-              value={pendingStatus}
-              onChange={(e) => setPendingStatus(e.target.value)}
-              disabled={isUpdating}
-              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getStatusColor(pendingStatus)}`}
-            >
-              <option value="" className="text-gray-700">ステータスを選択</option>
-              <option value="registering" className="text-blue-600">登録中</option>
-              <option value="collection_requested" className="text-purple-600">情報収集依頼済み</option>
-              <option value="approval_pending" className="text-yellow-600">承認待ち</option>
-              <option value="promotional_materials_preparing" className="text-orange-600">宣材準備中</option>
-              <option value="promotional_materials_shipping" className="text-indigo-600">宣材発送中</option>
-              <option value="operating" className="text-green-600">営業中</option>
-              <option value="suspended" className="text-red-600">停止中</option>
-              <option value="terminated" className="text-gray-600">終了</option>
-            </select>
-            <Button
-              onClick={handleStatusChange}
-              disabled={isUpdating || !pendingStatus}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              更新
-            </Button>
-          </div>
+          {onBulkUpdateStatus && (
+            <div className="flex items-center space-x-2">
+              <select
+                value={pendingStatus}
+                onChange={(e) => setPendingStatus(e.target.value)}
+                disabled={isUpdating}
+                className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getStatusColor(pendingStatus)}`}
+              >
+                <option value="" className="text-gray-700">ステータスを選択</option>
+                <option value="registering" className="text-blue-600">登録中</option>
+                <option value="collection_requested" className="text-purple-600">情報収集依頼済み</option>
+                <option value="approval_pending" className="text-yellow-600">承認待ち</option>
+                <option value="promotional_materials_preparing" className="text-orange-600">宣材準備中</option>
+                <option value="promotional_materials_shipping" className="text-indigo-600">宣材発送中</option>
+                <option value="operating" className="text-green-600">営業中</option>
+                <option value="suspended" className="text-red-600">停止中</option>
+                <option value="terminated" className="text-gray-600">終了</option>
+              </select>
+              <Button
+                onClick={handleStatusChange}
+                disabled={isUpdating || !pendingStatus}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                更新
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

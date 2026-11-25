@@ -16,6 +16,7 @@ import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
 import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
@@ -71,6 +72,8 @@ export default function MerchantShopsPage() {
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  const { canWrite, canCreateShop } = usePermissions();
 
   const canSelectShops = useMemo(() => {
     if (!auth?.user) return false;
@@ -634,17 +637,19 @@ export default function MerchantShopsPage() {
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({pagination.total}件)
             </h3>
-            <Link
-              href={{
-                pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
-                query: { returnTo: encodedReturnTo },
-              }}
-            >
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                <span className="mr-2">+</span>
-                新規登録
-              </Button>
-            </Link>
+            {canCreateShop && (
+              <Link
+                href={{
+                  pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
+                  query: { returnTo: encodedReturnTo },
+                }}
+              >
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                  <span className="mr-2">+</span>
+                  新規登録
+                </Button>
+              </Link>
+            )}
           </div>
           
           <div className="overflow-x-auto">
@@ -698,25 +703,27 @@ export default function MerchantShopsPage() {
                     )}
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={{
-                            pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
-                            query: { returnTo: encodedReturnTo },
-                          }}
-                        >
-                          <button 
-                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="編集"
+                        {canWrite && (
+                          <Link
+                            href={{
+                              pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
+                              query: { returnTo: encodedReturnTo },
+                            }}
                           >
-                            <Image 
-                              src="/edit.svg" 
-                              alt="編集" 
-                              width={24}
-                              height={24}
-                              className="w-6 h-6 flex-shrink-0"
-                            />
-                          </button>
-                        </Link>
+                            <button 
+                              className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              title="編集"
+                            >
+                              <Image 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 flex-shrink-0"
+                              />
+                            </button>
+                          </Link>
+                        )}
                         <Link
                           href={{
                             pathname: '/coupons',
@@ -771,19 +778,25 @@ export default function MerchantShopsPage() {
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <select
-                        value={shop.status}
-                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
-                      >
-                        {statusOptions?.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        )) || (
-                          <option value={shop.status}>{statusLabels[shop.status] || shop.status}</option>
-                        )}
-                      </select>
+                      {canWrite ? (
+                        <select
+                          value={shop.status}
+                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
+                        >
+                          {statusOptions?.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          )) || (
+                            <option value={shop.status}>{statusLabels[shop.status] || shop.status}</option>
+                          )}
+                        </select>
+                      ) : (
+                        <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>
+                          {statusLabels[shop.status] || shop.status}
+                        </div>
+                      )}
                     </td>
                   </tr>
               ))}

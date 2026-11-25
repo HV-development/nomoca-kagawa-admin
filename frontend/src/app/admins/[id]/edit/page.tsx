@@ -14,6 +14,7 @@ import { apiClient } from '@/lib/api';
 import { handleAdminError } from '@/hooks/use-admin-error-handler';
 import { type AdminFormData, type AdminAccountInput } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +22,23 @@ function AdminEditForm() {
   const params = useParams();
   const router = useRouter();
   const auth = useAuth();
+  const { canManageAdmins } = usePermissions();
   const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const adminId = params.id as string;
   
   const [step, setStep] = useState<'input' | 'confirm'>('input');
   const [isLoading, setIsLoading] = useState(true);
+  const [targetEmail, setTargetEmail] = useState<string | null>(null);
+
+  // sysadmin以外が編集できるのは自分のアカウントだけ
+  const isDenied = !auth?.isLoading && !canManageAdmins && targetEmail !== null && targetEmail !== auth?.user?.email;
+
+  useEffect(() => {
+    if (isDenied) {
+      router.replace('/admins');
+    }
+  }, [isDenied, router]);
 
   const initialFormData: AdminFormData = {
     role: '',
@@ -58,6 +70,7 @@ function AdminEditForm() {
           role?: string;
         };
         if (adminData) {
+          setTargetEmail(adminData.email || '');
           setFormData(prev => ({
             ...prev,
             role: adminData.role || '',
@@ -103,7 +116,8 @@ function AdminEditForm() {
     try {
       const trimmedPassword = (formData.password || '').trim();
       const updateData: Partial<AdminAccountInput> = {
-        role: formData.role,
+        // sysadmin以外がroleを送るとAPIが403を返す
+        ...(canManageAdmins ? { role: formData.role } : {}),
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -141,7 +155,7 @@ function AdminEditForm() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isDenied) {
     return (
       <AdminLayout>
         <div className="text-center py-12">
@@ -182,6 +196,7 @@ function AdminEditForm() {
                   errors={errors}
                   onInputChange={handleInputChange}
                   isPasswordRequired={false}
+                  isRoleEditable={canManageAdmins}
                 />
 
                 {/* アクションボタン */}

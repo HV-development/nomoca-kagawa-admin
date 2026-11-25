@@ -1,7 +1,9 @@
 import { type AdminFormDataBase, type AdminFormFieldsProps } from '@hv-development/schemas';
+import { getRoleLabel } from '@/utils/admin';
 
 interface AdminFormFieldsOptions {
   isPasswordRequired?: boolean;
+  isRoleEditable?: boolean;
 }
 
 export default function AdminFormFields<T extends AdminFormDataBase>({
@@ -9,6 +11,7 @@ export default function AdminFormFields<T extends AdminFormDataBase>({
   errors,
   onInputChange,
   isPasswordRequired = true,
+  isRoleEditable = true,
 }: AdminFormFieldsProps<T> & AdminFormFieldsOptions) {
   return (
     <>
@@ -131,26 +134,33 @@ export default function AdminFormFields<T extends AdminFormDataBase>({
       </div>
 
       {/* 権限 */}
-      <div>
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-          権限 <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="role"
-          value={formData.role}
-          onChange={(e) => onInputChange('role', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-            errors.role ? 'border-red-500' : 'border-gray-300'
-          }`}
-        >
-          <option value="">権限を選択してください</option>
-          <option value="sysadmin">管理者</option>
-          <option value="operator">一般</option>
-        </select>
-        {errors.role && (
-          <p className="mt-1 text-sm text-red-500">{errors.role as string}</p>
-        )}
-      </div>
+      {isRoleEditable ? (
+        <div>
+          <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+            権限 <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="role"
+            value={formData.role}
+            onChange={(e) => onInputChange('role', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+              errors.role ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
+            <option value="">権限を選択してください</option>
+            <option value="sysadmin">管理者</option>
+            <option value="operator">一般</option>
+          </select>
+          {errors.role && (
+            <p className="mt-1 text-sm text-red-500">{errors.role as string}</p>
+          )}
+        </div>
+      ) : (
+        <div>
+          <p className="block text-sm font-medium text-gray-700 mb-2">権限</p>
+          <p className="text-sm text-gray-900">{getRoleLabel(formData.role)}</p>
+        </div>
+      )}
     </>
   );
 }
